@@ -1,0 +1,24 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "39b4ee2ef0ed6c2273df208b36a059fd"
+name = "Buy Now Later"
+application_url = "https://baseball-achievement-democrat-favorite.trycloudflare.com"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2026-07"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_products,write_products,read_themes,read_draft_orders,write_draft_orders"
+
+[auth]
+redirect_urls = [ "https://baseball-achievement-democrat-favorite.trycloudflare.com/authenticate" ]
+
+[app_proxy]
+url = "https://baseball-achievement-democrat-favorite.trycloudflare.com"
+subpath = "buylater-proxy"
+prefix = "apps"
