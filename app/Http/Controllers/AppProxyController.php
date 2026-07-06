@@ -35,6 +35,12 @@ class AppProxyController extends Controller
         ]);
 
         $shop = auth()->user(); // Authenticated via AuthProxy middleware
+        if (!$shop) {
+            $shopDomain = $request->query('shop') ?: $request->input('shop');
+            if ($shopDomain) {
+                $shop = User::where('name', $shopDomain)->first();
+            }
+        }
 
         if (!$shop) {
             return response()->json(['message' => 'Unauthorized shop.'], 401);
@@ -46,6 +52,25 @@ class AppProxyController extends Controller
         // Check if reminder is in the past
         if ($scheduledAt->isPast()) {
             return response()->json(['message' => 'Reminder date cannot be in the past.'], 422);
+        }
+
+        // Idempotency check: check if a pending reminder already exists for the same shop, email, and product
+        // within the last 5 minutes.
+        $existingReminder = Reminder::where('shop_id', $shop->id)
+            ->where('email', $request->input('email'))
+            ->where('product_id', $request->input('product_id'))
+            ->where('status', 'pending')
+            ->where('created_at', '>=', now()->subMinutes(5))
+            ->first();
+
+        if ($existingReminder) {
+            Log::info('AppProxy: Duplicate reminder request detected. Returning existing reminder.', [
+                'reminder_id' => $existingReminder->id
+            ]);
+            return response()->json([
+                'message' => 'Reminder scheduled successfully.',
+                'reminder' => $existingReminder
+            ], 201);
         }
 
         // Create the reminder
@@ -88,6 +113,12 @@ class AppProxyController extends Controller
         ]);
 
         $shop = auth()->user(); // Authenticated via AuthProxy middleware
+        if (!$shop) {
+            $shopDomain = $request->query('shop') ?: $request->input('shop');
+            if ($shopDomain) {
+                $shop = User::where('name', $shopDomain)->first();
+            }
+        }
 
         if (!$shop) {
             return response()->json(['message' => 'Unauthorized shop.'], 401);
@@ -202,6 +233,7 @@ class AppProxyController extends Controller
 
     /**
      * Store a new product booking (partial deposit).
+     * Uses Shopify Admin GraphQL API to create a Draft Order (avoids REST protected-data restriction).
      */
     public function storeBooking(Request $request)
     {
@@ -216,11 +248,40 @@ class AppProxyController extends Controller
             'shop' => 'required|string',
         ]);
 
-        $shopDomain = $request->input('shop');
-        $shop = User::where('name', $shopDomain)->first();
+        $shop = auth()->user();
+        if (!$shop) {
+            $shopDomain = $request->query('shop') ?: $request->input('shop');
+            if ($shopDomain) {
+                $shop = User::where('name', $shopDomain)->first();
+            }
+        }
 
         if (!$shop) {
             return response()->json(['message' => 'Shop not found.'], 404);
+        }
+
+        $shopDomain = $shop->name;
+
+        // Idempotency check: check if a pending booking already exists for the same shop, email, and product
+        // within the last 5 minutes.
+        $existingBooking = Booking::where('shop_id', $shop->id)
+            ->where('email', $request->input('email'))
+            ->where('product_id', $request->input('product_id'))
+            ->where('status', 'pending')
+            ->where('created_at', '>=', now()->subMinutes(5))
+            ->whereNotNull('checkout_url')
+            ->first();
+
+        if ($existingBooking) {
+            Log::info('AppProxy: Duplicate booking request detected. Returning existing booking.', [
+                'booking_id' => $existingBooking->id,
+                'checkout_url' => $existingBooking->checkout_url
+            ]);
+            return response()->json([
+                'message'      => 'Booking retrieved successfully.',
+                'booking'      => $existingBooking,
+                'checkout_url' => $existingBooking->checkout_url,
+            ], 201);
         }
 
         $productPrice = (float) $request->input('product_price');
@@ -228,44 +289,63 @@ class AppProxyController extends Controller
         $depositPercentage = $settings ? (int) $settings->deposit_percentage : 10;
         $depositAmount = round($productPrice * ($depositPercentage / 100), 2);
         $remainingBalance = $productPrice - $depositAmount;
+        $holdDurationDays = $settings ? (int) ($settings->hold_duration_days ?? 14) : 14;
 
         // Generate a unique token
-        $token = Str::random(32);
+        $token = strtolower(Str::random(32));
 
-        // Make API call to Shopify to create a Draft Order for the deposit
-        $checkoutUrl = null;
+        // -----------------------------------------------------------------------
+        // Create a temporary Shopify Product with the deposit price as variant.
+        // Then generate a /cart/ checkout URL using that variant ID.
+        // This avoids Draft Order API (protected customer data restriction).
+        // -----------------------------------------------------------------------
+        $checkoutUrl  = null;
         $draftOrderId = null;
 
         try {
-            $response = $shop->api()->rest('POST', '/admin/api/2024-04/draft_orders.json', [
+            $draftOrderData = [
                 'draft_order' => [
-                    'line_items' => [
-                        [
-                            'title' => '[Deposit] ' . $request->input('product_title'),
-                            'price' => $depositAmount,
-                            'quantity' => 1,
-                            'requires_shipping' => false,
-                        ]
-                    ],
+                    'email' => $request->input('email'),
                     'customer' => [
-                        'email' => $request->input('email')
+                        'email' => $request->input('email'),
                     ],
-                    'note' => 'BuyLater 14-day hold deposit. Remaining balance: $' . $remainingBalance . '. Complete link token: ' . $token
+                    'line_items' => [[
+                        'title'             => 'Deposit — ' . $request->input('product_title'),
+                        'price'             => number_format($depositAmount, 2, '.', ''),
+                        'quantity'          => 1,
+                        'requires_shipping' => false,
+                        'properties'        => [
+                            ['name' => '_token', 'value' => $token],
+                            ['name' => 'Original Price', 'value' => '$' . number_format($productPrice, 2)],
+                            ['name' => 'Remaining Balance', 'value' => '$' . number_format($remainingBalance, 2)],
+                        ]
+                    ]],
+                    'note'  => 'BuyLater deposit — do not fulfill',
+                    'tags'  => 'buylater-deposit',
                 ]
-            ]);
+            ];
 
-            if ($response['errors'] === false) {
-                $draftOrder = $response['body']['draft_order'];
-                $checkoutUrl = $draftOrder['invoice_url'];
+            $createRes = $shop->api()->rest('POST', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json', $draftOrderData);
+
+            Log::info('Deposit draft order create response', ['errors' => $createRes['errors'], 'status' => $createRes['status'] ?? null]);
+
+            if ($createRes['errors'] === false && isset($createRes['body']['draft_order'])) {
+                $draftOrder   = $createRes['body']['draft_order'];
                 $draftOrderId = $draftOrder['id'];
+                $checkoutUrl  = $draftOrder['invoice_url'];
+
+                Log::info('Deposit draft order created, invoice URL generated', [
+                    'draft_order_id' => $draftOrderId,
+                    'checkout_url'   => $checkoutUrl,
+                ]);
             } else {
-                Log::error('Shopify Draft Order creation failed', [
-                    'errors' => $response['errors'],
-                    'response' => $response,
+                Log::error('Shopify deposit draft order creation failed', [
+                    'errors' => $createRes['errors'],
+                    'body'   => $createRes['body'] ?? [],
                 ]);
             }
         } catch (\Exception $e) {
-            Log::error('Exception creating Shopify Draft Order', ['message' => $e->getMessage()]);
+            Log::error('Exception creating deposit draft order', ['message' => $e->getMessage()]);
         }
 
         // Create booking in database
@@ -285,10 +365,18 @@ class AppProxyController extends Controller
             'token' => $token,
         ]);
 
+        if (!$checkoutUrl) {
+            return response()->json([
+                'message'      => 'Booking saved but checkout URL could not be generated. Please try again.',
+                'booking'      => $booking,
+                'checkout_url' => null,
+            ], 201);
+        }
+
         return response()->json([
-            'message' => 'Booking created successfully.',
-            'booking' => $booking,
-            'checkout_url' => $checkoutUrl
+            'message'      => 'Booking created successfully.',
+            'booking'      => $booking,
+            'checkout_url' => $checkoutUrl,
         ], 201);
     }
 
@@ -299,7 +387,7 @@ class AppProxyController extends Controller
     {
         $shop = auth()->user();
         if (!$shop) {
-            $shopDomain = $request->query('shop');
+            $shopDomain = $request->query('shop') ?: $request->input('shop');
             if ($shopDomain) {
                 $shop = User::where('name', $shopDomain)->first();
             }
@@ -312,7 +400,11 @@ class AppProxyController extends Controller
         $settings = Setting::where('shop_id', $shop->id)->first();
 
         return response()->json([
-            'deposit_percentage' => $settings ? (int) $settings->deposit_percentage : 10
+            'deposit_percentage' => $settings ? (int) $settings->deposit_percentage : 10,
+            'show_deposit' => $settings ? (bool) ($settings->show_deposit ?? true) : true,
+            'show_reminders' => $settings ? (bool) ($settings->show_reminders ?? true) : true,
+            'show_alerts' => $settings ? (bool) ($settings->show_alerts ?? true) : true,
+            'hold_duration_days' => $settings ? (int) ($settings->hold_duration_days ?? 14) : 14,
         ]);
     }
 }

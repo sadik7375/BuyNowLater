@@ -23,6 +23,12 @@ class Booking extends Model
         'checkout_url',
         'status',
         'token',
+        'customer_name',
+        'expires_at',
+    ];
+
+    protected $casts = [
+        'expires_at' => 'datetime',
     ];
 
     /**

@@ -1,0 +1,22 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "05b438e5be3e9c9cd30d5dcdb36925d4"
+application_url = "https://limitation-mines-cologne-praise.trycloudflare.com"
+embedded = true
+name = "Buy Now Later"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_draft_orders,read_products,read_themes,write_draft_orders,write_products"
+
+[auth]
+redirect_urls = [
+  "https://limitation-mines-cologne-praise.trycloudflare.com/authenticate"
+]
+
+[webhooks]
+api_version = "2026-10"
+
+[build]
+include_config_on_deploy = true
+automatically_update_urls_on_dev = true

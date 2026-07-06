@@ -107,11 +107,6 @@ class ProductsUpdateJob implements ShouldQueue
         $apiKey = $setting->sendgrid_api_key ?? config('services.sendgrid.api_key');
         $fromEmail = $setting->sendgrid_from_email ?? config('services.sendgrid.from_email');
 
-        if (empty($apiKey) || empty($fromEmail)) {
-            Log::error("ProductsUpdateJob: Missing SendGrid settings for shop ID {$shop->id}. Cannot send alerts.");
-            return;
-        }
-
         $subject = $setting->discount_email_subject ?? 'Price Drop Alert: A product you wanted is now on sale!';
         $htmlTemplate = $setting->discount_email_template ?? $this->getDefaultHtmlTemplate();
 

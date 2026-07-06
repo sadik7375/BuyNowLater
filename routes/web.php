@@ -27,6 +27,19 @@ Log::info('Web Route Match:', [
 Route::group(['middleware' => ['verify.shopify']], function () {
     Route::get('/', [DashboardController::class, 'index'])->name('home');
     Route::post('/admin/settings', [DashboardController::class, 'saveSettings'])->name('settings.save');
+    Route::post('/admin/bookings/{id}/send-balance-link', [DashboardController::class, 'sendBalanceLink'])->name('bookings.send_balance_link');
+    Route::post('/admin/bookings/{id}/send-reminder', [DashboardController::class, 'sendReminder'])->name('bookings.send_reminder');
+
+    // Fallbacks to handle GET redirects caused by Shopify App Bridge re-auth redirection on POST routes
+    Route::get('/admin/settings', function () {
+        return redirect()->to(route('home', request()->query()) . '#settings');
+    });
+    Route::get('/admin/bookings/{id}/send-balance-link', function () {
+        return redirect()->to(route('home', request()->query()) . '#bookings');
+    });
+    Route::get('/admin/bookings/{id}/send-reminder', function () {
+        return redirect()->to(route('home', request()->query()) . '#bookings');
+    });
 });
 
 // Shopify App Proxy Routes (Signed requests from storefront)

@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
+  if (window.buylaterInitialized) return;
+  window.buylaterInitialized = true;
+
   const triggerBtn = document.getElementById('buylater-trigger');
   const modal = document.getElementById('buylater-modal');
   const closeBtn = document.querySelector('.buylater-close-btn');
@@ -21,8 +24,9 @@ document.addEventListener('DOMContentLoaded', function() {
   if (!triggerBtn || !modal) return;
 
   let selectedOption = null;
-  const productPrice = parseFloat(triggerBtn.getAttribute('data-product-price') || '0');
-  const currencySymbol = '$'; // Adjust based on shop currency if needed
+  const rawPrice = (triggerBtn.getAttribute('data-product-price') || '0').replace(/,/g, '');
+  const productPrice = parseFloat(rawPrice);
+  const currencySymbol = window.buylaterCurrencySymbol || '$';
   let depositPercentage = 10; // Default fallback
 
   // Populate Booking Breakdown
@@ -63,9 +67,37 @@ document.addEventListener('DOMContentLoaded', function() {
     return res.json();
   })
   .then(data => {
-    if (data && data.deposit_percentage) {
-      depositPercentage = parseInt(data.deposit_percentage, 10);
-      updateDepositDisplay();
+    if (data) {
+      if (data.deposit_percentage) {
+        depositPercentage = parseInt(data.deposit_percentage, 10);
+        updateDepositDisplay();
+      }
+      if (data.hold_duration_days) {
+        const holdDaysSpan = document.getElementById('buylater-hold-days-display');
+        if (holdDaysSpan) {
+          holdDaysSpan.textContent = data.hold_duration_days;
+        }
+      }
+      
+      // Control options visibility based on shop settings
+      const depositCard = document.querySelector('.buylater-option-card[data-option="book"]');
+      const reminderCard = document.querySelector('.buylater-option-card[data-option="remind"]');
+      const alertsCard = document.querySelector('.buylater-option-card[data-option="discount"]');
+
+      if (depositCard && data.show_deposit === false) {
+        depositCard.style.display = 'none';
+      }
+      if (reminderCard && data.show_reminders === false) {
+        reminderCard.style.display = 'none';
+      }
+      if (alertsCard && data.show_alerts === false) {
+        alertsCard.style.display = 'none';
+      }
+
+      // If all options are disabled, hide the trigger button completely
+      if (data.show_deposit === false && data.show_reminders === false && data.show_alerts === false) {
+        triggerBtn.style.display = 'none';
+      }
     }
   })
   .catch(err => {
@@ -204,8 +236,10 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Submit Remind Me Later Form
+  let isRemindSubmitting = false;
   remindForm.addEventListener('submit', function(e) {
     e.preventDefault();
+    if (isRemindSubmitting) return;
     const email = document.getElementById('remind-email').value;
     const datetime = document.getElementById('remind-datetime').value;
     
@@ -214,6 +248,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitBtn = remindForm.querySelector('.buylater-primary-btn');
     const originalBtnText = submitBtn.querySelector('span').textContent;
     
+    isRemindSubmitting = true;
     submitBtn.disabled = true;
     submitBtn.classList.remove('enabled');
     submitBtn.querySelector('span').textContent = 'Setting Reminder...';
@@ -243,6 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
       showMessage(error.message || 'Failed to set reminder. Please try again.', 'error');
     })
     .finally(() => {
+      isRemindSubmitting = false;
       submitBtn.disabled = false;
       submitBtn.classList.add('enabled');
       submitBtn.querySelector('span').textContent = originalBtnText;
@@ -250,8 +286,10 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // Submit Price Drop Alert Form
+  let isDiscountSubmitting = false;
   discountForm.addEventListener('submit', function(e) {
     e.preventDefault();
+    if (isDiscountSubmitting) return;
     const email = document.getElementById('discount-email').value;
     
     if (!email) return;
@@ -259,6 +297,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitBtn = discountForm.querySelector('.buylater-primary-btn');
     const originalBtnText = submitBtn.querySelector('span').textContent;
     
+    isDiscountSubmitting = true;
     submitBtn.disabled = true;
     submitBtn.classList.remove('enabled');
     submitBtn.querySelector('span').textContent = 'Subscribing...';
@@ -287,6 +326,7 @@ document.addEventListener('DOMContentLoaded', function() {
       showMessage(error.message || 'Failed to subscribe. Please try again.', 'error');
     })
     .finally(() => {
+      isDiscountSubmitting = false;
       submitBtn.disabled = false;
       submitBtn.classList.add('enabled');
       submitBtn.querySelector('span').textContent = originalBtnText;
@@ -294,8 +334,10 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // Submit Book It Now Form (Draft/Deposit Booking)
+  let isBookSubmitting = false;
   bookForm.addEventListener('submit', function(e) {
     e.preventDefault();
+    if (isBookSubmitting) return;
     const email = document.getElementById('book-email').value;
     
     if (!email) return;
@@ -303,6 +345,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitBtn = bookForm.querySelector('.buylater-primary-btn');
     const originalBtnText = submitBtn.querySelector('span').textContent;
     
+    isBookSubmitting = true;
     submitBtn.disabled = true;
     submitBtn.classList.remove('enabled');
     submitBtn.querySelector('span').textContent = 'Creating Reservation...';
@@ -327,7 +370,8 @@ document.addEventListener('DOMContentLoaded', function() {
       showMessage('Success! Redirecting you to checkout to pay the deposit...', 'success');
       if (data.checkout_url) {
         setTimeout(() => {
-          window.location.href = data.checkout_url;
+          // Redirect the top frame to the checkout URL, avoiding pop-up blockers
+          window.top.location.href = data.checkout_url;
         }, 1500);
       }
     })
@@ -336,6 +380,7 @@ document.addEventListener('DOMContentLoaded', function() {
       showMessage(error.message || 'Failed to initialize booking. Please try again.', 'error');
     })
     .finally(() => {
+      isBookSubmitting = false;
       submitBtn.disabled = false;
       submitBtn.classList.add('enabled');
       submitBtn.querySelector('span').textContent = originalBtnText;

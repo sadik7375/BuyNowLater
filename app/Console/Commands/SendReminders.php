@@ -56,12 +56,6 @@ class SendReminders extends Command
                 $apiKey = $setting->sendgrid_api_key ?? config('services.sendgrid.api_key');
                 $fromEmail = $setting->sendgrid_from_email ?? config('services.sendgrid.from_email');
 
-                if (empty($apiKey) || empty($fromEmail)) {
-                    $this->error("Skipping reminder ID {$reminder->id} due to missing SendGrid API key or sender email configuration.");
-                    Log::error("SendReminders Command: Missing SendGrid settings for shop ID {$reminder->shop_id}");
-                    continue;
-                }
-
                 // Determine subject and template
                 $subject = $setting->reminder_email_subject ?? 'Reminder: You wanted to buy this later!';
                 

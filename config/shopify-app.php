@@ -416,6 +416,26 @@ return [
             'topic' => 'PRODUCTS_UPDATE',
             'address' => env('APP_URL') . '/webhook/products-update',
         ],
+        [
+            'topic' => 'ORDERS_PAID',
+            'address' => env('APP_URL') . '/webhook/orders-paid',
+        ],
+        [
+            'topic' => 'APP_UNINSTALLED',
+            'address' => env('APP_URL') . '/webhook/app-uninstalled',
+        ],
+        [
+            'topic' => 'CUSTOMERS_DATA_REQUEST',
+            'address' => env('APP_URL') . '/webhook/gdpr-customers-data-request',
+        ],
+        [
+            'topic' => 'CUSTOMERS_REDACT',
+            'address' => env('APP_URL') . '/webhook/gdpr-customers-redact',
+        ],
+        [
+            'topic' => 'SHOP_REDACT',
+            'address' => env('APP_URL') . '/webhook/gdpr-shop-redact',
+        ],
     ],
 
     /*

@@ -1,22 +1,27 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 {{ 'buylater.css' | asset_url | stylesheet_tag }}
 
-<button type="button" 
-        class="buylater-btn" 
-        style="--buylater-btn-bg: {{ block.settings.button_color }}; --buylater-btn-color: {{ block.settings.button_text_color }};"
-        id="buylater-trigger"
-        data-product-id="{{ product.id }}"
-        data-product-title="{{ product.title | escape }}"
-        data-product-handle="{{ product.handle }}"
-        data-product-price="{{ product.price | money_without_currency }}"
-        data-product-compare-price="{% if product.compare_at_price %}{{ product.compare_at_price | money_without_currency }}{% else %}{% endif %}"
-        data-product-image="{{ product.featured_image | img_url: 'medium' }}">
-  <!-- Clock SVG Icon -->
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="buylater-btn-icon">
-    <circle cx="12" cy="12" r="10"></circle>
-    <polyline points="12 6 12 12 16 14"></polyline>
-  </svg>
-  <span>{{ block.settings.button_text }}</span>
-</button>
+<div class="buylater-btn-wrapper" style="display: flex; justify-content: {{ block.settings.button_alignment }}; width: 100%;">
+  <button type="button" 
+          class="buylater-btn" 
+          style="font-size: {{ block.settings.button_font_size }}px; font-weight: {{ block.settings.button_font_weight }}; width: {% if block.settings.button_width_mode == 'full' %}100%{% elsif block.settings.button_width_mode == 'auto' %}auto{% else %}{{ block.settings.button_custom_width }}px{% endif %};"
+          id="buylater-trigger"
+          data-product-id="{{ product.id }}"
+          data-product-title="{{ product.title | escape }}"
+          data-product-handle="{{ product.handle }}"
+          data-product-price="{{ product.price | divided_by: 100.0 }}"
+          data-product-compare-price="{% if product.compare_at_price %}{{ product.compare_at_price | divided_by: 100.0 }}{% else %}{% endif %}"
+          data-product-image="{{ product.featured_image | image_url: width: 240 }}">
+    <!-- Clock SVG Icon -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="buylater-btn-icon">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 12 16 14"></polyline>
+    </svg>
+    <span>{{ block.settings.button_text }}</span>
+  </button>
+</div>
 
 <!-- Modal Container -->
 <div id="buylater-modal" class="buylater-modal" style="display: none;">
@@ -37,7 +42,7 @@
 
       <!-- Product Preview Block -->
       <div class="buylater-product-preview">
-        <img id="buylater-preview-img" src="{{ product.featured_image | img_url: 'medium' }}" alt="{{ product.title | escape }}">
+        <img id="buylater-preview-img" src="{{ product.featured_image | image_url: width: 240 }}" alt="{{ product.title | escape }}" width="52" height="52">
         <div class="buylater-product-details">
           <h4 id="buylater-preview-title">{{ product.title }}</h4>
           <div class="buylater-price-container">
@@ -51,70 +56,86 @@
       <div class="buylater-options-list">
         <!-- Option 1: Book it now -->
         <div class="buylater-option-card" data-option="book">
-          <div class="buylater-card-selection">
-            <span class="buylater-radio-circle"></span>
-          </div>
           <div class="buylater-card-icon book-icon">
             <!-- Lock/Wallet SVG -->
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
             </svg>
           </div>
           <div class="buylater-card-content">
             <h3>Book it now</h3>
-            <p>Reserve with a small deposit. We hold it for you while you arrange the rest.</p>
+            <p>Reserve with a small deposit. We hold the item while you arrange the rest.</p>
             <span class="buylater-price-drop-badge" id="buylater-deposit-amount">From $0.00 deposit</span>
+          </div>
+          <div class="buylater-card-selection">
+            <span class="buylater-radio-circle"></span>
           </div>
         </div>
 
         <!-- Option 2: Remind me later -->
         <div class="buylater-option-card" data-option="remind">
-          <div class="buylater-card-selection">
-            <span class="buylater-radio-circle"></span>
-          </div>
           <div class="buylater-card-icon remind-icon">
             <!-- Bell SVG -->
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
             </svg>
           </div>
           <div class="buylater-card-content">
             <h3>Remind me later</h3>
-            <p>Pick a date and time — we'll send you an email reminder to come back.</p>
-            <span class="buylater-badge email-badge">Email</span>
+            <p>Pick a date and time — we'll send a reminder when you're ready to buy.</p>
+            <div class="buylater-badge-group">
+              <span class="buylater-badge email-badge">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="badge-icon">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+                Email
+              </span>
+            </div>
+          </div>
+          <div class="buylater-card-selection">
+            <span class="buylater-radio-circle"></span>
           </div>
         </div>
 
         <!-- Option 3: Alert me on discount -->
         <div class="buylater-option-card" data-option="discount">
-          <div class="buylater-card-selection">
-            <span class="buylater-radio-circle"></span>
-          </div>
           <div class="buylater-card-icon discount-icon">
             <!-- Tag SVG -->
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
               <line x1="7" y1="7" x2="7.01" y2="7"></line>
             </svg>
           </div>
           <div class="buylater-card-content">
             <h3>Alert me on discount</h3>
-            <p>Get notified the moment the store owner drops the price on this product.</p>
-            <span class="buylater-badge alert-badge">Instant Alert</span>
+            <p>Get notified the moment the store drops the price on this product.</p>
+            <span class="buylater-badge alert-badge">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="badge-icon">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+              Instant alert
+            </span>
+          </div>
+          <div class="buylater-card-selection">
+            <span class="buylater-radio-circle"></span>
           </div>
         </div>
       </div>
 
-      <!-- Action Button -->
-      <button type="button" id="buylater-continue-btn" class="buylater-primary-btn" disabled>
-        <span>Continue</span>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-          <polyline points="12 5 19 12 12 19"></polyline>
-        </svg>
-      </button>
+      <!-- Footer Area -->
+      <div class="buylater-modal-footer">
+        <button type="button" id="buylater-continue-btn" class="buylater-primary-btn" disabled>
+          <span>Continue</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </button>
+        <div class="buylater-modal-footer-subtext">No account needed · Unsubscribe anytime</div>
+      </div>
     </div>
 
     <!-- Step 2: Book it now Form -->
@@ -128,7 +149,7 @@
       </div>
       <div class="buylater-modal-header">
         <h2>Reserve with Deposit</h2>
-        <p>Pay a partial deposit to hold this item for 14 days.</p>
+        <p>Pay a partial deposit to hold this item for <span id="buylater-hold-days-display">14</span> days.</p>
       </div>
       <form id="buylater-book-form">
         <div class="form-group">
@@ -212,9 +233,10 @@
 </div>
 
 <script>
-  window.buylaterShopDomain = "{{ shop.domain }}";
+  window.buylaterShopDomain = "{{ shop.permanent_domain }}";
+  window.buylaterCurrencySymbol = "{{ cart.currency.symbol }}";
 </script>
-{{ 'buylater.js' | asset_url | defer: 'defer' | script_tag }}
+<script src="{{ 'buylater.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
@@ -222,8 +244,42 @@
   "target": "section",
   "settings": [
     { "type": "text", "id": "button_text", "label": "Button Text", "default": "Buy Later — not ready yet?" },
-    { "type": "color", "id": "button_color", "label": "Button Color", "default": "#1a1a1a" },
-    { "type": "color", "id": "button_text_color", "label": "Button Text Color", "default": "#ffffff" }
+    { "type": "range", "id": "button_font_size", "min": 12, "max": 24, "step": 1, "unit": "px", "label": "Button Font Size", "default": 15 },
+    {
+      "type": "select",
+      "id": "button_font_weight",
+      "label": "Button Font Weight",
+      "options": [
+        { "value": "400", "label": "Normal (400)" },
+        { "value": "500", "label": "Medium (500)" },
+        { "value": "600", "label": "Semi-Bold (600)" },
+        { "value": "700", "label": "Bold (700)" }
+      ],
+      "default": "600"
+    },
+    {
+      "type": "select",
+      "id": "button_width_mode",
+      "label": "Button Width",
+      "options": [
+        { "value": "full", "label": "Full Width (100%)" },
+        { "value": "auto", "label": "Fit Content (Auto)" },
+        { "value": "custom", "label": "Custom Width" }
+      ],
+      "default": "full"
+    },
+    { "type": "range", "id": "button_custom_width", "min": 100, "max": 500, "step": 10, "unit": "px", "label": "Custom Width (if Custom selected)", "default": 200 },
+    {
+      "type": "select",
+      "id": "button_alignment",
+      "label": "Button Alignment",
+      "options": [
+        { "value": "flex-start", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "flex-end", "label": "Right" }
+      ],
+      "default": "center"
+    }
   ]
 }
 {% endschema %}

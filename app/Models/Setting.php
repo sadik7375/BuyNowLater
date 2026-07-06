@@ -22,6 +22,10 @@ class Setting extends Model
         'reminder_email_template',
         'discount_email_subject',
         'discount_email_template',
+        'show_deposit',
+        'show_reminders',
+        'show_alerts',
+        'hold_duration_days',
     ];
 
     public function shop()

@@ -1,28 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 /* BuyLater Button styling */
 .buylater-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 0.9rem 2rem;
-  font-size: 0.95rem;
+  gap: 10px;
+  padding: 12px 24px;
+  min-height: 46px;
+  font-size: 15px;
   font-weight: 600;
-  background-color: var(--buylater-btn-bg, #1a1a1a);
-  color: var(--buylater-btn-color, #ffffff);
-  border: 1px solid var(--buylater-btn-bg, #1a1a1a);
-  border-radius: 6px;
+  font-family: inherit;
+  /* Inherit Theme button colors (Hex/RGB dual fallbacks) */
+  background-color: var(--color-button, #1a1a1a);
+  color: var(--color-button-text, #ffffff);
+  border: 1px solid var(--color-button, #1a1a1a);
+  
+  background-color: rgb(var(--color-button, 26, 26, 26));
+  color: rgb(var(--color-button-text, 255, 255, 255));
+  border: 1px solid rgb(var(--color-button, 26, 26, 26));
+  
+  border-radius: 4px;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.15s ease-in-out;
   margin-top: 12px;
   width: 100%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+  letter-spacing: 0.04em;
 }
 
 .buylater-btn:hover {
-  background-color: #333333;
-  border-color: #333333;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  filter: brightness(0.9);
 }
 
 .buylater-btn-icon {
@@ -40,47 +48,60 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background-color: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: buylaterFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: buylaterFadeIn 0.2s ease-out;
 }
 
 /* Modal Content Container */
 .buylater-modal-content {
-  background-color: #1c1d1f;
-  color: #f5f5f7;
+  background-color: #ffffff;
+  color: #1a1a1a;
   border-radius: 16px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-  width: 90%;
-  max-width: 480px;
-  padding: 2rem;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.02);
+  width: 92%;
+  max-width: 440px;
+  padding: 1.75rem 1.75rem 1.5rem 1.75rem;
   position: relative;
-  border: 1px solid #2e2f33;
-  animation: buylaterSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 1px solid #e2e8f0;
+  animation: buylaterSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   max-height: 90vh;
   overflow-y: auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  box-sizing: border-box;
 }
 
 /* Close Button */
 .buylater-close-btn {
-  color: #8e8e93;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e1e3e5;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #6d7175;
   position: absolute;
   top: 1.5rem;
   right: 1.5rem;
   cursor: pointer;
-  transition: color 0.2s;
+  transition: all 0.2s ease;
 }
 
 .buylater-close-btn svg {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.5;
 }
 
 .buylater-close-btn:hover {
-  color: #ffffff;
+  background-color: #f6f6f7;
+  color: #1a1a1a;
+  border-color: #c9cccf;
 }
 
 /* Steps Transition */
@@ -94,22 +115,25 @@
 
 /* Headers */
 .buylater-modal-header {
-  margin-bottom: 1.5rem;
-  padding-right: 20px;
+  margin-bottom: 1.25rem;
+  padding-right: 40px;
+  text-align: left;
 }
 
 .buylater-modal-header h2 {
   font-size: 1.35rem;
   font-weight: 600;
   margin: 0 0 6px 0;
-  color: #ffffff;
-  letter-spacing: -0.02em;
+  color: #1a1a1a;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
 }
 
 .buylater-modal-header p {
-  font-size: 0.9rem;
-  color: #8e8e93;
+  font-size: 0.95rem;
+  color: #6d7175;
   margin: 0;
+  line-height: 1.45;
 }
 
 /* Product Preview Block */
@@ -117,11 +141,18 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  background-color: #242529;
-  border: 1px solid #2e2f33;
-  border-radius: 10px;
-  padding: 12px;
-  margin-bottom: 1.5rem;
+  background-color: transparent;
+  border-top: 1px solid #e1e3e5;
+  border-bottom: 1px solid #e1e3e5;
+  border-left: none;
+  border-right: none;
+  border-radius: 0;
+  padding: 14px 0;
+  margin-bottom: 1.25rem;
+  margin-left: -1.75rem;
+  margin-right: -1.75rem;
+  padding-left: 1.75rem;
+  padding-right: 1.75rem;
 }
 
 .buylater-product-preview img {
@@ -129,23 +160,24 @@
   height: 52px;
   object-fit: cover;
   border-radius: 8px;
-  border: 1px solid #3a3b3f;
-  background-color: #2a2b30;
+  border: 1px solid #e1e3e5;
+  background-color: #f6f6f7;
 }
 
 .buylater-product-details {
   flex: 1;
+  text-align: left;
 }
 
 .buylater-product-details h4 {
-  font-size: 0.9rem;
+  font-size: 0.98rem;
   font-weight: 600;
-  margin: 0 0 4px 0;
-  color: #ffffff;
+  margin: 0 0 3px 0;
+  color: #1a1a1a;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 320px;
+  max-width: 300px;
 }
 
 .buylater-price-container {
@@ -155,14 +187,14 @@
 }
 
 .buylater-price {
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
 }
 
 .buylater-compare-price {
-  font-size: 0.85rem;
-  color: #8e8e93;
+  font-size: 0.9rem;
+  color: #8c9196;
   text-decoration: line-through;
 }
 
@@ -171,62 +203,63 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
 }
 
 /* Option Card */
 .buylater-option-card {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  background-color: #242529;
-  border: 1.5px solid #2e2f33;
+  background-color: #ffffff;
+  border: 1px solid #e1e3e5;
   border-radius: 12px;
   padding: 16px;
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
+  box-sizing: border-box;
+  text-align: left;
 }
 
 .buylater-option-card:hover {
-  background-color: #2a2b30;
-  border-color: #3e3f45;
+  background-color: #fafbfb;
+  border-color: #cbd5e1;
 }
 
 .buylater-option-card.selected {
-  background-color: #162438;
-  border-color: #007aff;
-  box-shadow: 0 0 0 1px #007aff;
+  background-color: #e8f2ff;
+  border-color: #adcbf7;
 }
 
 /* Radio circle alignment */
 .buylater-card-selection {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 20px;
-  margin-top: 2px;
+  position: absolute;
+  top: 16px;
+  right: 16px;
 }
 
 .buylater-radio-circle {
-  width: 18px;
-  height: 18px;
-  border: 2px solid #5a5b60;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid #cbd5e0;
   border-radius: 50%;
   display: inline-block;
   position: relative;
+  background-color: #ffffff;
   transition: all 0.2s ease;
 }
 
 .buylater-option-card.selected .buylater-radio-circle {
-  border-color: #007aff;
-  background-color: #007aff;
+  border-color: #2563eb;
+  background-color: #2563eb;
 }
 
 .buylater-option-card.selected .buylater-radio-circle::after {
   content: '';
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   background-color: #ffffff;
   border-radius: 50%;
   position: absolute;
@@ -237,63 +270,113 @@
 
 /* Card Icons */
 .buylater-card-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 0;
 }
 
 .buylater-card-icon svg {
   width: 18px;
   height: 18px;
+  stroke-width: 2.5;
 }
 
-.book-icon { background-color: rgba(0, 122, 255, 0.15); color: #007aff; }
-.remind-icon { background-color: rgba(142, 142, 147, 0.15); color: #8e8e93; }
-.discount-icon { background-color: rgba(52, 199, 89, 0.15); color: #34c759; }
+.book-icon {
+  background-color: #2563eb;
+  color: #ffffff;
+}
 
-.buylater-option-card.selected .book-icon { background-color: #007aff; color: #ffffff; }
-.buylater-option-card.selected .remind-icon { background-color: #8e8e93; color: #ffffff; }
-.buylater-option-card.selected .discount-icon { background-color: #34c759; color: #ffffff; }
+.remind-icon {
+  background-color: #e8e5ff;
+  color: #4f46e5;
+}
+
+.discount-icon {
+  background-color: #e6f4ea;
+  color: #137333;
+}
 
 /* Card Text Content */
 .buylater-card-content {
   flex: 1;
+  padding-right: 28px;
+  text-align: left;
 }
 
 .buylater-card-content h3 {
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 600;
-  margin: 0 0 4px 0;
-  color: #ffffff;
+  margin: 0 0 5px 0;
+  color: #1a1a1a;
+  line-height: 1.25;
 }
 
 .buylater-card-content p {
-  font-size: 0.82rem;
-  color: #8e8e93;
-  margin: 0 0 8px 0;
-  line-height: 1.4;
+  font-size: 0.95rem;
+  color: #4a5568;
+  margin: 0 0 10px 0;
+  line-height: 1.45;
 }
 
 /* Badges */
-.buylater-badge {
-  display: inline-block;
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 4px;
+.buylater-badge-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.email-badge { background-color: #242b35; color: #007aff; }
-.alert-badge { background-color: #1e3322; color: #34c759; }
-.buylater-price-drop-badge {
-  font-size: 0.8rem;
+.buylater-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: #007aff;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.email-badge, .whatsapp-badge {
+  background-color: #e8e5ff;
+  color: #4f46e5;
+}
+
+.alert-badge {
+  background-color: #d1fae5;
+  color: #047857;
+}
+
+.badge-icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.2;
+}
+
+.buylater-price-drop-badge {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  background-color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  line-height: 1.3;
+}
+
+/* Footer Area styling */
+.buylater-modal-footer {
+  border-top: 1px solid #e1e3e5;
+  margin-left: -1.75rem;
+  margin-right: -1.75rem;
+  padding-left: 1.75rem;
+  padding-right: 1.75rem;
+  padding-top: 1.25rem;
+  margin-top: 1.25rem;
 }
 
 /* Action Buttons */
@@ -304,39 +387,52 @@
   gap: 8px;
   width: 100%;
   padding: 14px;
-  background-color: #3a3b3f;
-  color: #a1a1a5;
+  background-color: #2563eb;
+  color: #ffffff;
   border: none;
   border-radius: 8px;
   font-size: 0.95rem;
   font-weight: 600;
-  cursor: not-allowed;
-  transition: all 0.2s ease;
-}
-
-.buylater-primary-btn.enabled {
-  background-color: #007aff;
-  color: #ffffff;
   cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-.buylater-primary-btn.enabled:hover {
-  background-color: #0066d6;
+.buylater-primary-btn:hover {
+  background-color: #1d4ed8;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
   transform: translateY(-1px);
 }
 
-.buylater-primary-btn.enabled:active {
+.buylater-primary-btn:active {
   transform: translateY(0);
+}
+
+.buylater-primary-btn[disabled] {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none !important;
+  transform: none !important;
 }
 
 .buylater-primary-btn svg {
   width: 16px;
   height: 16px;
+  stroke-width: 2.5;
   transition: transform 0.2s ease;
 }
 
-.buylater-primary-btn.enabled:hover svg {
+.buylater-primary-btn:not([disabled]):hover svg {
   transform: translateX(4px);
+}
+
+.buylater-modal-footer-subtext {
+  font-size: 0.88rem;
+  color: #718096;
+  text-align: center;
+  margin-top: 12px;
 }
 
 /* Back Button inside Forms */
@@ -345,80 +441,88 @@
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  color: #8e8e93;
-  font-size: 0.85rem;
-  font-weight: 500;
+  color: #6d7175;
+  font-size: 0.95rem;
+  font-weight: 600;
   margin-bottom: 1.2rem;
   transition: color 0.2s;
   align-self: flex-start;
 }
 
 .buylater-step-back-btn:hover {
-  color: #ffffff;
+  color: #1a1a1a;
 }
 
 .buylater-step-back-btn svg {
   width: 16px;
   height: 16px;
+  stroke-width: 2.5;
 }
 
 /* Form Styles */
 .form-group {
   margin-bottom: 1.2rem;
+  text-align: left;
 }
 
 .form-group label {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.88rem;
   font-weight: 600;
   margin-bottom: 6px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #8e8e93;
+  color: #6d7175;
+}
+
+.form-group label span.required {
+  color: #e53e3e;
 }
 
 .form-group input {
   width: 100%;
   padding: 12px;
-  background-color: #242529;
-  border: 1px solid #2e2f33;
+  background-color: #ffffff;
+  border: 1px solid #e1e3e5;
   border-radius: 8px;
   font-family: inherit;
-  font-size: 0.92rem;
-  color: #ffffff;
+  font-size: 0.95rem;
+  color: #1a1a1a;
   box-sizing: border-box;
   transition: border-color 0.2s;
 }
 
 .form-group input:focus {
-  border-color: #007aff;
+  border-color: #2563eb;
   outline: none;
+  box-shadow: 0 0 0 1px #2563eb;
 }
 
 /* Breakdown for Booking */
 .buylater-deposit-breakdown {
-  background-color: #242529;
-  border: 1px solid #2e2f33;
+  background-color: #fafbfb;
+  border: 1px solid #e1e3e5;
   border-radius: 10px;
   padding: 14px;
   margin-bottom: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  box-sizing: border-box;
 }
 
 .breakdown-row {
   display: flex;
   justify-content: space-between;
-  font-size: 0.85rem;
-  color: #8e8e93;
+  font-size: 0.92rem;
+  color: #6d7175;
 }
 
 .breakdown-row.highlight {
-  font-weight: 600;
-  color: #ffffff;
-  border-top: 1px solid #2e2f33;
-  border-bottom: 1px solid #2e2f33;
+  font-weight: 700;
+  color: #1a1a1a;
+  border-top: 1px solid #e1e3e5;
+  border-bottom: 1px solid #e1e3e5;
   padding: 8px 0;
 }
 
@@ -427,22 +531,22 @@
   margin-top: 1rem;
   padding: 12px;
   border-radius: 8px;
-  font-size: 0.85rem;
-  font-weight: 500;
+  font-size: 0.95rem;
+  font-weight: 600;
   line-height: 1.4;
   text-align: left;
 }
 
 .buylater-message.success {
-  background-color: rgba(52, 199, 89, 0.15);
-  color: #30d158;
-  border: 1px solid rgba(52, 199, 89, 0.3);
+  background-color: #def7ec;
+  color: #03543f;
+  border: 1px solid #bcf0da;
 }
 
 .buylater-message.error {
-  background-color: rgba(255, 69, 58, 0.15);
-  color: #ff453a;
-  border: 1px solid rgba(255, 69, 58, 0.3);
+  background-color: #fde8e8;
+  color: #9b1c1c;
+  border: 1px solid #f8b4b4;
 }
 
 /* Keyframes */
@@ -452,6 +556,6 @@
 }
 
 @keyframes buylaterSlideIn {
-  from { transform: translateY(20px); opacity: 0; }
+  from { transform: translateY(12px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
