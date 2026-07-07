@@ -325,27 +325,94 @@ class AppProxyController extends Controller
                 ]
             ];
 
+            Log::info('Deposit draft order: sending request to Shopify', [
+                'api_version' => config('shopify-app.api_version'),
+                'shop' => $shopDomain,
+            ]);
+
             $createRes = $shop->api()->rest('POST', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json', $draftOrderData);
 
-            Log::info('Deposit draft order create response', ['errors' => $createRes['errors'], 'status' => $createRes['status'] ?? null]);
+            Log::info('Deposit draft order create response', [
+                'errors' => $createRes['errors'],
+                'status' => $createRes['status'] ?? null,
+                'body_type' => is_object($createRes['body']) ? get_class($createRes['body']) : gettype($createRes['body']),
+            ]);
 
             if ($createRes['errors'] === false && isset($createRes['body']['draft_order'])) {
-                $draftOrder   = $createRes['body']['draft_order'];
-                $draftOrderId = $draftOrder['id'];
-                $checkoutUrl  = $draftOrder['invoice_url'];
+                $draftOrder = $createRes['body']['draft_order'];
+
+                // ResponseAccess objects need careful handling — convert to array if needed
+                if (is_object($draftOrder) && method_exists($draftOrder, 'toArray')) {
+                    $draftOrderArray = $draftOrder->toArray();
+                } elseif ($draftOrder instanceof \ArrayAccess) {
+                    $draftOrderArray = json_decode(json_encode($draftOrder), true);
+                } else {
+                    $draftOrderArray = (array) $draftOrder;
+                }
+
+                Log::info('Draft order data extracted', [
+                    'keys' => array_keys($draftOrderArray),
+                    'id' => $draftOrderArray['id'] ?? null,
+                    'invoice_url' => $draftOrderArray['invoice_url'] ?? 'NOT_PRESENT',
+                    'status' => $draftOrderArray['status'] ?? null,
+                ]);
+
+                $draftOrderId = $draftOrderArray['id'] ?? null;
+                $checkoutUrl  = $draftOrderArray['invoice_url'] ?? null;
+
+                // If invoice_url is missing, try to get it by sending an invoice
+                if (empty($checkoutUrl) && $draftOrderId) {
+                    Log::info('invoice_url missing, attempting to send invoice to generate it');
+                    try {
+                        $invoiceRes = $shop->api()->rest(
+                            'POST',
+                            '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/' . $draftOrderId . '/send_invoice.json',
+                            ['draft_order_invoice' => ['to' => $request->input('email')]]
+                        );
+                        if ($invoiceRes['errors'] === false) {
+                            // Re-fetch the draft order to get the invoice_url
+                            $fetchRes = $shop->api()->rest(
+                                'GET',
+                                '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/' . $draftOrderId . '.json'
+                            );
+                            if ($fetchRes['errors'] === false && isset($fetchRes['body']['draft_order'])) {
+                                $refetchedOrder = $fetchRes['body']['draft_order'];
+                                if (is_object($refetchedOrder) && method_exists($refetchedOrder, 'toArray')) {
+                                    $refetchedArray = $refetchedOrder->toArray();
+                                } else {
+                                    $refetchedArray = json_decode(json_encode($refetchedOrder), true);
+                                }
+                                $checkoutUrl = $refetchedArray['invoice_url'] ?? null;
+                                Log::info('Re-fetched draft order invoice_url', ['checkout_url' => $checkoutUrl]);
+                            }
+                        }
+                    } catch (\Exception $invoiceEx) {
+                        Log::error('Failed to send invoice for draft order', ['error' => $invoiceEx->getMessage()]);
+                    }
+                }
 
                 Log::info('Deposit draft order created, invoice URL generated', [
                     'draft_order_id' => $draftOrderId,
                     'checkout_url'   => $checkoutUrl,
                 ]);
             } else {
+                // Log the full body for debugging
+                $bodyData = $createRes['body'] ?? null;
+                if (is_object($bodyData) && method_exists($bodyData, 'toArray')) {
+                    $bodyData = $bodyData->toArray();
+                }
                 Log::error('Shopify deposit draft order creation failed', [
                     'errors' => $createRes['errors'],
-                    'body'   => $createRes['body'] ?? [],
+                    'body'   => $bodyData,
                 ]);
             }
         } catch (\Exception $e) {
-            Log::error('Exception creating deposit draft order', ['exception' => $e]);
+            Log::error('Exception creating deposit draft order', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
         }
 
         // Create booking in database
