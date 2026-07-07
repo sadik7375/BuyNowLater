@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "39b4ee2ef0ed6c2273df208b36a059fd"
-application_url = "https://volume-annual-promised-purposes.trycloudflare.com"
+application_url = "https://buynowlater.orderkoi.online"
 embedded = true
 name = "Buy Now Later"
 
@@ -11,13 +11,13 @@ scopes = "read_draft_orders,read_products,read_themes,write_draft_orders,write_p
 
 [auth]
 redirect_urls = [
-  "https://volume-annual-promised-purposes.trycloudflare.com/authenticate"
+  "https://buynowlater.orderkoi.online/authenticate"
 ]
 
 [webhooks]
 api_version = "2026-07"
 
 [app_proxy]
-url = "https://volume-annual-promised-purposes.trycloudflare.com"
+url = "https://buynowlater.orderkoi.online"
 subpath = "buylater-proxy"
 prefix = "apps"

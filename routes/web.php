@@ -91,7 +91,7 @@ Route::group(['prefix' => 'deploy'], function() {
 
     Route::get('/key-generate', function() {
         try {
-            \Illuminate\Support\Facades\Artisan::call('key:generate');
+            \Illuminate\Support\Facades\Artisan::call('key:generate', ['--force' => true]);
             return 'Key generated successfully: <br><pre>' . \Illuminate\Support\Facades\Artisan::output() . '</pre>';
         } catch (\Exception $e) {
             return 'Key generation failed: ' . $e->getMessage();
