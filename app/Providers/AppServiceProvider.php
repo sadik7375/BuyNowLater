@@ -11,7 +11,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(
+            \Osiset\ShopifyApp\Actions\InstallShop::class,
+            \App\Actions\CustomInstallShop::class
+        );
     }
 
     /**
