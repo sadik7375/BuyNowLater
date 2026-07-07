@@ -25,7 +25,11 @@ $grantMode = AuthMode::OFFLINE();
 
 if (empty($code)) {
     echo "Code is empty. Generating auth URL:<br>";
-    $authUrl = $apiHelper->buildAuthUrl($grantMode, config('shopify-app.api_scopes'));
+    $authUrl = $apiHelper->getApi()->getAuthUrl(
+        config('shopify-app.api_scopes'),
+        'https://buynowlater.orderkoi.online/debug-auth.php',
+        'offline'
+    );
     echo "<a href='$authUrl'>Go to Auth URL</a>";
     exit;
 }
