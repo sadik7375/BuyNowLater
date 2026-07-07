@@ -65,3 +65,37 @@ Route::post('/reminders/{token}/reschedule', [AppProxyController::class, 'resche
 Route::get('/reminder/cancel/{token}', [AppProxyController::class, 'cancelReminder'])->name('reminders.cancel.alt');
 Route::get('/reminder/reschedule/{token}', [AppProxyController::class, 'showRescheduleForm'])->name('reminders.reschedule.form.alt');
 Route::post('/reminder/reschedule/{token}', [AppProxyController::class, 'rescheduleReminder'])->name('reminders.reschedule.alt');
+
+// Deployment Helpers (For hosting environments without SSH/Terminal access)
+Route::group(['prefix' => 'deploy'], function() {
+    Route::get('/migrate', function() {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            return 'Migration Success: <br><pre>' . \Illuminate\Support\Facades\Artisan::output() . '</pre>';
+        } catch (\Exception $e) {
+            return 'Migration Failed: ' . $e->getMessage();
+        }
+    });
+
+    Route::get('/clear', function() {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('config:clear');
+            \Illuminate\Support\Facades\Artisan::call('route:clear');
+            \Illuminate\Support\Facades\Artisan::call('cache:clear');
+            \Illuminate\Support\Facades\Artisan::call('view:clear');
+            return 'Cache cleared successfully!';
+        } catch (\Exception $e) {
+            return 'Cache clear failed: ' . $e->getMessage();
+        }
+    });
+
+    Route::get('/key-generate', function() {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('key:generate');
+            return 'Key generated successfully: <br><pre>' . \Illuminate\Support\Facades\Artisan::output() . '</pre>';
+        } catch (\Exception $e) {
+            return 'Key generation failed: ' . $e->getMessage();
+        }
+    });
+});
+

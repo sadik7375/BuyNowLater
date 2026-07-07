@@ -4,29 +4,46 @@ $app = require_once __DIR__ . '/../bootstrap/app.php';
 $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
-use App\Http\Controllers\AppProxyController;
-use Illuminate\Http\Request;
+use App\Models\User;
 
-// Ensure logs go to stdout/log file
-Illuminate\Support\Facades\Log::info('Running manual scratch test for storeBooking');
-
-$request = Request::create('/bookings', 'POST', [
-    'shop' => 'canny-apps.myshopify.com',
-    'email' => 'customer_test@example.com',
-    'product_id' => '1122334455',
-    'product_title' => 'The Collection Snowboard: Liquid',
-    'product_handle' => 'the-collection-snowboard-liquid',
-    'product_image' => 'https://cdn.shopify.com/s/files/1/0819/9199/1577/products/snowboard_liquid.jpg',
-    'product_price' => '1027.00',
-]);
-
-try {
-    $controller = app(AppProxyController::class);
-    $response = $controller->storeBooking($request);
-
-    echo "Status Code: " . $response->getStatusCode() . "\n";
-    echo "Content: " . json_encode(json_decode($response->getContent()), JSON_PRETTY_PRINT) . "\n";
-} catch (\Exception $e) {
-    echo "Exception: " . $e->getMessage() . "\n";
-    echo $e->getTraceAsString() . "\n";
+$shop = User::where('name', 'canny-apps.myshopify.com')->first();
+if (!$shop) {
+    echo "Shop not found.\n";
+    exit(1);
 }
+
+$depositAmount = 15.00;
+$productPrice = 100.00;
+$remainingBalance = 85.00;
+$token = 'test_token_123';
+
+$draftOrderData = [
+    'draft_order' => [
+        'email' => 'customer@example.com',
+        'customer' => [
+            'email' => 'customer@example.com',
+        ],
+        'line_items' => [[
+            'title'             => 'Deposit — Test Product',
+            'price'             => number_format($depositAmount, 2, '.', ''),
+            'quantity'          => 1,
+            'requires_shipping' => false,
+            'properties'        => [
+                ['name' => '_token', 'value' => $token],
+                ['name' => 'Original Price', 'value' => '$' . number_format($productPrice, 2)],
+                ['name' => 'Remaining Balance', 'value' => '$' . number_format($remainingBalance, 2)],
+            ]
+        ]],
+        'note'  => 'BuyLater deposit — do not fulfill',
+        'tags'  => 'buylater-deposit',
+    ]
+];
+
+echo "Sending draft order creation request...\n";
+$createRes = $shop->api()->rest('POST', '/admin/api/2024-04/draft_orders.json', $draftOrderData);
+
+echo "Errors: " . ($createRes['errors'] ? 'true' : 'false') . "\n";
+echo "Status: " . $createRes['status'] . "\n";
+echo "Body:\n";
+print_r($createRes['body']);
+echo "\n";

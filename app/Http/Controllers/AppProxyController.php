@@ -345,7 +345,7 @@ class AppProxyController extends Controller
                 ]);
             }
         } catch (\Exception $e) {
-            Log::error('Exception creating deposit draft order', ['message' => $e->getMessage()]);
+            Log::error('Exception creating deposit draft order', ['exception' => $e]);
         }
 
         // Create booking in database
