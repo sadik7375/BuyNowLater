@@ -8,8 +8,8 @@ use App\Models\User;
 use Osiset\ShopifyApp\Objects\Values\ShopDomain;
 use Osiset\ShopifyApp\Objects\Enums\AuthMode;
 
-$shopDomain = request()->query('shop') ?: 'canny-apps.myshopify.com';
-$code = request()->query('code');
+$shopDomain = isset($_GET['shop']) ? $_GET['shop'] : 'canny-apps.myshopify.com';
+$code = isset($_GET['code']) ? $_GET['code'] : null;
 
 echo "<h2>Debugging OAuth for shop: $shopDomain</h2>";
 echo "<p>Code: " . htmlspecialchars($code) . "</p>";
