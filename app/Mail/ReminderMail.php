@@ -17,6 +17,7 @@ class ReminderMail extends Mailable
     public string $cancelUrl;
     public string $rescheduleUrl;
     public string $senderName;
+    public string $productUrl;
 
     public function __construct(Reminder $reminder, string $senderName = 'BuyLater')
     {
@@ -26,6 +27,9 @@ class ReminderMail extends Mailable
         $baseUrl = config('app.url');
         $this->cancelUrl = $baseUrl . '/reminder/cancel/' . $reminder->token;
         $this->rescheduleUrl = $baseUrl . '/reminder/reschedule/' . $reminder->token;
+        
+        $shopDomain = $reminder->shop->name ?? 'Store';
+        $this->productUrl = "https://{$shopDomain}/products/{$reminder->product_handle}";
     }
 
     public function envelope(): Envelope

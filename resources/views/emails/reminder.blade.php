@@ -57,7 +57,7 @@
       </div>
 
       <!-- CTA -->
-      <a href="#" class="cta-btn">🛒 &nbsp; Shop Now</a>
+      <a href="{{ $productUrl }}" class="cta-btn">🛒 &nbsp; Shop Now</a>
 
       <!-- Secondary actions -->
       <div class="links-row">
