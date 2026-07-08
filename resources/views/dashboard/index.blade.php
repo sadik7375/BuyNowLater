@@ -1865,7 +1865,7 @@ function filterSubscribers() {
             e.preventDefault();
             
             // Check if this is a Send Reminder form
-            const isReminderForm = form.action && form.action.includes('/bookings/send-reminder/');
+            const isReminderForm = form.action && form.action.includes('/bookings/') && form.action.includes('/send-reminder');
             if (isReminderForm) {
                 // Find the submit button in this form
                 const btn = form.querySelector('button[type="submit"]');
