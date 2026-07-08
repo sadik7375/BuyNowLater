@@ -106,5 +106,14 @@ Route::group(['prefix' => 'deploy'], function() {
             return 'Failed to run reminders: ' . $e->getMessage();
         }
     });
+
+    Route::get('/register-webhooks', function() {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('shopify-app:register-webhooks');
+            return 'Webhooks registered successfully: <br><pre>' . \Illuminate\Support\Facades\Artisan::output() . '</pre>';
+        } catch (\Exception $e) {
+            return 'Webhook registration failed: ' . $e->getMessage();
+        }
+    });
 });
 
