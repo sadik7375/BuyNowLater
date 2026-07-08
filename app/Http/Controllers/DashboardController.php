@@ -196,34 +196,140 @@ class DashboardController extends Controller
     {
         $shop = auth()->user();
         $booking = Booking::where('shop_id', $shop->id)->findOrFail($id);
-        $setting = Setting::where('shop_id', $shop->id)->first();
 
+        if ($booking->status === 'completed') {
+            return back()->with('error', 'This booking is already completed.');
+        }
+
+        if ($booking->status === 'expired') {
+            return back()->with('error', 'This booking has expired.');
+        }
+
+        $setting = Setting::where('shop_id', $shop->id)->first();
         $apiKey = $setting->sendgrid_api_key ?? config('services.sendgrid.api_key');
         $fromEmail = $setting->sendgrid_from_email ?? config('services.sendgrid.from_email');
 
-        $subject = $setting->reminder_email_subject ?? 'Reminder: You wanted to buy this later!';
-        $htmlTemplate = $setting->reminder_email_template ?? "
-            <h2>Reminder: You wanted to buy {product_title} later!</h2>
-            <p>Ready to complete your order? Go here: {product_link}</p>
-        ";
-
-        $shopDomain = $shop->name;
-        $productLink = "https://{$shopDomain}/products/{$booking->product_handle}";
-
-        $replacements = [
-            '{product_title}' => htmlspecialchars($booking->product_title),
-            '{product_price}' => htmlspecialchars($booking->product_price),
-            '{product_link}' => $productLink,
-        ];
-        $htmlContent = strtr($htmlTemplate, $replacements);
-
-        $success = \App\Services\SendGridService::send($apiKey, $fromEmail, $booking->email, $subject, $htmlContent);
-
-        if ($success) {
-            return back()->with('success', 'Reminder email sent to ' . $booking->email);
+        // Format Shop Name
+        $senderName = $setting->sender_display_name ?? null;
+        if (empty($senderName)) {
+            $shopDomain = $shop->name;
+            $cleanName = str_replace('.myshopify.com', '', $shopDomain);
+            $cleanName = ucwords(str_replace(['-', '_'], ' ', $cleanName));
+            $senderName = $cleanName;
         }
 
-        return back()->with('error', 'Failed to dispatch email via SendGrid.');
+        if ($booking->status === 'deposit_paid') {
+            // For deposit paid, we send the remaining balance invoice link!
+            try {
+                $needsNewDraftOrder = true;
+                $checkoutUrl = null;
+
+                if ($booking->draft_order_id) {
+                    // Fetch from Shopify to see if it is completed (deposit) or open (remaining balance)
+                    $response = $shop->api()->rest('GET', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/' . $booking->draft_order_id . '.json');
+                    
+                    if (!$response['errors']) {
+                        $draftOrder = $response['body']['draft_order'] ?? null;
+                        if ($draftOrder) {
+                            $status = is_object($draftOrder) ? ($draftOrder->status ?? '') : ($draftOrder['status'] ?? '');
+                            if ($status !== 'completed') {
+                                $needsNewDraftOrder = false;
+                                $checkoutUrl = is_object($draftOrder) ? ($draftOrder->invoice_url ?? '') : ($draftOrder['invoice_url'] ?? '');
+                            }
+                        }
+                    }
+                }
+
+                if ($needsNewDraftOrder) {
+                    // Create Draft Order using Shopify REST API via Osiset/Laravel-Shopify
+                    $draftOrderData = [
+                        'draft_order' => [
+                            'line_items' => [
+                                [
+                                    'title' => 'Remaining Balance - ' . $booking->product_title,
+                                    'price' => number_format($booking->remaining_balance, 2, '.', ''),
+                                    'quantity' => 1,
+                                    'requires_shipping' => true,
+                                ]
+                            ],
+                            'customer' => [
+                                'email' => $booking->email,
+                                'first_name' => $booking->customer_name ?? 'Valued',
+                                'last_name' => 'Customer'
+                            ],
+                            'use_customer_default_address' => true,
+                            'note_attributes' => [
+                                [
+                                    'name' => 'buylater_token',
+                                    'value' => $booking->token
+                                ]
+                            ]
+                        ]
+                    ];
+
+                    $response = $shop->api()->rest('POST', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json', $draftOrderData);
+
+                    if ($response['errors']) {
+                        throw new \Exception('Shopify Draft Order API Error: ' . json_encode($response['body']));
+                    }
+
+                    $draftOrder = $response['body']['draft_order'] ?? null;
+                    if ($draftOrder) {
+                        $draftOrderId = is_object($draftOrder) ? $draftOrder->id : $draftOrder['id'];
+                        $checkoutUrl = is_object($draftOrder) ? $draftOrder->invoice_url : $draftOrder['invoice_url'];
+
+                        $booking->update([
+                            'draft_order_id' => $draftOrderId,
+                            'checkout_url' => $checkoutUrl
+                        ]);
+                    }
+                }
+
+                if ($checkoutUrl) {
+                    $subject = "Reminder: Complete Your Booking - Remaining Balance for " . $booking->product_title;
+                    
+                    $htmlContent = view('emails.booking_reminder', [
+                        'booking' => $booking,
+                        'senderName' => $senderName,
+                        'buttonUrl' => $checkoutUrl,
+                        'isDepositPaid' => true
+                    ])->render();
+
+                    \App\Services\SendGridService::send($apiKey, $fromEmail, $booking->email, $subject, $htmlContent);
+
+                    return back()->with('success', 'Balance reminder email sent to ' . $booking->email);
+                }
+
+                return back()->with('error', 'Failed to retrieve invoice URL from Shopify response.');
+
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Draft Order Balance Creation failed in sendReminder: ' . $e->getMessage());
+                return back()->with('error', 'Error generating Shopify invoice: ' . $e->getMessage());
+            }
+        } else {
+            // For pending (deposit not paid yet), send reminder to pay the deposit!
+            $checkoutUrl = $booking->checkout_url;
+            if (!$checkoutUrl) {
+                return back()->with('error', 'No checkout URL found for this booking.');
+            }
+
+            $subject = "Reminder: Secure Your Booking for " . $booking->product_title;
+            
+            $htmlContent = view('emails.booking_reminder', [
+                'booking' => $booking,
+                'senderName' => $senderName,
+                'buttonUrl' => $checkoutUrl,
+                'isDepositPaid' => false
+            ])->render();
+
+            $success = \App\Services\SendGridService::send($apiKey, $fromEmail, $booking->email, $subject, $htmlContent);
+
+            if ($success) {
+                return back()->with('success', 'Deposit reminder email sent to ' . $booking->email);
+            }
+
+            return back()->with('error', 'Failed to dispatch email via SendGrid.');
+        }
     }
 
     /**
@@ -235,66 +341,95 @@ class DashboardController extends Controller
         $booking = Booking::where('shop_id', $shop->id)->findOrFail($id);
 
         try {
-            // If draft_order_id already exists on booking, we can reuse it or fetch invoice url
+            $needsNewDraftOrder = true;
+            $checkoutUrl = null;
+
             if ($booking->draft_order_id) {
-                // Return success immediately or fetch from Shopify
-                return back()->with('success', 'Remaining balance draft order already created: ID ' . $booking->draft_order_id);
+                // Fetch from Shopify to see if it is completed (deposit) or open (remaining balance)
+                $response = $shop->api()->rest('GET', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/' . $booking->draft_order_id . '.json');
+                
+                if (!$response['errors']) {
+                    $draftOrder = $response['body']['draft_order'] ?? null;
+                    if ($draftOrder) {
+                        $status = is_object($draftOrder) ? ($draftOrder->status ?? '') : ($draftOrder['status'] ?? '');
+                        if ($status !== 'completed') {
+                            $needsNewDraftOrder = false;
+                            $checkoutUrl = is_object($draftOrder) ? ($draftOrder->invoice_url ?? '') : ($draftOrder['invoice_url'] ?? '');
+                        }
+                    }
+                }
             }
 
-            // Create Draft Order using Shopify REST or GraphQL API via Osiset/Laravel-Shopify
-            $draftOrderData = [
-                'draft_order' => [
-                    'line_items' => [
-                        [
-                            'title' => 'Remaining Balance - ' . $booking->product_title,
-                            'price' => $booking->remaining_balance,
-                            'quantity' => 1,
-                            'requires_shipping' => true,
-                        ]
-                    ],
-                    'customer' => [
-                        'email' => $booking->email,
-                        'first_name' => $booking->customer_name ?? 'Valued',
-                        'last_name' => 'Customer'
-                    ],
-                    'use_customer_default_address' => true,
-                    'note_attributes' => [
-                        [
-                            'name' => 'buylater_token',
-                            'value' => $booking->token
+            if ($needsNewDraftOrder) {
+                // Create Draft Order using Shopify REST API via Osiset/Laravel-Shopify
+                $draftOrderData = [
+                    'draft_order' => [
+                        'line_items' => [
+                            [
+                                'title' => 'Remaining Balance - ' . $booking->product_title,
+                                'price' => number_format($booking->remaining_balance, 2, '.', ''),
+                                'quantity' => 1,
+                                'requires_shipping' => true,
+                            ]
+                        ],
+                        'customer' => [
+                            'email' => $booking->email,
+                            'first_name' => $booking->customer_name ?? 'Valued',
+                            'last_name' => 'Customer'
+                        ],
+                        'use_customer_default_address' => true,
+                        'note_attributes' => [
+                            [
+                                'name' => 'buylater_token',
+                                'value' => $booking->token
+                            ]
                         ]
                     ]
-                ]
-            ];
+                ];
 
-            $response = $shop->api()->rest('POST', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json', $draftOrderData);
+                $response = $shop->api()->rest('POST', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json', $draftOrderData);
 
-            if ($response['errors']) {
-                throw new \Exception('Shopify Draft Order API Error: ' . json_encode($response['body']));
+                if ($response['errors']) {
+                    throw new \Exception('Shopify Draft Order API Error: ' . json_encode($response['body']));
+                }
+
+                $draftOrder = $response['body']['draft_order'] ?? null;
+                if ($draftOrder) {
+                    $draftOrderId = is_object($draftOrder) ? $draftOrder->id : $draftOrder['id'];
+                    $checkoutUrl = is_object($draftOrder) ? $draftOrder->invoice_url : $draftOrder['invoice_url'];
+
+                    $booking->update([
+                        'draft_order_id' => $draftOrderId,
+                        'checkout_url' => $checkoutUrl
+                    ]);
+                }
             }
 
-            $draftOrder = $response['body']['draft_order'] ?? null;
-
-            if ($draftOrder && isset($draftOrder['invoice_url'])) {
-                $booking->update([
-                    'draft_order_id' => $draftOrder['id'],
-                    'checkout_url' => $draftOrder['invoice_url']
-                ]);
-
+            if ($checkoutUrl) {
                 // Also send email with invoice URL to the customer
                 $setting = Setting::where('shop_id', $shop->id)->first();
                 $apiKey = $setting->sendgrid_api_key ?? config('services.sendgrid.api_key');
                 $fromEmail = $setting->sendgrid_from_email ?? config('services.sendgrid.from_email');
 
+                // Format Shop Name
+                $senderName = $setting->sender_display_name ?? null;
+                if (empty($senderName)) {
+                    $shopDomain = $shop->name;
+                    $cleanName = str_replace('.myshopify.com', '', $shopDomain);
+                    $cleanName = ucwords(str_replace(['-', '_'], ' ', $cleanName));
+                    $senderName = $cleanName;
+                }
+
                 $subject = "Complete Your Booking - Remaining Balance for " . $booking->product_title;
-                $htmlContent = "
-                    <h2>Complete Your Purchase</h2>
-                    <p>Hi " . htmlspecialchars($booking->customer_name ?? 'there') . ",</p>
-                    <p>Thank you for your deposit payment of $" . number_format($booking->deposit_amount, 2) . ".</p>
-                    <p>To pay your remaining balance of <strong>$" . number_format($booking->remaining_balance, 2) . "</strong> and receive your items, please click the checkout link below:</p>
-                    <p><a href='" . $draftOrder['invoice_url'] . "' style='display:inline-block;padding:12px 24px;background:#008060;color:#fff;text-decoration:none;border-radius:4px;font-weight:bold;'>Complete Payment</a></p>
-                    <p>Thank you!</p>
-                ";
+                
+                // Render the beautiful HTML view
+                $htmlContent = view('emails.booking_reminder', [
+                    'booking' => $booking,
+                    'senderName' => $senderName,
+                    'buttonUrl' => $checkoutUrl,
+                    'isDepositPaid' => true
+                ])->render();
+
                 \App\Services\SendGridService::send($apiKey, $fromEmail, $booking->email, $subject, $htmlContent);
 
                 return back()->with('success', 'Draft order invoice created and sent successfully!');
