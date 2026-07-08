@@ -63,14 +63,15 @@ class DashboardController extends Controller
                                 $shopifyStatus = $draftOrder['status'] ?? '';
                                 
                                 if ($shopifyStatus === 'completed') {
-                                    if ($booking->status === 'pending') {
+                                    $isRemaining = $this->isRemainingBalanceDraftOrder($draftOrder);
+                                    if ($booking->status === 'pending' && !$isRemaining) {
                                         $holdDurationDays = $settings->hold_duration_days ?? 14;
                                         $booking->update([
                                             'status' => 'deposit_paid',
                                             'expires_at' => now()->addDays($holdDurationDays),
                                         ]);
                                         \Illuminate\Support\Facades\Log::info("Sync index: Booking ID {$booking->id} deposit paid on Shopify. Status updated to deposit_paid.");
-                                    } elseif ($booking->status === 'deposit_paid') {
+                                    } elseif ($booking->status === 'deposit_paid' && $isRemaining) {
                                         $booking->update([
                                             'status' => 'completed'
                                         ]);
@@ -262,7 +263,8 @@ class DashboardController extends Controller
                         $draftOrder = $this->normalizeDraftOrder($draftOrder);
                         $shopifyStatus = $draftOrder['status'] ?? '';
                         if ($shopifyStatus === 'completed') {
-                            if ($booking->status === 'pending') {
+                            $isRemaining = $this->isRemainingBalanceDraftOrder($draftOrder);
+                            if ($booking->status === 'pending' && !$isRemaining) {
                                 $holdDurationDays = $setting->hold_duration_days ?? 14;
                                 $booking->update([
                                     'status' => 'deposit_paid',
@@ -270,7 +272,7 @@ class DashboardController extends Controller
                                 ]);
                                 $booking->status = 'deposit_paid';
                                 \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} deposit paid on Shopify. Status updated to deposit_paid.");
-                            } elseif ($booking->status === 'deposit_paid') {
+                            } elseif ($booking->status === 'deposit_paid' && $isRemaining) {
                                 $booking->update([
                                     'status' => 'completed'
                                 ]);
@@ -543,7 +545,8 @@ class DashboardController extends Controller
                         $draftOrder = $this->normalizeDraftOrder($draftOrder);
                         $shopifyStatus = $draftOrder['status'] ?? '';
                         if ($shopifyStatus === 'completed') {
-                            if ($booking->status === 'pending') {
+                            $isRemaining = $this->isRemainingBalanceDraftOrder($draftOrder);
+                            if ($booking->status === 'pending' && !$isRemaining) {
                                 $holdDurationDays = $setting->hold_duration_days ?? 14;
                                 $booking->update([
                                     'status' => 'deposit_paid',
@@ -551,7 +554,7 @@ class DashboardController extends Controller
                                 ]);
                                 $booking->status = 'deposit_paid';
                                 \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} deposit paid on Shopify. Status updated to deposit_paid.");
-                            } elseif ($booking->status === 'deposit_paid') {
+                            } elseif ($booking->status === 'deposit_paid' && $isRemaining) {
                                 $booking->update([
                                     'status' => 'completed'
                                 ]);
@@ -704,5 +707,21 @@ class DashboardController extends Controller
             return (array) $draftOrder;
         }
         return $draftOrder;
+    }
+
+    /**
+     * Check if a draft order is for the remaining balance.
+     */
+    private function isRemainingBalanceDraftOrder($draftOrder): bool
+    {
+        $draftOrder = $this->normalizeDraftOrder($draftOrder);
+        $lineItems = $draftOrder['line_items'] ?? [];
+        foreach ($lineItems as $item) {
+            $title = is_object($item) ? ($item->title ?? '') : ($item['title'] ?? '');
+            if (str_contains($title, 'Remaining Balance')) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -102,8 +102,23 @@ class OrdersPaidJob implements ShouldQueue
             }
         }
 
+        $isDeposit = false;
+        if (stripos($tags, 'buylater-deposit') !== false) {
+            $isDeposit = true;
+        } else {
+            $lineItems = $this->data->line_items ?? [];
+            foreach ($lineItems as $item) {
+                $title = is_object($item) ? ($item->title ?? '') : ($item['title'] ?? '');
+                $sku = is_object($item) ? ($item->sku ?? '') : ($item['sku'] ?? '');
+                if (stripos($title, 'Deposit') !== false || str_starts_with($sku, 'BUYLATER-DEP-')) {
+                    $isDeposit = true;
+                    break;
+                }
+            }
+        }
+
         // If it's not a deposit order and doesn't contain a buylater token, skip
-        if (stripos($tags, 'buylater-deposit') === false && empty($token)) {
+        if (!$isDeposit && empty($token)) {
             Log::info('OrdersPaidJob: Order is neither a BuyLater deposit nor a balance payment, skipping.');
             return;
         }
@@ -117,38 +132,47 @@ class OrdersPaidJob implements ShouldQueue
         $orderId   = $this->data->id;
         $orderName = $this->data->name ?? '#' . $orderId;
 
-        Log::info('OrdersPaidJob: Processing token', ['token' => $token]);
+        Log::info('OrdersPaidJob: Processing token', ['token' => $token, 'is_deposit' => $isDeposit]);
 
         // Update booking status
         if ($token) {
             $booking = Booking::where('token', $token)->first();
             if ($booking) {
-                if ($booking->status === 'deposit_paid') {
-                    // This is the remaining balance order being paid!
-                    $booking->update([
-                        'status' => 'completed'
-                    ]);
-                    Log::info('OrdersPaidJob: Booking marked completed (balance paid)', ['booking_id' => $booking->id]);
-                    // No need to hold fulfillment for the final balance order
-                    return;
-                } else {
-                    // Initial deposit paid
-                    $settings = Setting::where('shop_id', $shop->id)->first();
-                    $holdDurationDays = $settings ? (int) ($settings->hold_duration_days ?? 14) : 14;
+                if ($isDeposit) {
+                    if ($booking->status === 'pending') {
+                        // Initial deposit paid
+                        $settings = Setting::where('shop_id', $shop->id)->first();
+                        $holdDurationDays = $settings ? (int) ($settings->hold_duration_days ?? 14) : 14;
 
-                    $customer = $this->data->customer ?? null;
-                    $customerName = null;
-                    if ($customer) {
-                        $customerName = trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''));
+                        $customer = $this->data->customer ?? null;
+                        $customerName = null;
+                        if ($customer) {
+                            $customerName = trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''));
+                        }
+
+                        $booking->update([
+                            'status'        => 'deposit_paid',
+                            'order_id'      => $orderId,
+                            'customer_name' => $customerName,
+                            'expires_at'    => now()->addDays($holdDurationDays),
+                        ]);
+                        Log::info('OrdersPaidJob: Booking updated to deposit_paid', ['booking_id' => $booking->id]);
+                    } else {
+                        Log::info('OrdersPaidJob: Booking is already ' . $booking->status . ', ignoring duplicate deposit webhook.', ['booking_id' => $booking->id]);
                     }
-
-                    $booking->update([
-                        'status'        => 'deposit_paid',
-                        'order_id'      => $orderId,
-                        'customer_name' => $customerName,
-                        'expires_at'    => now()->addDays($holdDurationDays),
-                    ]);
-                    Log::info('OrdersPaidJob: Booking updated to deposit_paid', ['booking_id' => $booking->id]);
+                } else {
+                    // This is the remaining balance order being paid!
+                    if ($booking->status === 'deposit_paid') {
+                        $booking->update([
+                            'status' => 'completed'
+                        ]);
+                        Log::info('OrdersPaidJob: Booking marked completed (balance paid)', ['booking_id' => $booking->id]);
+                        // No need to hold fulfillment for the final balance order
+                        return;
+                    } else {
+                        Log::info('OrdersPaidJob: Booking status is ' . $booking->status . ', cannot mark completed.', ['booking_id' => $booking->id]);
+                        return;
+                    }
                 }
             } else {
                 Log::warning('OrdersPaidJob: No booking found for token', ['token' => $token]);
@@ -156,7 +180,9 @@ class OrdersPaidJob implements ShouldQueue
         }
 
         // Put fulfillment on HOLD via Shopify GraphQL (only for initial deposit order)
-        $this->holdOrderFulfillment($shop, $orderId, $orderName);
+        if ($isDeposit) {
+            $this->holdOrderFulfillment($shop, $orderId, $orderName);
+        }
     }
 
     /**

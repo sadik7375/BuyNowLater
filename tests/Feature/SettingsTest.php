@@ -71,4 +71,32 @@ class SettingsTest extends TestCase
             'show_deposit' => true,
         ]);
     }
+
+    public function test_can_get_settings_via_proxy_with_middleware_active_but_no_signature()
+    {
+        $user = User::factory()->create([
+            'name' => 'test-shop.myshopify.com'
+        ]);
+
+        Setting::create([
+            'shop_id' => $user->id,
+            'sender_display_name' => 'Test Sender',
+            'deposit_percentage' => 25,
+            'button_text' => 'Buy Later',
+            'reminder_email_subject' => 'Reminder Subject',
+            'discount_email_subject' => 'Discount Subject',
+            'hold_duration_days' => 25,
+            'show_deposit' => true,
+            'show_reminders' => true,
+            'show_alerts' => true,
+        ]);
+
+        $response = $this->get('/apps/buylater-proxy/settings?shop=test-shop.myshopify.com&path_prefix=/apps/buylater-proxy');
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'deposit_percentage' => 25,
+            'hold_duration_days' => 25,
+        ]);
+    }
 }

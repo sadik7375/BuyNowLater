@@ -47,12 +47,16 @@ Route::group(['middleware' => ['shopify.classify', 'auth.proxy']], function () {
     Route::post('/apps/buylater-proxy/reminders', [AppProxyController::class, 'storeReminder']);
     Route::post('/apps/buylater-proxy/discounts/subscribe', [AppProxyController::class, 'subscribePriceDrop']);
     Route::post('/apps/buylater-proxy/bookings', [AppProxyController::class, 'storeBooking']);
-    Route::get('/apps/buylater-proxy/settings', [AppProxyController::class, 'getSettings']);
 
     // Alternate routes in case Shopify strips the /apps/buylater-proxy prefix
     Route::post('/reminders', [AppProxyController::class, 'storeReminder']);
     Route::post('/discounts/subscribe', [AppProxyController::class, 'subscribePriceDrop']);
     Route::post('/bookings', [AppProxyController::class, 'storeBooking']);
+});
+
+// Public App Proxy Settings Routes (Storefront accesses these to fetch display settings dynamically)
+Route::group(['middleware' => ['shopify.classify']], function () {
+    Route::get('/apps/buylater-proxy/settings', [AppProxyController::class, 'getSettings']);
     Route::get('/settings', [AppProxyController::class, 'getSettings']);
 });
 
