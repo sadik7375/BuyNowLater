@@ -532,6 +532,35 @@
         background-color: #f6f6f7;
     }
 
+    .btn-action-secondary.loading {
+        pointer-events: none;
+        opacity: 0.8;
+    }
+
+    .spinner {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        border-top-color: var(--primary-color);
+        animation: spin 1s linear infinite;
+        margin-right: 6px;
+        vertical-align: middle;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .btn-action-secondary.success-state {
+        background-color: #e3fbeb !important;
+        color: var(--secondary-color) !important;
+        border-color: rgba(48, 209, 88, 0.3) !important;
+        pointer-events: none;
+    }
+
     /* Alerts */
     .alert {
         padding: 12px 16px;
@@ -1834,6 +1863,73 @@ function filterSubscribers() {
         const form = e.target;
         if (form.method && form.method.toLowerCase() === 'post' && !form.dataset.tokenInjected) {
             e.preventDefault();
+            
+            // Check if this is a Send Reminder form
+            const isReminderForm = form.action && form.action.includes('/bookings/send-reminder/');
+            if (isReminderForm) {
+                // Find the submit button in this form
+                const btn = form.querySelector('button[type="submit"]');
+                if (btn) {
+                    // Disable button and show spinner
+                    const originalHtml = btn.innerHTML;
+                    btn.disabled = true;
+                    btn.classList.add('loading');
+                    btn.innerHTML = '<span class="spinner"></span> Sending...';
+                    
+                    // We need to fetch the Shopify session token first if we are inside Shopify Admin App Bridge
+                    let token = '';
+                    try {
+                        if (window.shopify && typeof window.shopify.idToken === 'function') {
+                            token = await window.shopify.idToken();
+                        }
+                    } catch (err) {
+                        console.error('Failed to retrieve Shopify session token:', err);
+                    }
+
+                    // Prepare form data
+                    const formData = new FormData(form);
+                    if (token) {
+                        formData.set('token', token);
+                    }
+                    
+                    // Send request via Fetch API
+                    try {
+                        const response = await fetch(form.action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+                        
+                        // After fetch completes successfully
+                        if (response.ok) {
+                            btn.classList.remove('loading');
+                            btn.classList.add('success-state');
+                            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="vertical-align: middle; margin-right: 4px; width: 12px; height: 12px;"><polyline points="20 6 9 17 4 12"></polyline></svg> Sent Success!`;
+                            
+                            // Reload the page after 1.5 seconds to refresh the booking lists/statuses/flash messages
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1500);
+                        } else {
+                            // Fetch returned error
+                            btn.disabled = false;
+                            btn.classList.remove('loading');
+                            btn.innerHTML = originalHtml;
+                            alert('Failed to send reminder. Please try again.');
+                        }
+                    } catch (fetchErr) {
+                        console.error('Error sending reminder:', fetchErr);
+                        btn.disabled = false;
+                        btn.classList.remove('loading');
+                        btn.innerHTML = originalHtml;
+                        alert('An error occurred. Please try again.');
+                    }
+                    return; // Stop here, do not submit normally
+                }
+            }
+
             try {
                 if (window.shopify && typeof window.shopify.idToken === 'function') {
                     const token = await window.shopify.idToken();
