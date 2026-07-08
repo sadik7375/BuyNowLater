@@ -1269,15 +1269,6 @@
                                     </td>
                                     <td>
                                         <div class="actions-cell">
-                                            @if($booking->status == 'deposit_paid')
-                                                <form action="{{ route('bookings.send_balance_link', array_merge(['id' => $booking->id], request()->query())) }}" method="POST" style="margin:0;">
-                                                    @csrf
-                                                    <button type="submit" class="btn-action-primary">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                                                        Send Balance Link
-                                                    </button>
-                                                </form>
-                                            @endif
 
                                             @if($booking->status !== 'completed' && $booking->status !== 'expired')
                                                 <form action="{{ route('bookings.send_reminder', array_merge(['id' => $booking->id], request()->query())) }}" method="POST" style="margin:0;">
