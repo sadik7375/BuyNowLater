@@ -47,7 +47,8 @@ class AppProxyController extends Controller
         }
 
         // Parse scheduled date
-        $scheduledAt = Carbon::parse($request->input('scheduled_at'));
+        $scheduledInput = $request->input('scheduled_at_utc') ?: $request->input('scheduled_at');
+        $scheduledAt = Carbon::parse($scheduledInput);
 
         // Check if reminder is in the past
         if ($scheduledAt->isPast()) {
@@ -210,7 +211,8 @@ class AppProxyController extends Controller
             'scheduled_at' => 'required|date'
         ]);
 
-        $scheduledAt = Carbon::parse($request->input('scheduled_at'));
+        $scheduledInput = $request->input('scheduled_at_utc') ?: $request->input('scheduled_at');
+        $scheduledAt = Carbon::parse($scheduledInput);
 
         if ($scheduledAt->isPast()) {
             return view('reminders.customer_action', [
@@ -437,7 +439,7 @@ class AppProxyController extends Controller
                 'message'      => 'Booking saved but checkout URL could not be generated. Please try again.',
                 'booking'      => $booking,
                 'checkout_url' => null,
-            ], 201);
+            ], 422);
         }
 
         return response()->json([

@@ -234,8 +234,9 @@
                     </div>
                 </div>
 
-                <form action="{{ route('reminders.reschedule', $reminder->token) }}" method="POST">
+                <form id="reschedule-form" action="{{ route('reminders.reschedule', $reminder->token) }}" method="POST">
                     @csrf
+                    <input type="hidden" id="scheduled_at_utc" name="scheduled_at_utc">
                     <div class="form-group">
                         <label for="scheduled_at">New Date & Time</label>
                         <input type="datetime-local" id="scheduled_at" name="scheduled_at" required>
@@ -252,6 +253,16 @@
                     const hours = String(now.getHours()).padStart(2, '0');
                     const minutes = String(now.getMinutes()).padStart(2, '0');
                     document.getElementById('scheduled_at').min = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+                    document.getElementById('reschedule-form').addEventListener('submit', function(e) {
+                        const localVal = document.getElementById('scheduled_at').value;
+                        if (localVal) {
+                            const dateObj = new Date(localVal);
+                            if (!isNaN(dateObj.getTime())) {
+                                document.getElementById('scheduled_at_utc').value = dateObj.toISOString();
+                            }
+                        }
+                    });
                 </script>
             @endif
         </div>

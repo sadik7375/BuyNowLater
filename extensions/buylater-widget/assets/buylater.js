@@ -254,10 +254,17 @@ document.addEventListener('DOMContentLoaded', function() {
     submitBtn.querySelector('span').textContent = 'Setting Reminder...';
     messageDiv.style.display = 'none';
 
+    let scheduledAtUtc = datetime;
+    const dateObj = new Date(datetime);
+    if (!isNaN(dateObj.getTime())) {
+      scheduledAtUtc = dateObj.toISOString();
+    }
+
     const payload = {
       ...getProductData(),
       email: email,
-      scheduled_at: datetime
+      scheduled_at: datetime,
+      scheduled_at_utc: scheduledAtUtc
     };
 
     fetch('/apps/buylater-proxy/reminders', {
