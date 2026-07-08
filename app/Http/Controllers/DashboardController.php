@@ -309,8 +309,90 @@ class DashboardController extends Controller
         } else {
             // For pending (deposit not paid yet), send reminder to pay the deposit!
             $checkoutUrl = $booking->checkout_url;
-            if (!$checkoutUrl) {
-                return back()->with('error', 'No checkout URL found for this booking.');
+            if (!$checkoutUrl || !$booking->draft_order_id) {
+                try {
+                    $productPrice = (float) $booking->product_price;
+                    $depositAmount = (float) $booking->deposit_amount;
+                    $remainingBalance = (float) $booking->remaining_balance;
+                    $token = $booking->token;
+
+                    $draftOrderData = [
+                        'draft_order' => [
+                            'email' => $booking->email,
+                            'customer' => [
+                                'email' => $booking->email,
+                            ],
+                            'line_items' => [[
+                                'title'             => 'Deposit — ' . $booking->product_title,
+                                'price'             => number_format($depositAmount, 2, '.', ''),
+                                'quantity'          => 1,
+                                'requires_shipping' => false,
+                                'properties'        => [
+                                    ['name' => '_token', 'value' => $token],
+                                    ['name' => 'Original Price', 'value' => '$' . number_format($productPrice, 2)],
+                                    ['name' => 'Remaining Balance', 'value' => '$' . number_format($remainingBalance, 2)],
+                                ]
+                            ]],
+                            'note'  => 'BuyLater deposit — do not fulfill',
+                            'tags'  => 'buylater-deposit',
+                        ]
+                    ];
+
+                    \Illuminate\Support\Facades\Log::info("Recreating deposit draft order for booking ID {$booking->id} in sendReminder");
+                    $createRes = $shop->api()->rest('POST', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json', $draftOrderData);
+
+                    if ($createRes['errors'] === false && isset($createRes['body']['draft_order'])) {
+                        $draftOrder = $createRes['body']['draft_order'];
+                        
+                        if (is_object($draftOrder) && method_exists($draftOrder, 'toArray')) {
+                            $draftOrderArray = $draftOrder->toArray();
+                        } elseif ($draftOrder instanceof \ArrayAccess) {
+                            $draftOrderArray = json_decode(json_encode($draftOrder), true);
+                        } else {
+                            $draftOrderArray = (array) $draftOrder;
+                        }
+
+                        $draftOrderId = $draftOrderArray['id'] ?? null;
+                        $checkoutUrl  = $draftOrderArray['invoice_url'] ?? null;
+
+                        // If invoice_url is missing, try to generate it by sending invoice
+                        if (empty($checkoutUrl) && $draftOrderId) {
+                            $shop->api()->rest(
+                                'POST',
+                                '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/' . $draftOrderId . '/send_invoice.json',
+                                ['draft_order_invoice' => ['to' => $booking->email]]
+                            );
+                            
+                            $fetchRes = $shop->api()->rest(
+                                'GET',
+                                '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/' . $draftOrderId . '.json'
+                            );
+                            if ($fetchRes['errors'] === false && isset($fetchRes['body']['draft_order'])) {
+                                $refetchedOrder = $fetchRes['body']['draft_order'];
+                                if (is_object($refetchedOrder) && method_exists($refetchedOrder, 'toArray')) {
+                                    $refetchedArray = $refetchedOrder->toArray();
+                                } else {
+                                    $refetchedArray = json_decode(json_encode($refetchedOrder), true);
+                                }
+                                $checkoutUrl = $refetchedArray['invoice_url'] ?? null;
+                            }
+                        }
+
+                        if ($checkoutUrl) {
+                            $booking->update([
+                                'draft_order_id' => $draftOrderId,
+                                'checkout_url' => $checkoutUrl
+                            ]);
+                        } else {
+                            return back()->with('error', 'Failed to retrieve checkout URL from Shopify response.');
+                        }
+                    } else {
+                        return back()->with('error', 'Shopify draft order creation failed: ' . json_encode($createRes['body']));
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Draft Order Deposit Re-creation failed in sendReminder: ' . $e->getMessage());
+                    return back()->with('error', 'Error generating Shopify invoice for deposit: ' . $e->getMessage());
+                }
             }
 
             $subject = "Reminder: Secure Your Booking for " . $booking->product_title;
