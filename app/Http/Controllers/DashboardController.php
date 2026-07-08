@@ -292,10 +292,15 @@ class DashboardController extends Controller
                                 'last_name' => 'Customer'
                             ],
                             'use_customer_default_address' => true,
+                            'note' => 'Remaining balance payment. Original Deposit Paid: $' . number_format($booking->deposit_amount, 2),
                             'note_attributes' => [
                                 [
                                     'name' => 'buylater_token',
                                     'value' => $booking->token
+                                ],
+                                [
+                                    'name' => 'Original Deposit Paid',
+                                    'value' => '$' . number_format($booking->deposit_amount, 2)
                                 ]
                             ]
                         ]
@@ -542,10 +547,15 @@ class DashboardController extends Controller
                             'last_name' => 'Customer'
                         ],
                         'use_customer_default_address' => true,
+                        'note' => 'Remaining balance payment. Original Deposit Paid: $' . number_format($booking->deposit_amount, 2),
                         'note_attributes' => [
                             [
                                 'name' => 'buylater_token',
                                 'value' => $booking->token
+                            ],
+                            [
+                                'name' => 'Original Deposit Paid',
+                                'value' => '$' . number_format($booking->deposit_amount, 2)
                             ]
                         ]
                     ]

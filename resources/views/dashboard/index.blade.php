@@ -1008,7 +1008,7 @@
                                 </div>
                                 <div class="booking-status-price">
                                     <span class="price-value">${{ number_format($booking->deposit_amount, 2) }}</span>
-                                    <span class="status-pill {{ $booking->status }}">{{ str_replace('_', ' ', $booking->status) }}</span>
+                                    <span class="status-pill {{ $booking->status }}">{{ $booking->status === 'completed' ? 'Full Paid' : str_replace('_', ' ', $booking->status) }}</span>
                                 </div>
                             </div>
                         @endforeach
@@ -1196,7 +1196,7 @@
                         <option value="all">All Statuses</option>
                         <option value="pending">Pending</option>
                         <option value="deposit_paid">Deposit Paid</option>
-                        <option value="completed">Completed</option>
+                        <option value="completed">Full Paid</option>
                         <option value="expired">Expired</option>
                     </select>
                     <select id="sort-bookings" class="filter-select" onchange="filterBookings()">
@@ -1248,7 +1248,7 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="status-pill {{ $booking->status }}">{{ str_replace('_', ' ', $booking->status) }}</span>
+                                        <span class="status-pill {{ $booking->status }}">{{ $booking->status === 'completed' ? 'Full Paid' : str_replace('_', ' ', $booking->status) }}</span>
                                     </td>
                                     <td>
                                         @if($booking->expires_at)
@@ -1279,13 +1279,15 @@
                                                 </form>
                                             @endif
 
-                                            <form action="{{ route('bookings.send_reminder', array_merge(['id' => $booking->id], request()->query())) }}" method="POST" style="margin:0;">
-                                                @csrf
-                                                <button type="submit" class="btn-action-secondary">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                                                    Send Reminder
-                                                </button>
-                                            </form>
+                                            @if($booking->status !== 'completed' && $booking->status !== 'expired')
+                                                <form action="{{ route('bookings.send_reminder', array_merge(['id' => $booking->id], request()->query())) }}" method="POST" style="margin:0;">
+                                                    @csrf
+                                                    <button type="submit" class="btn-action-secondary">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                                        Send Reminder
+                                                    </button>
+                                                </form>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
