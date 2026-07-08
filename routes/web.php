@@ -97,5 +97,14 @@ Route::group(['prefix' => 'deploy'], function() {
             return 'Key generation failed: ' . $e->getMessage();
         }
     });
+
+    Route::get('/run-reminders', function() {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('app:send-reminders');
+            return 'Reminders processed successfully: <br><pre>' . \Illuminate\Support\Facades\Artisan::output() . '</pre>';
+        } catch (\Exception $e) {
+            return 'Failed to run reminders: ' . $e->getMessage();
+        }
+    });
 });
 
