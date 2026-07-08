@@ -196,6 +196,39 @@ class DashboardController extends Controller
     {
         $shop = auth()->user();
         $booking = Booking::where('shop_id', $shop->id)->findOrFail($id);
+        $setting = Setting::where('shop_id', $shop->id)->first();
+
+        // --- SELF-HEALING: Sync Status from Shopify ---
+        if ($booking->draft_order_id) {
+            try {
+                $response = $shop->api()->rest('GET', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/' . $booking->draft_order_id . '.json');
+                if (!$response['errors']) {
+                    $draftOrder = $response['body']['draft_order'] ?? null;
+                    if ($draftOrder) {
+                        $shopifyStatus = is_object($draftOrder) ? ($draftOrder->status ?? '') : ($draftOrder['status'] ?? '');
+                        if ($shopifyStatus === 'completed') {
+                            if ($booking->status === 'pending') {
+                                $holdDurationDays = $setting->hold_duration_days ?? 14;
+                                $booking->update([
+                                    'status' => 'deposit_paid',
+                                    'expires_at' => now()->addDays($holdDurationDays),
+                                ]);
+                                $booking->status = 'deposit_paid';
+                                \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} deposit paid on Shopify. Status updated to deposit_paid.");
+                            } elseif ($booking->status === 'deposit_paid') {
+                                $booking->update([
+                                    'status' => 'completed'
+                                ]);
+                                $booking->status = 'completed';
+                                \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} balance paid on Shopify. Status updated to completed.");
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to sync Shopify draft order status for Booking ID {$booking->id}: " . $e->getMessage());
+            }
+        }
 
         if ($booking->status === 'completed') {
             return back()->with('error', 'This booking is already completed.');
@@ -205,7 +238,6 @@ class DashboardController extends Controller
             return back()->with('error', 'This booking has expired.');
         }
 
-        $setting = Setting::where('shop_id', $shop->id)->first();
         $apiKey = $setting->sendgrid_api_key ?? config('services.sendgrid.api_key');
         $fromEmail = $setting->sendgrid_from_email ?? config('services.sendgrid.from_email');
 
@@ -421,6 +453,51 @@ class DashboardController extends Controller
     {
         $shop = auth()->user();
         $booking = Booking::where('shop_id', $shop->id)->findOrFail($id);
+        $setting = Setting::where('shop_id', $shop->id)->first();
+
+        // --- SELF-HEALING: Sync Status from Shopify ---
+        if ($booking->draft_order_id) {
+            try {
+                $response = $shop->api()->rest('GET', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/' . $booking->draft_order_id . '.json');
+                if (!$response['errors']) {
+                    $draftOrder = $response['body']['draft_order'] ?? null;
+                    if ($draftOrder) {
+                        $shopifyStatus = is_object($draftOrder) ? ($draftOrder->status ?? '') : ($draftOrder['status'] ?? '');
+                        if ($shopifyStatus === 'completed') {
+                            if ($booking->status === 'pending') {
+                                $holdDurationDays = $setting->hold_duration_days ?? 14;
+                                $booking->update([
+                                    'status' => 'deposit_paid',
+                                    'expires_at' => now()->addDays($holdDurationDays),
+                                ]);
+                                $booking->status = 'deposit_paid';
+                                \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} deposit paid on Shopify. Status updated to deposit_paid.");
+                            } elseif ($booking->status === 'deposit_paid') {
+                                $booking->update([
+                                    'status' => 'completed'
+                                ]);
+                                $booking->status = 'completed';
+                                \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} balance paid on Shopify. Status updated to completed.");
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to sync Shopify draft order status for Booking ID {$booking->id}: " . $e->getMessage());
+            }
+        }
+
+        if ($booking->status === 'completed') {
+            return back()->with('error', 'This booking is already completed.');
+        }
+
+        if ($booking->status === 'expired') {
+            return back()->with('error', 'This booking has expired.');
+        }
+
+        if ($booking->status === 'pending') {
+            return back()->with('error', 'Customer has not paid the deposit yet. Please send a deposit reminder instead.');
+        }
 
         try {
             $needsNewDraftOrder = true;
