@@ -205,7 +205,8 @@ class DashboardController extends Controller
                 if (!$response['errors']) {
                     $draftOrder = $response['body']['draft_order'] ?? null;
                     if ($draftOrder) {
-                        $shopifyStatus = is_object($draftOrder) ? ($draftOrder->status ?? '') : ($draftOrder['status'] ?? '');
+                        $draftOrder = $this->normalizeDraftOrder($draftOrder);
+                        $shopifyStatus = $draftOrder['status'] ?? '';
                         if ($shopifyStatus === 'completed') {
                             if ($booking->status === 'pending') {
                                 $holdDurationDays = $setting->hold_duration_days ?? 14;
@@ -263,10 +264,11 @@ class DashboardController extends Controller
                     if (!$response['errors']) {
                         $draftOrder = $response['body']['draft_order'] ?? null;
                         if ($draftOrder) {
-                            $status = is_object($draftOrder) ? ($draftOrder->status ?? '') : ($draftOrder['status'] ?? '');
+                            $draftOrder = $this->normalizeDraftOrder($draftOrder);
+                            $status = $draftOrder['status'] ?? '';
                             if ($status !== 'completed') {
                                 $needsNewDraftOrder = false;
-                                $checkoutUrl = is_object($draftOrder) ? ($draftOrder->invoice_url ?? '') : ($draftOrder['invoice_url'] ?? '');
+                                $checkoutUrl = $draftOrder['invoice_url'] ?? '';
                             }
                         }
                     }
@@ -307,8 +309,9 @@ class DashboardController extends Controller
 
                     $draftOrder = $response['body']['draft_order'] ?? null;
                     if ($draftOrder) {
-                        $draftOrderId = is_object($draftOrder) ? $draftOrder->id : $draftOrder['id'];
-                        $checkoutUrl = is_object($draftOrder) ? $draftOrder->invoice_url : $draftOrder['invoice_url'];
+                        $draftOrder = $this->normalizeDraftOrder($draftOrder);
+                        $draftOrderId = $draftOrder['id'] ?? null;
+                        $checkoutUrl = $draftOrder['invoice_url'] ?? null;
 
                         $booking->update([
                             'draft_order_id' => $draftOrderId,
@@ -462,7 +465,8 @@ class DashboardController extends Controller
                 if (!$response['errors']) {
                     $draftOrder = $response['body']['draft_order'] ?? null;
                     if ($draftOrder) {
-                        $shopifyStatus = is_object($draftOrder) ? ($draftOrder->status ?? '') : ($draftOrder['status'] ?? '');
+                        $draftOrder = $this->normalizeDraftOrder($draftOrder);
+                        $shopifyStatus = $draftOrder['status'] ?? '';
                         if ($shopifyStatus === 'completed') {
                             if ($booking->status === 'pending') {
                                 $holdDurationDays = $setting->hold_duration_days ?? 14;
@@ -510,10 +514,11 @@ class DashboardController extends Controller
                 if (!$response['errors']) {
                     $draftOrder = $response['body']['draft_order'] ?? null;
                     if ($draftOrder) {
-                        $status = is_object($draftOrder) ? ($draftOrder->status ?? '') : ($draftOrder['status'] ?? '');
+                        $draftOrder = $this->normalizeDraftOrder($draftOrder);
+                        $status = $draftOrder['status'] ?? '';
                         if ($status !== 'completed') {
                             $needsNewDraftOrder = false;
-                            $checkoutUrl = is_object($draftOrder) ? ($draftOrder->invoice_url ?? '') : ($draftOrder['invoice_url'] ?? '');
+                            $checkoutUrl = $draftOrder['invoice_url'] ?? '';
                         }
                     }
                 }
@@ -554,8 +559,9 @@ class DashboardController extends Controller
 
                 $draftOrder = $response['body']['draft_order'] ?? null;
                 if ($draftOrder) {
-                    $draftOrderId = is_object($draftOrder) ? $draftOrder->id : $draftOrder['id'];
-                    $checkoutUrl = is_object($draftOrder) ? $draftOrder->invoice_url : $draftOrder['invoice_url'];
+                    $draftOrder = $this->normalizeDraftOrder($draftOrder);
+                    $draftOrderId = $draftOrder['id'] ?? null;
+                    $checkoutUrl = $draftOrder['invoice_url'] ?? null;
 
                     $booking->update([
                         'draft_order_id' => $draftOrderId,
@@ -600,5 +606,23 @@ class DashboardController extends Controller
             \Illuminate\Support\Facades\Log::error('Draft Order Balance Creation failed: ' . $e->getMessage());
             return back()->with('error', 'Error generating Shopify invoice: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Convert response object/array to standard array.
+     */
+    private function normalizeDraftOrder($draftOrder)
+    {
+        if (!$draftOrder) {
+            return null;
+        }
+        if (is_object($draftOrder) && method_exists($draftOrder, 'toArray')) {
+            return $draftOrder->toArray();
+        } elseif ($draftOrder instanceof \ArrayAccess) {
+            return json_decode(json_encode($draftOrder), true);
+        } elseif (is_object($draftOrder)) {
+            return (array) $draftOrder;
+        }
+        return $draftOrder;
     }
 }
