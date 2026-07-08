@@ -266,7 +266,23 @@ class DashboardController extends Controller
                         if ($draftOrder) {
                             $draftOrder = $this->normalizeDraftOrder($draftOrder);
                             $status = $draftOrder['status'] ?? '';
-                            if ($status !== 'completed') {
+                            if ($status === 'completed') {
+                                // Check if this is the remaining balance draft order
+                                $lineItems = $draftOrder['line_items'] ?? [];
+                                $isRemainingBalance = false;
+                                foreach ($lineItems as $item) {
+                                    $title = is_object($item) ? ($item->title ?? '') : ($item['title'] ?? '');
+                                    if (str_contains($title, 'Remaining Balance')) {
+                                        $isRemainingBalance = true;
+                                        break;
+                                    }
+                                }
+
+                                if ($isRemainingBalance) {
+                                    $booking->update(['status' => 'completed']);
+                                    return back()->with('success', 'This booking has already been paid in full!');
+                                }
+                            } else {
                                 $needsNewDraftOrder = false;
                                 $checkoutUrl = $draftOrder['invoice_url'] ?? '';
                             }

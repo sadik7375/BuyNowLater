@@ -109,10 +109,23 @@ Route::group(['prefix' => 'deploy'], function() {
 
     Route::get('/register-webhooks', function() {
         try {
-            \Illuminate\Support\Facades\Artisan::call('shopify-app:register-webhooks');
-            return 'Webhooks registered successfully: <br><pre>' . \Illuminate\Support\Facades\Artisan::output() . '</pre>';
+            $shops = \App\Models\User::all();
+            $webhooksConfig = config('shopify-app.webhooks');
+            $action = app(\Osiset\ShopifyApp\Actions\CreateWebhooks::class);
+            $results = [];
+
+            foreach ($shops as $shop) {
+                // Ensure the shop model actually has a token/api helper
+                if ($shop->password) {
+                    $shopId = \Osiset\ShopifyApp\Objects\Values\ShopId::fromNative($shop->id);
+                    $res = $action($shopId, $webhooksConfig);
+                    $results[$shop->name] = $res;
+                }
+            }
+
+            return 'Webhooks registration results: <br><pre>' . json_encode($results, JSON_PRETTY_PRINT) . '</pre>';
         } catch (\Exception $e) {
-            return 'Webhook registration failed: ' . $e->getMessage();
+            return 'Webhook registration failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString();
         }
     });
 });

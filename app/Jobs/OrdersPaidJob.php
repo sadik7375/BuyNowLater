@@ -68,8 +68,8 @@ class OrdersPaidJob implements ShouldQueue
         foreach ($noteAttributes as $attr) {
             $name = is_object($attr) ? ($attr->name ?? '') : ($attr['name'] ?? '');
             $value = is_object($attr) ? ($attr->value ?? '') : ($attr['value'] ?? '');
-            if ($name === 'buylater_token') {
-                $token = $value;
+            if (strtolower($name) === 'buylater_token') {
+                $token = strtolower($value);
                 break;
             }
         }
