@@ -116,6 +116,17 @@ document.addEventListener('DOMContentLoaded', function() {
     datetimeInput.min = `${year}-${month}-${day}T${hours}:${minutes}`;
   }
 
+  // Pre-fill email inputs if customer is logged in
+  const customerEmail = window.buylaterCustomerEmail || '';
+  if (customerEmail) {
+    const bookEmailInput = document.getElementById('book-email');
+    const remindEmailInput = document.getElementById('remind-email');
+    const discountEmailInput = document.getElementById('discount-email');
+    if (bookEmailInput) bookEmailInput.value = customerEmail;
+    if (remindEmailInput) remindEmailInput.value = customerEmail;
+    if (discountEmailInput) discountEmailInput.value = customerEmail;
+  }
+
   // Open modal
   triggerBtn.addEventListener('click', function() {
     modal.style.display = 'flex';

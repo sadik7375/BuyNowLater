@@ -235,6 +235,7 @@
 <script>
   window.buylaterShopDomain = "{{ shop.permanent_domain }}";
   window.buylaterCurrencySymbol = "{{ cart.currency.symbol }}";
+  window.buylaterCustomerEmail = "{% if customer %}{{ customer.email }}{% endif %}";
 </script>
 <script src="{{ 'buylater.js' | asset_url }}" defer></script>
 

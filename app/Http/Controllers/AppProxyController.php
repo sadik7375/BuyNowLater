@@ -476,4 +476,92 @@ class AppProxyController extends Controller
             'hold_duration_days' => $settings ? (int) ($settings->hold_duration_days ?? 14) : 14,
         ]);
     }
+
+    /**
+     * Retrieve bookings for the logged-in storefront customer.
+     */
+    public function getCustomerBookings(Request $request)
+    {
+        $shop = auth()->user();
+        if (!$shop) {
+            $shopDomain = $request->query('shop') ?: $request->input('shop');
+            if ($shopDomain) {
+                $shop = User::where('name', $shopDomain)->first();
+            }
+        }
+
+        if (!$shop) {
+            return response()->json(['message' => 'Shop not found.'], 404);
+        }
+
+        $customerId = $request->query('logged_in_customer_id');
+        if (empty($customerId)) {
+            return response()->json(['bookings' => []]);
+        }
+
+        try {
+            // Fetch customer details from Shopify Admin API to get their email securely
+            $response = $shop->api()->rest(
+                'GET',
+                '/admin/api/' . config('shopify-app.api_version') . '/customers/' . $customerId . '.json'
+            );
+
+            if ($response['errors']) {
+                Log::warning('AppProxy: Failed to fetch Shopify customer details.', [
+                    'customer_id' => $customerId,
+                    'errors' => $response['body']
+                ]);
+                return response()->json(['bookings' => []]);
+            }
+
+            $customer = $response['body']['customer'] ?? null;
+            if (!$customer) {
+                return response()->json(['bookings' => []]);
+            }
+
+            // Normalization
+            if (is_object($customer) && method_exists($customer, 'toArray')) {
+                $customerArray = $customer->toArray();
+            } else {
+                $customerArray = json_decode(json_encode($customer), true);
+            }
+
+            $email = $customerArray['email'] ?? null;
+            if (!$email) {
+                return response()->json(['bookings' => []]);
+            }
+
+            $settings = Setting::where('shop_id', $shop->id)->first();
+            $holdDurationDays = $settings ? (int) ($settings->hold_duration_days ?? 14) : 14;
+
+            $bookings = Booking::where('shop_id', $shop->id)
+                ->where('email', $email)
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($booking) use ($holdDurationDays) {
+                    $bookingArray = $booking->toArray();
+                    
+                    // Expiry is calculated from when the deposit was paid (updated_at)
+                    $depositPaidAt = $booking->updated_at;
+                    $expiryDate = $depositPaidAt->copy()->addDays($holdDurationDays);
+                    
+                    $bookingArray['expires_at'] = $expiryDate->toIso8601String();
+                    
+                    // If the database status is deposit_paid, check if it has expired in time
+                    if ($booking->status === 'deposit_paid' && now()->gt($expiryDate)) {
+                        $bookingArray['status'] = 'expired';
+                    }
+                    
+                    return $bookingArray;
+                });
+
+            return response()->json([
+                'bookings' => $bookings
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('AppProxy: Exception fetching customer bookings: ' . $e->getMessage());
+            return response()->json(['bookings' => []]);
+        }
+    }
 }

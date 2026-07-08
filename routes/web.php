@@ -54,10 +54,12 @@ Route::group(['middleware' => ['shopify.classify', 'auth.proxy']], function () {
     Route::post('/bookings', [AppProxyController::class, 'storeBooking']);
 });
 
-// Public App Proxy Settings Routes (Storefront accesses these to fetch display settings dynamically)
+// Public App Proxy Settings & Bookings Routes (Storefront accesses these to fetch display settings and customer bookings dynamically)
 Route::group(['middleware' => ['shopify.classify']], function () {
     Route::get('/apps/buylater-proxy/settings', [AppProxyController::class, 'getSettings']);
     Route::get('/settings', [AppProxyController::class, 'getSettings']);
+    Route::get('/apps/buylater-proxy/customer-bookings', [AppProxyController::class, 'getCustomerBookings']);
+    Route::get('/customer-bookings', [AppProxyController::class, 'getCustomerBookings']);
 });
 
 // Public Customer Actions (Clicked from emails, no shop login required)
