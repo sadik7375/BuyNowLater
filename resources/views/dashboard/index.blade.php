@@ -1344,9 +1344,9 @@
                                 <tr data-search-text="{{ $searchText }}" data-status="{{ $reminder->status }}">
                                     <td>{{ $reminder->product_title }}</td>
                                     <td>{{ $reminder->email }}</td>
-                                    <td>{{ $reminder->scheduled_at->format('M j, Y g:i a') }}</td>
+                                    <td class="local-datetime" data-utc="{{ $reminder->scheduled_at->toIso8601String() }}">{{ $reminder->scheduled_at->format('M j, Y g:i a') }}</td>
                                     <td><span class="status-pill {{ $reminder->status }}">{{ $reminder->status }}</span></td>
-                                    <td>{{ $reminder->sent_at ? $reminder->sent_at->format('M j, Y g:i a') : '-' }}</td>
+                                    <td class="local-datetime" data-utc="{{ $reminder->sent_at ? $reminder->sent_at->toIso8601String() : '' }}">{{ $reminder->sent_at ? $reminder->sent_at->format('M j, Y g:i a') : '-' }}</td>
                                 </tr>
                             @endforeach
                             <tr id="reminders-no-results" style="display: none;">
@@ -1813,6 +1813,28 @@ function filterSubscribers() {
         
         downloadCSV("subscribers_export.csv", headers, rows);
     }
+
+    // Convert all UTC timestamps to local browser timezone on load
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.local-datetime').forEach(el => {
+            const utcDateStr = el.getAttribute('data-utc');
+            if (utcDateStr) {
+                const date = new Date(utcDateStr);
+                if (!isNaN(date.getTime())) {
+                    // Formats using user's system locale, e.g. "Jul 8, 2026, 8:55 PM" or 24h format based on OS
+                    el.textContent = date.toLocaleString(undefined, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit'
+                    });
+                } else {
+                    el.textContent = '-';
+                }
+            }
+        });
+    });
 
     // Intercept standard HTML POST form submissions to retrieve and inject a fresh Shopify session token
     document.addEventListener('submit', async function (e) {
