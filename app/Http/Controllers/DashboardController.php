@@ -32,6 +32,60 @@ class DashboardController extends Controller
             ]
         );
 
+        // ---------- Self-Healing: Sync Status of Active Bookings ----------
+        $activeBookingsWithDraft = Booking::where('shop_id', $shop->id)
+            ->whereIn('status', ['pending', 'deposit_paid'])
+            ->whereNotNull('draft_order_id')
+            ->get();
+
+        if ($activeBookingsWithDraft->isNotEmpty()) {
+            $draftOrderIds = $activeBookingsWithDraft->pluck('draft_order_id')->filter()->toArray();
+            if (!empty($draftOrderIds)) {
+                try {
+                    $response = $shop->api()->rest(
+                        'GET',
+                        '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json',
+                        ['ids' => implode(',', $draftOrderIds)]
+                    );
+                    if (!$response['errors']) {
+                        $draftOrders = $response['body']['draft_orders'] ?? [];
+                        $draftOrdersMap = [];
+                        foreach ($draftOrders as $do) {
+                            $doArray = $this->normalizeDraftOrder($do);
+                            if ($doArray && isset($doArray['id'])) {
+                                $draftOrdersMap[$doArray['id']] = $doArray;
+                            }
+                        }
+
+                        foreach ($activeBookingsWithDraft as $booking) {
+                            if (isset($draftOrdersMap[$booking->draft_order_id])) {
+                                $draftOrder = $draftOrdersMap[$booking->draft_order_id];
+                                $shopifyStatus = $draftOrder['status'] ?? '';
+                                
+                                if ($shopifyStatus === 'completed') {
+                                    if ($booking->status === 'pending') {
+                                        $holdDurationDays = $settings->hold_duration_days ?? 14;
+                                        $booking->update([
+                                            'status' => 'deposit_paid',
+                                            'expires_at' => now()->addDays($holdDurationDays),
+                                        ]);
+                                        \Illuminate\Support\Facades\Log::info("Sync index: Booking ID {$booking->id} deposit paid on Shopify. Status updated to deposit_paid.");
+                                    } elseif ($booking->status === 'deposit_paid') {
+                                        $booking->update([
+                                            'status' => 'completed'
+                                        ]);
+                                        \Illuminate\Support\Facades\Log::info("Sync index: Booking ID {$booking->id} balance paid on Shopify. Status updated to completed.");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to sync Shopify draft orders in index(): " . $e->getMessage());
+                }
+            }
+        }
+
         // ---------- Date Filter Handling ----------
         $dateFilter = $request->query('date_filter', 'all'); // all, today, week, custom
         $start = null;
