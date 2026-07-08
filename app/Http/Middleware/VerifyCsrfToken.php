@@ -17,5 +17,6 @@ class VerifyCsrfToken extends Middleware
         'reminders',
         'bookings',
         'webhook/*',
+        'admin/*',
     ];
 }
