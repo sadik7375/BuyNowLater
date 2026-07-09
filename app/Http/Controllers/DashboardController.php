@@ -323,16 +323,7 @@ class DashboardController extends Controller
                             $draftOrder = $this->normalizeDraftOrder($draftOrder);
                             $status = $draftOrder['status'] ?? '';
                             if ($status === 'completed') {
-                                // Check if this is the remaining balance draft order
-                                $lineItems = $draftOrder['line_items'] ?? [];
-                                $isRemainingBalance = false;
-                                foreach ($lineItems as $item) {
-                                    $title = is_object($item) ? ($item->title ?? '') : ($item['title'] ?? '');
-                                    if (str_contains($title, 'Remaining Balance')) {
-                                        $isRemainingBalance = true;
-                                        break;
-                                    }
-                                }
+                                $isRemainingBalance = $this->isRemainingBalanceDraftOrder($draftOrder);
 
                                 if ($isRemainingBalance) {
                                     $booking->update(['status' => 'completed']);
@@ -636,7 +627,13 @@ class DashboardController extends Controller
                     if ($draftOrder) {
                         $draftOrder = $this->normalizeDraftOrder($draftOrder);
                         $status = $draftOrder['status'] ?? '';
-                        if ($status !== 'completed') {
+                        if ($status === 'completed') {
+                            $isRemaining = $this->isRemainingBalanceDraftOrder($draftOrder);
+                            if ($isRemaining) {
+                                $booking->update(['status' => 'completed']);
+                                return back()->with('success', 'This booking has already been paid in full!');
+                            }
+                        } else {
                             $needsNewDraftOrder = false;
                             $checkoutUrl = $draftOrder['invoice_url'] ?? '';
                         }
@@ -782,7 +779,31 @@ class DashboardController extends Controller
             if (str_contains($title, 'Remaining Balance')) {
                 return true;
             }
+
+            // Check applied discount description (for variant-linked items)
+            $appliedDiscount = is_object($item) ? ($item->applied_discount ?? null) : ($item['applied_discount'] ?? null);
+            if ($appliedDiscount) {
+                if (is_object($appliedDiscount) && method_exists($appliedDiscount, 'toArray')) {
+                    $appliedDiscount = $appliedDiscount->toArray();
+                } else {
+                    $appliedDiscount = (array) $appliedDiscount;
+                }
+                $desc = $appliedDiscount['description'] ?? '';
+                if (str_contains($desc, 'Original Deposit Paid')) {
+                    return true;
+                }
+            }
         }
+
+        // Also check note attributes
+        $noteAttributes = $draftOrder['note_attributes'] ?? [];
+        foreach ($noteAttributes as $attr) {
+            $name = is_object($attr) ? ($attr->name ?? '') : ($attr['name'] ?? '');
+            if (str_contains($name, 'Original Deposit Paid')) {
+                return true;
+            }
+        }
+
         return false;
     }
 }
