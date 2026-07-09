@@ -101,7 +101,7 @@ class ProxyIdempotencyTest extends TestCase
                        $lineItem['variant_id'] === (int)$variantId &&
                        isset($lineItem['applied_discount']) &&
                        $lineItem['applied_discount']['value'] === '90.00' && // 90% of 100 remaining
-                       $lineItem['applied_discount']['value_type'] === 'fixed_amount';
+                       $lineItem['applied_discount']['value_type'] === 'percentage';
             }))
             ->andReturn([
                 'errors' => false,

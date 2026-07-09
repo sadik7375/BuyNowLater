@@ -312,6 +312,7 @@ class AppProxyController extends Controller
         }
 
         if ($variantId) {
+            $discountPercentage = 100 - $depositPercentage;
             $lineItems = [[
                 'variant_id'        => (int) $variantId,
                 'quantity'          => 1,
@@ -319,8 +320,8 @@ class AppProxyController extends Controller
                 'applied_discount'  => [
                     'title'       => 'Deposit Payment Adjustment',
                     'description' => 'Buy Now Later deposit discount',
-                    'value'       => number_format($remainingBalance, 2, '.', ''),
-                    'value_type'  => 'fixed_amount',
+                    'value'       => number_format($discountPercentage, 2, '.', ''),
+                    'value_type'  => 'percentage',
                 ],
                 'properties'        => [
                     ['name' => '_token', 'value' => $token],

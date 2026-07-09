@@ -348,6 +348,7 @@ class DashboardController extends Controller
 
                 if ($needsNewDraftOrder) {
                     if ($booking->variant_id) {
+                        $depositPercentage = round(($booking->deposit_amount / $booking->product_price) * 100);
                         $lineItems = [
                             [
                                 'variant_id' => (int) $booking->variant_id,
@@ -356,8 +357,8 @@ class DashboardController extends Controller
                                 'applied_discount' => [
                                     'title' => 'Deposit Payment Adjustment',
                                     'description' => 'Original Deposit Paid',
-                                    'value' => number_format($booking->deposit_amount, 2, '.', ''),
-                                    'value_type' => 'fixed_amount',
+                                    'value' => number_format($depositPercentage, 2, '.', ''),
+                                    'value_type' => 'percentage',
                                 ],
                             ]
                         ];
@@ -447,6 +448,8 @@ class DashboardController extends Controller
                     $token = $booking->token;
 
                     if ($booking->variant_id) {
+                        $depositPercentage = round(($booking->deposit_amount / $booking->product_price) * 100);
+                        $discountPercentage = 100 - $depositPercentage;
                         $lineItems = [[
                             'variant_id'        => (int) $booking->variant_id,
                             'quantity'          => 1,
@@ -454,8 +457,8 @@ class DashboardController extends Controller
                             'applied_discount'  => [
                                 'title'       => 'Deposit Payment Adjustment',
                                 'description' => 'Buy Now Later deposit discount',
-                                'value'       => number_format($remainingBalance, 2, '.', ''),
-                                'value_type'  => 'fixed_amount',
+                                'value'       => number_format($discountPercentage, 2, '.', ''),
+                                'value_type'  => 'percentage',
                             ],
                             'properties'        => [
                                 ['name' => '_token', 'value' => $token],
@@ -643,6 +646,7 @@ class DashboardController extends Controller
 
             if ($needsNewDraftOrder) {
                 if ($booking->variant_id) {
+                    $depositPercentage = round(($booking->deposit_amount / $booking->product_price) * 100);
                     $lineItems = [
                         [
                             'variant_id' => (int) $booking->variant_id,
@@ -651,8 +655,8 @@ class DashboardController extends Controller
                             'applied_discount' => [
                                 'title' => 'Deposit Payment Adjustment',
                                 'description' => 'Original Deposit Paid',
-                                'value' => number_format($booking->deposit_amount, 2, '.', ''),
-                                'value_type' => 'fixed_amount',
+                                'value' => number_format($depositPercentage, 2, '.', ''),
+                                'value_type' => 'percentage',
                             ],
                         ]
                     ];

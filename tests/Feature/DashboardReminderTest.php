@@ -284,7 +284,7 @@ class DashboardReminderTest extends TestCase
                        $lineItem['variant_id'] === (int)$variantId &&
                        isset($lineItem['applied_discount']) &&
                        $lineItem['applied_discount']['value'] === '80.00' && // 100 - 20 = 80 remaining
-                       $lineItem['applied_discount']['value_type'] === 'fixed_amount';
+                       $lineItem['applied_discount']['value_type'] === 'percentage';
             }))
             ->andReturn([
                 'errors' => false,
@@ -394,7 +394,7 @@ class DashboardReminderTest extends TestCase
                        $lineItem['variant_id'] === (int)$variantId &&
                        isset($lineItem['applied_discount']) &&
                        $lineItem['applied_discount']['value'] === '20.00' && // deposit discount applied
-                       $lineItem['applied_discount']['value_type'] === 'fixed_amount';
+                       $lineItem['applied_discount']['value_type'] === 'percentage';
             }))
             ->andReturn([
                 'errors' => false,
