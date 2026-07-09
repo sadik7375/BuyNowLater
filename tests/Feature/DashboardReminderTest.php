@@ -267,4 +267,188 @@ class DashboardReminderTest extends TestCase
         // CRITICAL CHECK: Booking should be updated to completed!
         $this->assertEquals('completed', $booking->status);
     }
+
+    public function test_send_reminder_pending_booking_with_variant_id_recreates_deposit_draft_order()
+    {
+        $this->withoutMiddleware();
+
+        $variantId = '44793613623512';
+        $apiMock = \Mockery::mock(\Gnikyt\BasicShopifyAPI\BasicShopifyAPI::class);
+
+        // Expect the draft order creation for the deposit using variant_id and discount
+        $apiMock->shouldReceive('rest')
+            ->once()
+            ->with('POST', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json', \Mockery::on(function ($draftOrderData) use ($variantId) {
+                $lineItem = $draftOrderData['draft_order']['line_items'][0] ?? [];
+                return isset($lineItem['variant_id']) &&
+                       $lineItem['variant_id'] === (int)$variantId &&
+                       isset($lineItem['applied_discount']) &&
+                       $lineItem['applied_discount']['value'] === '80.00' && // 100 - 20 = 80 remaining
+                       $lineItem['applied_discount']['value_type'] === 'fixed_amount';
+            }))
+            ->andReturn([
+                'errors' => false,
+                'status' => 201,
+                'body' => [
+                    'draft_order' => [
+                        'id' => 999222,
+                        'invoice_url' => 'https://test-shop.myshopify.com/checkout/999222'
+                    ]
+                ]
+            ]);
+
+        $realUser = User::factory()->create([
+            'id' => 2,
+            'name' => 'test-shop-var.myshopify.com'
+        ]);
+
+        Setting::create([
+            'shop_id' => $realUser->id,
+            'sendgrid_api_key' => 'SG.fake_key',
+            'sendgrid_from_email' => 'from@example.com',
+            'hold_duration_days' => 14,
+        ]);
+
+        $booking = Booking::create([
+            'shop_id' => $realUser->id,
+            'email' => 'customer@example.com',
+            'product_id' => '123456',
+            'variant_id' => $variantId,
+            'product_title' => 'Cool Shoes',
+            'product_handle' => 'cool-shoes',
+            'product_price' => 100.00,
+            'deposit_amount' => 20.00,
+            'remaining_balance' => 80.00,
+            'status' => 'pending',
+            'token' => 'pendingtoken123',
+            'draft_order_id' => null,
+            'checkout_url' => null,
+        ]);
+
+        $userMock = \Mockery::mock($realUser)->makePartial();
+        $userMock->shouldReceive('api')->andReturn($apiMock);
+
+        $this->actingAs($userMock);
+
+        \Mockery::mock('alias:App\Services\SendGridService')
+            ->shouldReceive('send')
+            ->once()
+            ->andReturn(true);
+
+        $response = $this->post(route('bookings.send_reminder', ['id' => $booking->id]));
+        $response->assertStatus(302);
+
+        $booking->refresh();
+        $this->assertEquals(999222, $booking->draft_order_id);
+    }
+
+    public function test_send_reminder_deposit_paid_booking_with_variant_id_creates_remaining_balance_draft_order()
+    {
+        $this->withoutMiddleware();
+
+        $variantId = '44793613623512';
+        $apiMock = \Mockery::mock(\Gnikyt\BasicShopifyAPI\BasicShopifyAPI::class);
+
+        // GET call to sync check
+        $apiMock->shouldReceive('rest')
+            ->once()
+            ->with('GET', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/55555.json')
+            ->andReturn([
+                'errors' => false,
+                'status' => 200,
+                'body' => [
+                    'draft_order' => [
+                        'id' => 55555,
+                        'status' => 'completed',
+                        'line_items' => [
+                            ['title' => 'Deposit — Cool Shoes', 'price' => '20.00']
+                        ]
+                    ]
+                ]
+            ]);
+
+        // GET call inside sendReminder to check status again
+        $apiMock->shouldReceive('rest')
+            ->once()
+            ->with('GET', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/55555.json')
+            ->andReturn([
+                'errors' => false,
+                'status' => 200,
+                'body' => [
+                    'draft_order' => [
+                        'id' => 55555,
+                        'status' => 'completed',
+                        'line_items' => [
+                            ['title' => 'Deposit — Cool Shoes', 'price' => '20.00']
+                        ]
+                    ]
+                ]
+            ]);
+
+        // POST call to create remaining balance draft order with variant_id and discount
+        $apiMock->shouldReceive('rest')
+            ->once()
+            ->with('POST', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json', \Mockery::on(function ($draftOrderData) use ($variantId) {
+                $lineItem = $draftOrderData['draft_order']['line_items'][0] ?? [];
+                return isset($lineItem['variant_id']) &&
+                       $lineItem['variant_id'] === (int)$variantId &&
+                       isset($lineItem['applied_discount']) &&
+                       $lineItem['applied_discount']['value'] === '20.00' && // deposit discount applied
+                       $lineItem['applied_discount']['value_type'] === 'fixed_amount';
+            }))
+            ->andReturn([
+                'errors' => false,
+                'status' => 201,
+                'body' => [
+                    'draft_order' => [
+                        'id' => 88888,
+                        'invoice_url' => 'https://test-shop.myshopify.com/checkout/88888'
+                    ]
+                ]
+            ]);
+
+        $realUser = User::factory()->create([
+            'id' => 3,
+            'name' => 'test-shop-var2.myshopify.com'
+        ]);
+
+        Setting::create([
+            'shop_id' => $realUser->id,
+            'sendgrid_api_key' => 'SG.fake_key',
+            'sendgrid_from_email' => 'from@example.com',
+            'hold_duration_days' => 14,
+        ]);
+
+        $booking = Booking::create([
+            'shop_id' => $realUser->id,
+            'email' => 'customer@example.com',
+            'product_id' => '123456',
+            'variant_id' => $variantId,
+            'product_title' => 'Cool Shoes',
+            'product_handle' => 'cool-shoes',
+            'product_price' => 100.00,
+            'deposit_amount' => 20.00,
+            'remaining_balance' => 80.00,
+            'status' => 'deposit_paid',
+            'token' => 'paidtoken123',
+            'draft_order_id' => 55555,
+            'checkout_url' => 'https://test-shop.myshopify.com/checkout/55555',
+        ]);
+
+        $userMock = \Mockery::mock($realUser)->makePartial();
+        $userMock->shouldReceive('api')->andReturn($apiMock);
+
+        $this->actingAs($userMock);
+
+        \Mockery::mock('alias:App\Services\SendGridService')
+            ->shouldReceive('send')
+            ->once()
+            ->andReturn(true);
+
+        $response = $this->post(route('bookings.send_reminder', ['id' => $booking->id]));
+        $response->assertStatus(302);
+
+        $booking->refresh();
+        $this->assertEquals(88888, $booking->draft_order_id);
+    }
 }

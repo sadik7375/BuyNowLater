@@ -204,8 +204,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Get current product data payload
   function getProductData() {
+    // Try to find the selected variant ID dynamically
+    const urlParams = new URLSearchParams(window.location.search);
+    let variantId = urlParams.get('variant');
+
+    if (!variantId) {
+      const variantInput = document.querySelector('form[action*="/cart/add"] input[name="id"], form[action*="/cart/add"] select[name="id"]');
+      if (variantInput) {
+        variantId = variantInput.value;
+      }
+    }
+
+    if (!variantId) {
+      variantId = triggerBtn.getAttribute('data-variant-id');
+    }
+
     return {
       product_id: triggerBtn.getAttribute('data-product-id'),
+      variant_id: variantId,
       product_title: triggerBtn.getAttribute('data-product-title'),
       product_handle: triggerBtn.getAttribute('data-product-handle'),
       product_price: triggerBtn.getAttribute('data-product-price'),

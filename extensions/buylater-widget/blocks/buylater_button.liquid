@@ -9,6 +9,7 @@
           style="font-size: {{ block.settings.button_font_size }}px; font-weight: {{ block.settings.button_font_weight }}; width: {% if block.settings.button_width_mode == 'full' %}100%{% elsif block.settings.button_width_mode == 'auto' %}auto{% else %}{{ block.settings.button_custom_width }}px{% endif %};"
           id="buylater-trigger"
           data-product-id="{{ product.id }}"
+          data-variant-id="{{ product.selected_or_first_available_variant.id }}"
           data-product-title="{{ product.title | escape }}"
           data-product-handle="{{ product.handle }}"
           data-product-price="{{ product.price | divided_by: 100.0 }}"

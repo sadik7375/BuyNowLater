@@ -13,6 +13,7 @@ class Booking extends Model
         'shop_id',
         'email',
         'product_id',
+        'variant_id',
         'product_title',
         'product_handle',
         'product_image',

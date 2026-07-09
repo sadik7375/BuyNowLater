@@ -83,6 +83,65 @@ class ProxyIdempotencyTest extends TestCase
         $this->assertEquals($firstBooking->id, $data2['booking']['id']);
     }
 
+    public function test_booking_with_variant_id_applies_discount_and_saves_variant_id()
+    {
+        $this->withoutMiddleware();
+
+        $variantId = '44793613623512';
+
+        // Mock Shopify API rest client
+        $apiMock = \Mockery::mock(\Gnikyt\BasicShopifyAPI\BasicShopifyAPI::class);
+        $apiMock->shouldReceive('rest')
+            ->once()
+            ->with('POST', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json', \Mockery::on(function ($draftOrderData) use ($variantId) {
+                $lineItem = $draftOrderData['draft_order']['line_items'][0] ?? [];
+                
+                // Assert it links the variant ID and applies a line item discount
+                return isset($lineItem['variant_id']) &&
+                       $lineItem['variant_id'] === (int)$variantId &&
+                       isset($lineItem['applied_discount']) &&
+                       $lineItem['applied_discount']['value'] === '90.00' && // 90% of 100 remaining
+                       $lineItem['applied_discount']['value_type'] === 'fixed_amount';
+            }))
+            ->andReturn([
+                'errors' => false,
+                'status' => 201,
+                'body' => [
+                    'draft_order' => [
+                        'id' => 987654321,
+                        'invoice_url' => 'https://test-shop.myshopify.com/checkout/987654321'
+                    ]
+                ]
+            ]);
+
+        $realUser = User::factory()->create([
+            'id' => 2,
+            'name' => 'test-shop-variant.myshopify.com'
+        ]);
+
+        $userMock = \Mockery::mock($realUser)->makePartial();
+        $userMock->shouldReceive('api')->andReturn($apiMock);
+
+        $this->actingAs($userMock);
+
+        $payload = [
+            'product_id' => 'gid://shopify/Product/111111',
+            'variant_id' => $variantId,
+            'product_title' => 'Test Product',
+            'product_handle' => 'test-product',
+            'product_price' => '100.00',
+            'email' => 'variant-customer@example.com',
+            'shop' => 'test-shop-variant.myshopify.com'
+        ];
+
+        $response = $this->post('/apps/buylater-proxy/bookings', $payload);
+        $response->assertStatus(201);
+
+        $booking = Booking::where('email', 'variant-customer@example.com')->first();
+        $this->assertNotNull($booking);
+        $this->assertEquals($variantId, $booking->variant_id);
+    }
+
     public function test_reminder_is_idempotent()
     {
         $this->withoutMiddleware();

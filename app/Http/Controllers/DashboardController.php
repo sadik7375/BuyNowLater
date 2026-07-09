@@ -347,17 +347,35 @@ class DashboardController extends Controller
                 }
 
                 if ($needsNewDraftOrder) {
+                    if ($booking->variant_id) {
+                        $lineItems = [
+                            [
+                                'variant_id' => (int) $booking->variant_id,
+                                'quantity' => 1,
+                                'requires_shipping' => true,
+                                'applied_discount' => [
+                                    'title' => 'Deposit Payment Adjustment',
+                                    'description' => 'Original Deposit Paid',
+                                    'value' => number_format($booking->deposit_amount, 2, '.', ''),
+                                    'value_type' => 'fixed_amount',
+                                ],
+                            ]
+                        ];
+                    } else {
+                        $lineItems = [
+                            [
+                                'title' => 'Remaining Balance - ' . $booking->product_title,
+                                'price' => number_format($booking->remaining_balance, 2, '.', ''),
+                                'quantity' => 1,
+                                'requires_shipping' => true,
+                            ]
+                        ];
+                    }
+
                     // Create Draft Order using Shopify REST API via Osiset/Laravel-Shopify
                     $draftOrderData = [
                         'draft_order' => [
-                            'line_items' => [
-                                [
-                                    'title' => 'Remaining Balance - ' . $booking->product_title,
-                                    'price' => number_format($booking->remaining_balance, 2, '.', ''),
-                                    'quantity' => 1,
-                                    'requires_shipping' => true,
-                                ]
-                            ],
+                            'line_items' => $lineItems,
                             'customer' => [
                                 'email' => $booking->email,
                                 'first_name' => $booking->customer_name ?? 'Valued',
@@ -428,23 +446,44 @@ class DashboardController extends Controller
                     $remainingBalance = (float) $booking->remaining_balance;
                     $token = $booking->token;
 
+                    if ($booking->variant_id) {
+                        $lineItems = [[
+                            'variant_id'        => (int) $booking->variant_id,
+                            'quantity'          => 1,
+                            'requires_shipping' => false,
+                            'applied_discount'  => [
+                                'title'       => 'Deposit Payment Adjustment',
+                                'description' => 'Buy Now Later deposit discount',
+                                'value'       => number_format($remainingBalance, 2, '.', ''),
+                                'value_type'  => 'fixed_amount',
+                            ],
+                            'properties'        => [
+                                ['name' => '_token', 'value' => $token],
+                                ['name' => 'Original Price', 'value' => '$' . number_format($productPrice, 2)],
+                                ['name' => 'Remaining Balance', 'value' => '$' . number_format($remainingBalance, 2)],
+                            ]
+                        ]];
+                    } else {
+                        $lineItems = [[
+                            'title'             => 'Deposit — ' . $booking->product_title,
+                            'price'             => number_format($depositAmount, 2, '.', ''),
+                            'quantity'          => 1,
+                            'requires_shipping' => false,
+                            'properties'        => [
+                                ['name' => '_token', 'value' => $token],
+                                ['name' => 'Original Price', 'value' => '$' . number_format($productPrice, 2)],
+                                ['name' => 'Remaining Balance', 'value' => '$' . number_format($remainingBalance, 2)],
+                            ]
+                        ]];
+                    }
+
                     $draftOrderData = [
                         'draft_order' => [
                             'email' => $booking->email,
                             'customer' => [
                                 'email' => $booking->email,
                             ],
-                            'line_items' => [[
-                                'title'             => 'Deposit — ' . $booking->product_title,
-                                'price'             => number_format($depositAmount, 2, '.', ''),
-                                'quantity'          => 1,
-                                'requires_shipping' => false,
-                                'properties'        => [
-                                    ['name' => '_token', 'value' => $token],
-                                    ['name' => 'Original Price', 'value' => '$' . number_format($productPrice, 2)],
-                                    ['name' => 'Remaining Balance', 'value' => '$' . number_format($remainingBalance, 2)],
-                                ]
-                            ]],
+                            'line_items' => $lineItems,
                             'note'  => 'BuyLater deposit — do not fulfill',
                             'tags'  => 'buylater-deposit',
                         ]
@@ -603,17 +642,35 @@ class DashboardController extends Controller
             }
 
             if ($needsNewDraftOrder) {
+                if ($booking->variant_id) {
+                    $lineItems = [
+                        [
+                            'variant_id' => (int) $booking->variant_id,
+                            'quantity' => 1,
+                            'requires_shipping' => true,
+                            'applied_discount' => [
+                                'title' => 'Deposit Payment Adjustment',
+                                'description' => 'Original Deposit Paid',
+                                'value' => number_format($booking->deposit_amount, 2, '.', ''),
+                                'value_type' => 'fixed_amount',
+                            ],
+                        ]
+                    ];
+                } else {
+                    $lineItems = [
+                        [
+                            'title' => 'Remaining Balance - ' . $booking->product_title,
+                            'price' => number_format($booking->remaining_balance, 2, '.', ''),
+                            'quantity' => 1,
+                            'requires_shipping' => true,
+                        ]
+                    ];
+                }
+
                 // Create Draft Order using Shopify REST API via Osiset/Laravel-Shopify
                 $draftOrderData = [
                     'draft_order' => [
-                        'line_items' => [
-                            [
-                                'title' => 'Remaining Balance - ' . $booking->product_title,
-                                'price' => number_format($booking->remaining_balance, 2, '.', ''),
-                                'quantity' => 1,
-                                'requires_shipping' => true,
-                            ]
-                        ],
+                        'line_items' => $lineItems,
                         'customer' => [
                             'email' => $booking->email,
                             'first_name' => $booking->customer_name ?? 'Valued',

@@ -248,6 +248,7 @@ class AppProxyController extends Controller
             'product_price' => 'required|numeric',
             'email' => 'required|email',
             'shop' => 'required|string',
+            'variant_id' => 'nullable|string',
         ]);
 
         $shop = auth()->user();
@@ -297,12 +298,49 @@ class AppProxyController extends Controller
         $token = strtolower(Str::random(32));
 
         // -----------------------------------------------------------------------
-        // Create a temporary Shopify Product with the deposit price as variant.
-        // Then generate a /cart/ checkout URL using that variant ID.
-        // This avoids Draft Order API (protected customer data restriction).
+        // Create a Shopify Draft Order.
+        // Link to the real variant if variant_id is provided, using a line-item
+        // discount so the checkout amount is exactly the deposit amount.
         // -----------------------------------------------------------------------
         $checkoutUrl  = null;
         $draftOrderId = null;
+
+        $variantId = $request->input('variant_id');
+        if ($variantId && str_contains($variantId, '/')) {
+            $parts = explode('/', $variantId);
+            $variantId = end($parts);
+        }
+
+        if ($variantId) {
+            $lineItems = [[
+                'variant_id'        => (int) $variantId,
+                'quantity'          => 1,
+                'requires_shipping' => false,
+                'applied_discount'  => [
+                    'title'       => 'Deposit Payment Adjustment',
+                    'description' => 'Buy Now Later deposit discount',
+                    'value'       => number_format($remainingBalance, 2, '.', ''),
+                    'value_type'  => 'fixed_amount',
+                ],
+                'properties'        => [
+                    ['name' => '_token', 'value' => $token],
+                    ['name' => 'Original Price', 'value' => '$' . number_format($productPrice, 2)],
+                    ['name' => 'Remaining Balance', 'value' => '$' . number_format($remainingBalance, 2)],
+                ]
+            ]];
+        } else {
+            $lineItems = [[
+                'title'             => 'Deposit — ' . $request->input('product_title'),
+                'price'             => number_format($depositAmount, 2, '.', ''),
+                'quantity'          => 1,
+                'requires_shipping' => false,
+                'properties'        => [
+                    ['name' => '_token', 'value' => $token],
+                    ['name' => 'Original Price', 'value' => '$' . number_format($productPrice, 2)],
+                    ['name' => 'Remaining Balance', 'value' => '$' . number_format($remainingBalance, 2)],
+                ]
+            ]];
+        }
 
         try {
             $draftOrderData = [
@@ -311,17 +349,7 @@ class AppProxyController extends Controller
                     'customer' => [
                         'email' => $request->input('email'),
                     ],
-                    'line_items' => [[
-                        'title'             => 'Deposit — ' . $request->input('product_title'),
-                        'price'             => number_format($depositAmount, 2, '.', ''),
-                        'quantity'          => 1,
-                        'requires_shipping' => false,
-                        'properties'        => [
-                            ['name' => '_token', 'value' => $token],
-                            ['name' => 'Original Price', 'value' => '$' . number_format($productPrice, 2)],
-                            ['name' => 'Remaining Balance', 'value' => '$' . number_format($remainingBalance, 2)],
-                        ]
-                    ]],
+                    'line_items' => $lineItems,
                     'note'  => 'BuyLater deposit — do not fulfill',
                     'tags'  => 'buylater-deposit',
                 ]
@@ -422,6 +450,7 @@ class AppProxyController extends Controller
             'shop_id' => $shop->id,
             'email' => $request->input('email'),
             'product_id' => $request->input('product_id'),
+            'variant_id' => $variantId,
             'product_title' => $request->input('product_title'),
             'product_handle' => $request->input('product_handle'),
             'product_image' => $request->input('product_image'),
