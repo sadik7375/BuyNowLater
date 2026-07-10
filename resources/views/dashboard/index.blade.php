@@ -1,4 +1,4 @@
-@extends('shopify-app::layouts.default')
+﻿@extends('shopify-app::layouts.default')
 
 @section('content')
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -23,11 +23,121 @@
         background-color: var(--bg-main);
         color: var(--text-main);
         margin: 0;
+        padding: 0;
+    }
+
+    .app-layout {
+        display: flex;
+        min-height: 100vh;
+    }
+
+    /* ── LEFT SIDEBAR ── */
+    .sidebar {
+        width: 220px;
+        flex-shrink: 0;
+        background: #1a1d23;
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        overflow-y: auto;
+        z-index: 100;
+    }
+
+    .sidebar-brand {
+        padding: 20px 20px 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .sidebar-brand h2 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 800;
+        color: #ffffff;
+        letter-spacing: -0.3px;
+    }
+
+    .sidebar-brand h2 span {
+        color: #4ade9b;
+    }
+
+    .sidebar-brand small {
+        font-size: 11px;
+        color: rgba(255,255,255,0.35);
+        display: block;
+        margin-top: 3px;
+    }
+
+    .sidebar-section-label {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.3);
+        padding: 18px 20px 6px;
+    }
+
+    .sidebar-nav {
+        flex: 1;
+        padding: 8px 12px;
+    }
+
+    .sidebar-btn {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 10px 12px;
+        border: none;
+        background: transparent;
+        color: rgba(255,255,255,0.6);
+        font-family: 'Outfit', sans-serif;
+        font-size: 13.5px;
+        font-weight: 500;
+        border-radius: 8px;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.18s ease;
+        margin-bottom: 2px;
+    }
+
+    .sidebar-btn:hover {
+        background: rgba(255,255,255,0.07);
+        color: #ffffff;
+    }
+
+    .sidebar-btn.active {
+        background: rgba(74, 222, 155, 0.15);
+        color: #4ade9b;
+        font-weight: 600;
+    }
+
+    .sidebar-btn .icon {
+        font-size: 16px;
+        width: 20px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .sidebar-divider {
+        border: none;
+        border-top: 1px solid rgba(255,255,255,0.07);
+        margin: 10px 12px;
+    }
+
+    /* ── MAIN CONTENT ── */
+    .main-content {
+        margin-left: 220px;
+        flex: 1;
         padding: 24px;
+        min-width: 0;
     }
 
     .dashboard-container {
-        max-width: 1200px;
+        max-width: 1180px;
         margin: 0 auto;
     }
 
@@ -148,38 +258,9 @@
     .change-up { color: var(--secondary-color); }
     .change-down { color: var(--danger-color); }
 
-    /* Tabs navigation */
-    .dashboard-tabs {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 24px;
-        border-bottom: 1px solid var(--border-color);
-        padding-bottom: 8px;
-    }
-
-    .tab-button {
-        background: none;
-        border: none;
-        padding: 10px 16px;
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--text-muted);
-        cursor: pointer;
-        border-radius: 6px;
-        transition: all 0.2s ease;
-    }
-
-    .tab-button:hover {
-        color: var(--text-main);
-        background-color: rgba(0,0,0,0.03);
-    }
-
-    .tab-button.active {
-        color: var(--text-main);
-        background-color: #ffffff;
-        border: 1px solid var(--border-color);
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
+    /* Tabs navigation — kept for JS compatibility, hidden visually */
+    .dashboard-tabs { display: none; }
+    .tab-button { display: none; }
 
     /* Main Grid Panels */
     .dashboard-main-grid {
@@ -976,17 +1057,46 @@
     }
 </style>
 
-<div class="dashboard-container">
-    <div class="dashboard-header">
-        <h1>Buy<span>Later</span> Dashboard</h1>
+<div class="app-layout">
+
+<!-- ─────────────── SIDEBAR ─────────────── -->
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <h2>Buy<span>Later</span></h2>
+        <small>Store Dashboard</small>
     </div>
+
+    <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Main</div>
+        <button class="sidebar-btn active" onclick="switchTab(event, 'tab-overview')">
+            <span class="icon">📈</span> Overview
+        </button>
+        <button class="sidebar-btn" onclick="switchTab(event, 'tab-bookings-list')">
+            <span class="icon">💰</span> Bookings &amp; Deposits
+        </button>
+        <button class="sidebar-btn" onclick="switchTab(event, 'tab-reminders-list')">
+            <span class="icon">⏰</span> Reminders
+        </button>
+        <button class="sidebar-btn" onclick="switchTab(event, 'tab-subscribers-list')">
+            <span class="icon">🔔</span> Price Alerts
+        </button>
+
+        <hr class="sidebar-divider">
+        <div class="sidebar-section-label">App</div>
+        <button class="sidebar-btn" onclick="switchTab(event, 'tab-settings')">
+            <span class="icon">⚙️</span> Settings
+        </button>
+    </nav>
+</aside>
+
+<!-- ─────────────── MAIN CONTENT ─────────────── -->
+<div class="main-content">
+<div class="dashboard-container">
 
     @php
         $shop = auth()->user();
         $isFreemium = $shop->isFreemium();
     @endphp
-
-
 
 
     @if(session('success'))
@@ -1040,16 +1150,14 @@
         </div>
     @endif
 
-
-
-    <!-- Subpage Navigation Tabs -->
-    <div class="dashboard-tabs">
-        <button class="tab-button active" onclick="switchTab(event, 'tab-overview')">📊 Overview Dashboard</button>
-        <button class="tab-button" onclick="switchTab(event, 'tab-bookings-list')">💰 Bookings & Deposits</button>
-        <button class="tab-button" onclick="switchTab(event, 'tab-reminders-list')">⏰ Reminders</button>
-        <button class="tab-button" onclick="switchTab(event, 'tab-subscribers-list')">🔔 Price Alerts</button>
-        <button class="tab-button" onclick="switchTab(event, 'tab-settings')">⚙️ Settings</button>
-    </div>
+    <!-- Hidden tab buttons for JS compatibility -->
+    <div class="dashboard-tabs" aria-hidden="true" style="display: none;">
+        <button class="tab-button active" onclick="switchTab(event, 'tab-overview')">Overview</button>
+        <button class="tab-button" onclick="switchTab(event, 'tab-bookings-list')">Bookings</button>
+        <button class="tab-button" onclick="switchTab(event, 'tab-reminders-list')">Reminders</button>
+        <button class="tab-button" onclick="switchTab(event, 'tab-subscribers-list')">Price Alerts</button>
+        <button class="tab-button" onclick="switchTab(event, 'tab-settings')">Settings</button>
+        </div>
 
     <!-- Tab 1: Overview Dashboard -->
     <div id="tab-overview" class="tab-content" style="display: block;">
@@ -1596,7 +1704,10 @@
             </div>
         </form>
     </div>
-</div>
+
+    </div><!-- /.dashboard-container -->
+</div><!-- /.main-content -->
+</div><!-- /.app-layout -->
 
 <script>
     function switchTab(event, tabId) {
@@ -1606,17 +1717,30 @@
         const tabButtons = document.querySelectorAll('.tab-button');
         tabButtons.forEach(btn => btn.classList.remove('active'));
 
-        document.getElementById(tabId).style.display = 'block';
-        if (event && event.currentTarget) {
-            event.currentTarget.classList.add('active');
-        } else {
-            const tabButton = Array.from(document.querySelectorAll('.tab-button')).find(btn => {
-                const onclick = btn.getAttribute('onclick') || '';
-                return onclick.includes(tabId);
-            });
-            if (tabButton) {
-                tabButton.classList.add('active');
-            }
+        const sidebarBtns = document.querySelectorAll('.sidebar-btn');
+        sidebarBtns.forEach(btn => btn.classList.remove('active'));
+
+        const targetEl = document.getElementById(tabId);
+        if (targetEl) {
+            targetEl.style.display = 'block';
+        }
+
+        // Set active on sidebar button
+        const matchingSidebarBtn = Array.from(sidebarBtns).find(btn => {
+            const onclick = btn.getAttribute('onclick') || '';
+            return onclick.includes(tabId);
+        });
+        if (matchingSidebarBtn) {
+            matchingSidebarBtn.classList.add('active');
+        }
+
+        // Set active on hidden tab button for compatibility
+        const matchingTabBtn = Array.from(tabButtons).find(btn => {
+            const onclick = btn.getAttribute('onclick') || '';
+            return onclick.includes(tabId);
+        });
+        if (matchingTabBtn) {
+            matchingTabBtn.classList.add('active');
         }
     }
 
@@ -2029,6 +2153,4 @@ function filterSubscribers() {
         }
     });
 </script>
-
-
 @endsection
