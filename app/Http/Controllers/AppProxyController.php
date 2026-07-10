@@ -598,11 +598,8 @@ class AppProxyController extends Controller
 
         $settings = Setting::where('shop_id', $shop->id)->first();
 
-        $isFreePlan = false; // App is fully free, bypass restrictions
         $showDeposit = $settings ? (bool) ($settings->show_deposit ?? true) : true;
-        if ($isFreePlan) {
-            $showDeposit = false;
-        }
+
 
         return response()->json([
             'deposit_percentage' => $settings ? (int) $settings->deposit_percentage : 10,
