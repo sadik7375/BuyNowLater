@@ -190,6 +190,25 @@ Route::group(['prefix' => 'deploy'], function() {
             return 'Activation failed: ' . $e->getMessage();
         }
     });
+
+    Route::get('/debug-settings', function() {
+        try {
+            $shops = \App\Models\User::all();
+            $settings = \App\Models\Setting::all();
+            $out = "Shops:<br>";
+            foreach ($shops as $s) {
+                $out .= "ID: {$s->id} | Name: {$s->name} | Plan: {$s->plan_id} | Freemium: {$s->shopify_freemium}<br>";
+            }
+            $out .= "<br>Settings:<br>";
+            foreach ($settings as $set) {
+                $out .= "ID: {$set->id} | Shop ID: {$set->shop_id} | show_deposit: " . ($set->show_deposit ? '1' : '0') . " | show_reminders: " . ($set->show_reminders ? '1' : '0') . " | show_alerts: " . ($set->show_alerts ? '1' : '0') . "<br>";
+            }
+            return $out;
+        } catch (\Exception $e) {
+            return 'Debug failed: ' . $e->getMessage();
+        }
+    });
 });
+
 
 
