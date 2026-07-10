@@ -987,19 +987,7 @@
     @endphp
 
 
-    <div class="filter-toolbar-container">
-        <div class="filter-presets">
-            <button class="filter-btn {{ $dateFilter == 'all' ? 'active' : '' }}" onclick="applyDateFilter('all')">All Time</button>
-            <button class="filter-btn {{ $dateFilter == 'today' ? 'active' : '' }}" onclick="applyDateFilter('today')">Today</button>
-            <button class="filter-btn {{ $dateFilter == 'week' ? 'active' : '' }}" onclick="applyDateFilter('week')">This Week</button>
-        </div>
-        <form class="custom-date-picker" onsubmit="event.preventDefault(); applyDateFilter('custom', document.getElementById('start_date_picker').value, document.getElementById('end_date_picker').value);">
-            <input type="date" id="start_date_picker" name="start_date" value="{{ $start ? $start->toDateString() : '' }}" />
-            <span>to</span>
-            <input type="date" id="end_date_picker" name="end_date" value="{{ $end ? $end->toDateString() : '' }}" />
-            <button type="submit">Apply</button>
-        </form>
-    </div>
+
 
     @if(session('success'))
         <div class="alert success">
@@ -1052,67 +1040,7 @@
         </div>
     @endif
 
-    <!-- 4 Stats Cards Grid (Updated Card 3 with Scheduled Reminders Count) -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-label">Revenue Recovered</div>
-            <div class="stat-value">${{ number_format($revenueRecovered, 2) }}</div>
-            <div class="stat-change" style="color: var(--text-muted); font-size: 11.5px;">
-                <span>
-                    @if($dateFilter === 'today')
-                        Today's recovered revenue
-                    @elseif($dateFilter === 'week')
-                        Recovered this week
-                    @elseif($dateFilter === 'custom')
-                        Recovered in custom range
-                    @else
-                        All-time recovered revenue
-                    @endif
-                </span>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Active Bookings</div>
-            <div class="stat-value">{{ $activeBookings }}</div>
-            <div class="stat-change" style="color: var(--text-muted); font-size: 11.5px;">
-                <span>
-                    @if($dateFilter === 'today')
-                        Active bookings created today
-                    @elseif($dateFilter === 'week')
-                        Active bookings created this week
-                    @elseif($dateFilter === 'custom')
-                        Active bookings in custom range
-                    @else
-                        Current total active bookings
-                    @endif
-                </span>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Today's Scheduled Reminders</div>
-            <div class="stat-value">{{ $todayRemindersCount }}</div>
-            <div class="stat-change @if($todayRemindersCount > 0) change-up @else change-down @endif">
-                <span>{{ $todayRemindersCount > 0 ? 'Pending send today' : 'No alerts scheduled today' }}</span>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Alert Subscribers</div>
-            <div class="stat-value">{{ number_format($alertSubscribersCount) }}</div>
-            <div class="stat-change" style="color: var(--text-muted); font-size: 11.5px;">
-                <span>
-                    @if($dateFilter === 'today')
-                        Subscribers joined today
-                    @elseif($dateFilter === 'week')
-                        Subscribers joined this week
-                    @elseif($dateFilter === 'custom')
-                        Subscribers joined in custom range
-                    @else
-                        Total alert subscribers
-                    @endif
-                </span>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Subpage Navigation Tabs -->
     <div class="dashboard-tabs">
@@ -2102,22 +2030,5 @@ function filterSubscribers() {
     });
 </script>
 
-<script>
-  // App Bridge Navigation Menu
-  (function() {
-    var host = new URLSearchParams(window.location.search).get('host');
-    if (!host) return;
-    var shopifyBridge = window['shopify-app-bridge'];
-    if (!shopifyBridge) return;
-    var createApp = shopifyBridge.createApp;
-    var app = createApp({ apiKey: '39b4ee2ef0ed6c2273df208b36a059fd', host: host });
-    var NavMenu = shopifyBridge.NavigationMenu;
-    NavMenu.create(app, {
-      items: [
-        { label: 'Price Plan', destination: '/admin/price-plan' },
-        { label: 'How to Use', destination: '/admin/how-to-use' },
-      ],
-    });
-  })();
-</script>
+
 @endsection

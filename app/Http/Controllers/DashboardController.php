@@ -220,21 +220,7 @@ class DashboardController extends Controller
         ));
     }
 
-    /**
-     * Show the Price Plan page.
-     */
-    public function pricePlan(Request $request)
-    {
-        return view('dashboard.price-plan');
-    }
 
-    /**
-     * Show the How to Use & Benefit page.
-     */
-    public function howToUse(Request $request)
-    {
-        return view('dashboard.how-to-use');
-    }
 
     /**
      * Downgrade the shop to the Free Plan.
