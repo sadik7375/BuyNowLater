@@ -147,5 +147,49 @@ Route::group(['prefix' => 'deploy'], function() {
             return 'Seeding Failed: ' . $e->getMessage();
         }
     });
+
+    Route::get('/activate-pro', function() {
+        try {
+            $shops = \App\Models\User::all();
+            if ($shops->isEmpty()) {
+                return 'No shops found to activate Pro.';
+            }
+            
+            $activated = [];
+            foreach ($shops as $shop) {
+                $exists = \DB::table('charges')
+                    ->where('user_id', $shop->id)
+                    ->where('plan_id', 1)
+                    ->exists();
+                
+                if (!$exists) {
+                    \DB::table('charges')->insert([
+                        'charge_id' => rand(10000000, 99999999),
+                        'type' => 1, // RECURRING
+                        'status' => 'ACTIVE',
+                        'name' => 'Pro Plan',
+                        'price' => 5.00,
+                        'interval' => 'EVERY_30_DAYS',
+                        'test' => true,
+                        'user_id' => $shop->id,
+                        'plan_id' => 1,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+                
+                $shop->plan_id = 1;
+                $shop->shopify_freemium = 0;
+                $shop->save();
+                
+                $activated[] = $shop->name;
+            }
+            
+            return 'Pro Plan activated successfully for shops: ' . implode(', ', $activated);
+        } catch (\Exception $e) {
+            return 'Activation failed: ' . $e->getMessage();
+        }
+    });
 });
+
 
