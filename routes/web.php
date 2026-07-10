@@ -138,5 +138,14 @@ Route::group(['prefix' => 'deploy'], function() {
             return 'Webhook registration failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString();
         }
     });
+
+    Route::get('/seed', function() {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+            return 'Seeding Success: <br><pre>' . \Illuminate\Support\Facades\Artisan::output() . '</pre>';
+        } catch (\Exception $e) {
+            return 'Seeding Failed: ' . $e->getMessage();
+        }
+    });
 });
 
