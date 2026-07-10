@@ -25,7 +25,7 @@ Log::info('Web Route Match:', [
 
 // Embedded App Dashboard Routes (Admin Area)
 Route::group(['middleware' => ['verify.shopify']], function () {
-    Route::get('/', [DashboardController::class, 'index'])->name('home');
+    Route::match(['get', 'post'], '/', [DashboardController::class, 'index'])->name('home');
     Route::get('/admin/price-plan', [DashboardController::class, 'pricePlan'])->name('price.plan');
     Route::get('/admin/how-to-use', [DashboardController::class, 'howToUse'])->name('how.to.use');
     Route::post('/admin/settings', [DashboardController::class, 'saveSettings'])->name('settings.save');
