@@ -22,11 +22,3 @@ url = "https://buynowlater.orderkoi.online"
 subpath = "buylater-proxy"
 prefix = "apps"
 
-[[app_access.admin.links]]
-label = "Price Plan"
-destination = "/admin/price-plan"
-
-[[app_access.admin.links]]
-label = "How to Use & Benefit"
-destination = "/admin/how-to-use"
-

@@ -298,4 +298,21 @@
         </div>
     </div>
 </div>
+
+<script>
+  (function() {
+    var host = new URLSearchParams(window.location.search).get('host');
+    if (!host) return;
+    var shopifyBridge = window['shopify-app-bridge'];
+    if (!shopifyBridge) return;
+    var app = shopifyBridge.createApp({ apiKey: '39b4ee2ef0ed6c2273df208b36a059fd', host: host });
+    shopifyBridge.NavigationMenu.create(app, {
+      items: [
+        { label: 'Price Plan', destination: '/admin/price-plan' },
+        { label: 'How to Use', destination: '/admin/how-to-use' },
+      ],
+      active: { label: 'Price Plan', destination: '/admin/price-plan' },
+    });
+  })();
+</script>
 @endsection
