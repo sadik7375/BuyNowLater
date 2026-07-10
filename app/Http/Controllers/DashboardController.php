@@ -196,14 +196,49 @@ class DashboardController extends Controller
         arsort($liveAlerts);
         $liveAlerts = array_slice($liveAlerts, 0, 5, true);
 
+        // --- Monthly Usage Count for Freemium Gating ---
+        $startOfMonth = Carbon::now()->startOfMonth();
+        $endOfMonth = Carbon::now()->endOfMonth();
+
+        $monthlyReminders = Reminder::where('shop_id', $shop->id)
+            ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+            ->count();
+
+        $monthlySubscribers = Subscriber::where('shop_id', $shop->id)
+            ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+            ->count();
+
+        $monthlyUsageCount = $monthlyReminders + $monthlySubscribers;
+
         return view('dashboard.index', compact(
             'settings', 'reminders', 'subscribers', 'bookings',
             'revenueRecovered', 'activeBookings', 'alertSubscribersCount',
             'conversionRate', 'wishes', 'liveAlerts',
             'expiringToday', 'expiringTomorrow', 'expiringThisWeek', 'isMockExpiring',
             'statusCounts', 'isMockStatus', 'todayRemindersCount',
-            'dateFilter', 'start', 'end'
+            'dateFilter', 'start', 'end', 'monthlyUsageCount'
         ));
+    }
+
+    /**
+     * Downgrade the shop to the Free Plan.
+     */
+    public function downgradePlan(Request $request)
+    {
+        $shop = auth()->user();
+
+        // 1. Cancel the active charge via CancelCurrentPlan action
+        $cancelCurrentPlan = resolve(\Osiset\ShopifyApp\Actions\CancelCurrentPlan::class);
+        $cancelCurrentPlan(\Osiset\ShopifyApp\Objects\Values\ShopId::fromNative($shop->id));
+
+        // 2. Set shop as freemium and clear plan_id
+        $shopCommand = resolve(\Osiset\ShopifyApp\Contracts\Commands\Shop::class);
+        $shopCommand->setAsFreemium(\Osiset\ShopifyApp\Objects\Values\ShopId::fromNative($shop->id));
+
+        $shop->plan_id = null;
+        $shop->save();
+
+        return redirect()->to(route('home', $request->query()))->with('success', 'You have successfully downgraded to the Free Plan.');
     }
 
     public function saveSettings(Request $request)

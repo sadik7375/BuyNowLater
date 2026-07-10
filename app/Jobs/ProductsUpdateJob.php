@@ -113,6 +113,14 @@ class ProductsUpdateJob implements ShouldQueue
         foreach ($subscribers as $subscriber) {
             $oldPrice = (float) $subscriber->product_price;
 
+            Log::info("ProductsUpdateJob: Comparing prices for subscriber {$subscriber->email}.", [
+                'subscriber_id' => $subscriber->id,
+                'product_id' => $productId,
+                'old_price' => $oldPrice,
+                'new_price' => $newPrice,
+                'is_lower' => ($newPrice < $oldPrice)
+            ]);
+
             // Trigger notification if the new price is lower than the price when they subscribed
             if ($newPrice < $oldPrice) {
                 Log::info("ProductsUpdateJob: Price drop detected for subscriber {$subscriber->email}. Old: {$oldPrice}, New: {$newPrice}");

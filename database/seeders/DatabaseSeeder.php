@@ -12,11 +12,19 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // \App\Models\User::factory(10)->create();
-
-        // \App\Models\User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
+        \Osiset\ShopifyApp\Storage\Models\Plan::updateOrCreate(
+            ['id' => 1],
+            [
+                'type' => \Osiset\ShopifyApp\Objects\Enums\PlanType::RECURRING()->toNative(),
+                'name' => 'Pro Plan',
+                'price' => 5.00,
+                'interval' => \Osiset\ShopifyApp\Objects\Enums\PlanInterval::EVERY_30_DAYS()->toNative(),
+                'capped_amount' => null,
+                'terms' => 'Unlimited reminders and discount alerts, booking enabled',
+                'trial_days' => 0,
+                'test' => true,
+                'on_install' => false,
+            ]
+        );
     }
 }

@@ -46,6 +46,26 @@ class AppProxyController extends Controller
             return response()->json(['message' => 'Unauthorized shop.'], 401);
         }
 
+        $isFreePlan = ($shop->plan_id === null || $shop->isFreemium());
+        if ($isFreePlan) {
+            $startOfMonth = Carbon::now()->startOfMonth();
+            $endOfMonth = Carbon::now()->endOfMonth();
+            
+            $remindersCount = Reminder::where('shop_id', $shop->id)
+                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                ->count();
+            
+            $subscribersCount = Subscriber::where('shop_id', $shop->id)
+                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                ->count();
+            
+            if (($remindersCount + $subscribersCount) >= 20) {
+                return response()->json([
+                    'message' => 'Monthly limit of 20 events reached on the Free plan. Please upgrade to Pro for unlimited usage.'
+                ], 403);
+            }
+        }
+
         // Parse scheduled date
         $scheduledInput = $request->input('scheduled_at_utc') ?: $request->input('scheduled_at');
         $scheduledAt = Carbon::parse($scheduledInput);
@@ -125,6 +145,79 @@ class AppProxyController extends Controller
             return response()->json(['message' => 'Unauthorized shop.'], 401);
         }
 
+        $isFreePlan = ($shop->plan_id === null || $shop->isFreemium());
+        if ($isFreePlan) {
+            $startOfMonth = Carbon::now()->startOfMonth();
+            $endOfMonth = Carbon::now()->endOfMonth();
+            
+            $remindersCount = Reminder::where('shop_id', $shop->id)
+                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                ->count();
+            
+            $subscribersCount = Subscriber::where('shop_id', $shop->id)
+                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                ->count();
+            
+            if (($remindersCount + $subscribersCount) >= 20) {
+                return response()->json([
+                    'message' => 'Monthly limit of 20 events reached on the Free plan. Please upgrade to Pro for unlimited usage.'
+                ], 403);
+            }
+        }
+
+        // Fetch product's base currency price from Shopify Admin API to resolve currency mismatches
+        $productPrice = $request->input('product_price');
+        try {
+            $productIdClean = $request->input('product_id');
+            if (str_contains($productIdClean, '/')) {
+                $parts = explode('/', $productIdClean);
+                $productIdClean = end($parts);
+            }
+
+            $response = $shop->api()->rest(
+                'GET',
+                '/admin/api/' . config('shopify-app.api_version') . '/products/' . $productIdClean . '.json'
+            );
+
+            if ($response['errors'] === false && isset($response['body']['product'])) {
+                $productData = $response['body']['product'];
+                if (is_object($productData) && method_exists($productData, 'toArray')) {
+                    $productData = $productData->toArray();
+                } else {
+                    $productData = json_decode(json_encode($productData), true);
+                }
+
+                $variants = $productData['variants'] ?? [];
+                $lowestPrice = null;
+                foreach ($variants as $variant) {
+                    $vPrice = isset($variant['price']) ? (float) $variant['price'] : null;
+                    if ($vPrice !== null) {
+                        if ($lowestPrice === null || $vPrice < $lowestPrice) {
+                            $lowestPrice = $vPrice;
+                        }
+                    }
+                }
+
+                if ($lowestPrice !== null) {
+                    $productPrice = (string) $lowestPrice;
+                    Log::info('AppProxy: Successfully fetched base currency product price for subscriber.', [
+                        'product_id' => $productIdClean,
+                        'original_price_input' => $request->input('product_price'),
+                        'base_currency_price' => $productPrice
+                    ]);
+                }
+            } else {
+                Log::warning('AppProxy: Product fetch returned errors or missing product body.', [
+                    'errors' => $response['errors'],
+                    'body' => $response['body'] ?? null
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('AppProxy: Exception fetching product details for base price.', [
+                'message' => $e->getMessage()
+            ]);
+        }
+
         // Create or update subscriber subscription
         $subscriber = Subscriber::updateOrCreate(
             [
@@ -136,7 +229,7 @@ class AppProxyController extends Controller
                 'product_title' => $request->input('product_title'),
                 'product_handle' => $request->input('product_handle'),
                 'product_image' => $request->input('product_image'),
-                'product_price' => $request->input('product_price'),
+                'product_price' => $productPrice,
                 'status' => 'active',
                 'notified_at' => null,
             ]
@@ -261,6 +354,13 @@ class AppProxyController extends Controller
 
         if (!$shop) {
             return response()->json(['message' => 'Shop not found.'], 404);
+        }
+
+        $isFreePlan = ($shop->plan_id === null || $shop->isFreemium());
+        if ($isFreePlan) {
+            return response()->json([
+                'message' => 'Deposit bookings require the Pro Plan. Please upgrade to Pro.'
+            ], 403);
         }
 
         $shopDomain = $shop->name;
@@ -498,9 +598,15 @@ class AppProxyController extends Controller
 
         $settings = Setting::where('shop_id', $shop->id)->first();
 
+        $isFreePlan = ($shop->plan_id === null || $shop->isFreemium());
+        $showDeposit = $settings ? (bool) ($settings->show_deposit ?? true) : true;
+        if ($isFreePlan) {
+            $showDeposit = false;
+        }
+
         return response()->json([
             'deposit_percentage' => $settings ? (int) $settings->deposit_percentage : 10,
-            'show_deposit' => $settings ? (bool) ($settings->show_deposit ?? true) : true,
+            'show_deposit' => $showDeposit,
             'show_reminders' => $settings ? (bool) ($settings->show_reminders ?? true) : true,
             'show_alerts' => $settings ? (bool) ($settings->show_alerts ?? true) : true,
             'hold_duration_days' => $settings ? (int) ($settings->hold_duration_days ?? 14) : 14,

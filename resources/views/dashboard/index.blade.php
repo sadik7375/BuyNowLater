@@ -832,11 +832,209 @@
         border-color: var(--accent-blue);
         outline: none;
     }
+
+    /* Subscription Status Banner */
+    .subscription-banner {
+        background: linear-gradient(135deg, #102a43 0%, #243b53 100%);
+        color: #ffffff;
+        border-radius: 12px;
+        padding: 20px 24px;
+        margin-bottom: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 15px rgba(16, 42, 67, 0.15);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .subscription-banner::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .sub-info-col h3 {
+        margin: 0 0 8px 0;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #ffffff;
+    }
+
+    .plan-badge {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 4px 8px;
+        border-radius: 20px;
+        letter-spacing: 0.05em;
+    }
+
+    .plan-badge.free {
+        background-color: #f1f2f4;
+        color: #202223;
+    }
+
+    .plan-badge.pro {
+        background-color: #e3fbeb;
+        color: #108043;
+        box-shadow: 0 0 10px rgba(16, 128, 67, 0.2);
+    }
+
+    .sub-info-col p {
+        margin: 0;
+        font-size: 13.5px;
+        color: #9fb3c8;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .sub-usage-col {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 240px;
+    }
+
+    .usage-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #9fb3c8;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .usage-progress-bar {
+        height: 8px;
+        background-color: rgba(255, 255, 255, 0.15);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .usage-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #38bec9 0%, #4facfe 100%);
+        border-radius: 4px;
+        transition: width 0.4s ease;
+    }
+
+    .sub-actions-col {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .btn-upgrade {
+        background: linear-gradient(135deg, #008060 0%, #006e52 100%);
+        color: #ffffff;
+        border: none;
+        padding: 10px 20px;
+        font-size: 13.5px;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-upgrade:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 128, 96, 0.3);
+    }
+
+    .btn-downgrade {
+        background: transparent;
+        color: #9fb3c8;
+        border: 1px solid rgba(159, 179, 200, 0.3);
+        padding: 9px 18px;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .btn-downgrade:hover {
+        color: #ffffff;
+        border-color: #ffffff;
+        background-color: rgba(255, 255, 255, 0.05);
+    }
 </style>
 
 <div class="dashboard-container">
     <div class="dashboard-header">
         <h1>Buy<span>Later</span> Dashboard</h1>
+    </div>
+
+    @php
+        $shop = auth()->user();
+        $isFreemium = $shop->isFreemium();
+    @endphp
+
+    <div class="subscription-banner">
+        <div class="sub-info-col">
+            <h3>
+                <span>Current Plan:</span> 
+                @if($isFreemium)
+                    <span class="plan-badge free">Free Plan</span>
+                @else
+                    <span class="plan-badge pro">Pro Plan</span>
+                @endif
+            </h3>
+            <p>
+                @if($isFreemium)
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    Upgrade to Pro to enable deposit holds, customer bookings & unlimited events.
+                @else
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    You have unlocked all premium features, bookings and unlimited monthly events!
+                @endif
+            </p>
+        </div>
+
+        @if($isFreemium)
+            <div class="sub-usage-col">
+                <div class="usage-label">
+                    <span>Monthly Usage (Reminders + Price Alerts)</span>
+                    <strong>{{ $monthlyUsageCount }} / 20</strong>
+                </div>
+                <div class="usage-progress-bar">
+                    <div class="usage-progress-fill" style="width: {{ min(100, ($monthlyUsageCount / 20) * 100) }}%; @if($monthlyUsageCount >= 20) background: var(--danger-color); @endif"></div>
+                </div>
+            </div>
+        @endif
+
+        <div class="sub-actions-col">
+            @if($isFreemium)
+                <a href="{{ route('billing', array_merge(['plan' => 1], request()->query())) }}" target="_top" class="btn-upgrade">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Upgrade to Pro ($5/mo)
+                </a>
+            @else
+                <form action="{{ route('plan.downgrade', request()->query()) }}" method="POST" onsubmit="return confirm('Are you sure you want to downgrade to the Free plan? Premium features like deposit bookings and storefront widget customizations will be restricted.');" style="margin: 0;">
+                    @csrf
+                    <input type="hidden" name="token" class="session-token" value="">
+                    <button type="submit" class="btn-downgrade">
+                        Downgrade to Free
+                    </button>
+                </form>
+            @endif
+        </div>
     </div>
     <div class="filter-toolbar-container">
         <div class="filter-presets">

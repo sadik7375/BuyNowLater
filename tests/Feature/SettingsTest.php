@@ -45,8 +45,24 @@ class SettingsTest extends TestCase
     {
         $this->withoutMiddleware();
 
+        // Seed the plan
+        $plan = new \Osiset\ShopifyApp\Storage\Models\Plan();
+        $plan->id = 1;
+        $plan->type = 'RECURRING';
+        $plan->name = 'Pro Plan';
+        $plan->price = 5.00;
+        $plan->interval = 'EVERY_30_DAYS';
+        $plan->capped_amount = null;
+        $plan->terms = 'Unlimited reminders';
+        $plan->trial_days = 0;
+        $plan->test = true;
+        $plan->on_install = false;
+        $plan->save();
+
         $user = User::factory()->create([
-            'name' => 'test-shop.myshopify.com'
+            'name' => 'test-shop.myshopify.com',
+            'plan_id' => 1,
+            'shopify_freemium' => false
         ]);
 
         Setting::create([

@@ -42,10 +42,26 @@ class ProxyIdempotencyTest extends TestCase
                 ]
             ]);
 
+        // Seed the plan
+        $plan = new \Osiset\ShopifyApp\Storage\Models\Plan();
+        $plan->id = 1;
+        $plan->type = 'RECURRING';
+        $plan->name = 'Pro Plan';
+        $plan->price = 5.00;
+        $plan->interval = 'EVERY_30_DAYS';
+        $plan->capped_amount = null;
+        $plan->terms = 'Unlimited reminders';
+        $plan->trial_days = 0;
+        $plan->test = true;
+        $plan->on_install = false;
+        $plan->save();
+
         // Create a real user that returns the apiMock
         $realUser = User::factory()->create([
             'id' => 1,
-            'name' => 'test-shop.myshopify.com'
+            'name' => 'test-shop.myshopify.com',
+            'plan_id' => 1,
+            'shopify_freemium' => false
         ]);
 
         // Create a mocked user that returns the apiMock
@@ -114,9 +130,25 @@ class ProxyIdempotencyTest extends TestCase
                 ]
             ]);
 
+        // Seed the plan
+        $plan = new \Osiset\ShopifyApp\Storage\Models\Plan();
+        $plan->id = 1;
+        $plan->type = 'RECURRING';
+        $plan->name = 'Pro Plan';
+        $plan->price = 5.00;
+        $plan->interval = 'EVERY_30_DAYS';
+        $plan->capped_amount = null;
+        $plan->terms = 'Unlimited reminders';
+        $plan->trial_days = 0;
+        $plan->test = true;
+        $plan->on_install = false;
+        $plan->save();
+
         $realUser = User::factory()->create([
             'id' => 2,
-            'name' => 'test-shop-variant.myshopify.com'
+            'name' => 'test-shop-variant.myshopify.com',
+            'plan_id' => 1,
+            'shopify_freemium' => false
         ]);
 
         $userMock = \Mockery::mock($realUser)->makePartial();
