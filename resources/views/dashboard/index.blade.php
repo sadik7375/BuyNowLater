@@ -1761,7 +1761,53 @@
                 </div>
                 <div class="form-group">
                     <label for="reminder_email_template">Reminder Email HTMLTemplate</label>
-                    <textarea id="reminder_email_template" name="reminder_email_template" rows="8">{{ $settings->reminder_email_template }}</textarea>
+                    <textarea id="reminder_email_template" name="reminder_email_template" rows="8">{{ $settings->reminder_email_template ?? '<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f6f6f6; margin: 0; padding: 0; color: #333; }
+    .email-container { max-width: 600px; margin: 20px auto; background: #fff; border-radius: 8px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .header { font-size: 24px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; letter-spacing: -0.02em; }
+    .product-details { display: flex; align-items: center; border: 1px solid #f0f0f0; border-radius: 8px; padding: 15px; margin-bottom: 25px; background-color: #fafafa; }
+    .product-img { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; margin-right: 20px; }
+    .product-info h3 { margin: 0 0 5px 0; font-size: 16px; font-weight: 600; }
+    .product-info p { margin: 0; color: #666; font-size: 14px; }
+    .actions { margin-bottom: 25px; }
+    .btn { display: inline-block; padding: 12px 24px; background: #000; color: #fff !important; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .footer { font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 20px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="header">BuyLater</div>
+    <p>Hi there,</p>
+    <p>You asked us to remind you about the following product on our store. We wanted to let you know it is still waiting for you!</p>
+    
+    <div class="product-details">
+      {product_image_tag}
+      <div class="product-info">
+        <h3>{product_title}</h3>
+        <p>Price: {product_price}</p>
+      </div>
+    </div>
+    
+    <div class="actions">
+      <a href="{product_link}" class="btn">View Product & Buy Now</a>
+    </div>
+    
+    <p style="font-size:13px; color:#666; margin-top: 30px;">Need more time or changed your mind? Use the links below to update your reminder:</p>
+    <div style="margin-bottom:25px;">
+      <a href="{reschedule_link}" style="color:#0066cc; text-decoration:underline; font-size:13px; margin-right:15px;">Reschedule Reminder</a>
+      <a href="{cancel_link}" style="color:#cc0000; text-decoration:underline; font-size:13px;">Cancel Reminder</a>
+    </div>
+    
+    <div class="footer">
+      This reminder was sent to you at your request.
+    </div>
+  </div>
+</body>
+</html>' }}</textarea>
                 </div>
                 <hr style="border: none; border-top: 1px solid var(--border-color); margin: 24px 0;">
                 <div class="form-group">
@@ -1770,7 +1816,53 @@
                 </div>
                 <div class="form-group">
                     <label for="discount_email_template">Price Drop Email HTML Template</label>
-                    <textarea id="discount_email_template" name="discount_email_template" rows="8">{{ $settings->discount_email_template }}</textarea>
+                    <textarea id="discount_email_template" name="discount_email_template" rows="8">{{ $settings->discount_email_template ?? '<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f6f6f6; margin: 0; padding: 0; color: #333; }
+    .email-container { max-width: 600px; margin: 20px auto; background: #fff; border-radius: 8px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .header { font-size: 24px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; letter-spacing: -0.02em; color: #000; }
+    .product-details { display: flex; align-items: center; border: 1px solid #f0f0f0; border-radius: 8px; padding: 15px; margin-bottom: 25px; background-color: #fafafa; }
+    .product-img { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; margin-right: 20px; }
+    .product-info h3 { margin: 0 0 5px 0; font-size: 16px; font-weight: 600; }
+    .product-info p { margin: 0; color: #666; font-size: 14px; }
+    .price-box { margin-top: 5px; font-size: 14px; }
+    .old-price { text-decoration: line-through; color: #888; margin-right: 10px; }
+    .new-price { color: #d9534f; font-weight: bold; font-size: 16px; }
+    .actions { margin-bottom: 25px; }
+    .btn { display: inline-block; padding: 12px 24px; background: #d9534f; color: #fff !important; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .footer { font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 20px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="header">Price Drop Alert!</div>
+    <p>Hi there,</p>
+    <p>Good news! A product you saved for later is now on sale. Check out the price drop below!</p>
+    
+    <div class="product-details">
+      {product_image_tag}
+      <div class="product-info">
+        <h3>{product_title}</h3>
+        <div class="price-box">
+          <span class="old-price">{old_price}</span>
+          <span class="new-price">{new_price}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="actions">
+      <a href="{product_link}" class="btn">Get Discount Now</a>
+    </div>
+    
+    <div class="footer">
+      You are receiving this because you subscribed to price drop alerts for this product.
+    </div>
+  </div>
+</body>
+</html>' }}</textarea>
                 </div>
 
                 <div style="text-align: right; margin-top: 20px;">
