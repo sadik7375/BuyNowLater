@@ -261,11 +261,83 @@
         } else {
           triggerBtn.style.display = 'none';
         }
+        return;
       } else {
         if (btnWrapper) {
           btnWrapper.style.setProperty('display', 'flex', 'important');
         } else {
           triggerBtn.style.display = 'inline-block';
+        }
+      }
+
+      if (data) {
+        // Store values globally so buylater.js can read them immediately
+        if (data.deposit_percentage) {
+          window.buylaterDepositPercentage = parseInt(data.deposit_percentage, 10);
+        }
+        if (data.hold_duration_days) {
+          window.buylaterHoldDurationDays = parseInt(data.hold_duration_days, 10);
+        }
+
+        // Apply settings directly to the DOM to prevent delay or cache issues
+        if (data.button_text) {
+          const btnTextSpan = triggerBtn.querySelector('span');
+          if (btnTextSpan) {
+            btnTextSpan.textContent = data.button_text;
+          }
+        }
+
+        if (data.hold_duration_days) {
+          const holdDaysSpan = document.getElementById('buylater-hold-days-display');
+          if (holdDaysSpan) {
+            holdDaysSpan.textContent = data.hold_duration_days;
+          }
+        }
+
+        if (data.deposit_percentage) {
+          const pct = parseInt(data.deposit_percentage, 10);
+          const rawPrice = (triggerBtn.getAttribute('data-product-price') || '0').replace(/,/g, '');
+          const productPrice = parseFloat(rawPrice);
+          const currencySymbol = window.buylaterCurrencySymbol || '$';
+          const depositVal = (productPrice * (pct / 100)).toFixed(2);
+
+          const depositText = document.getElementById('buylater-deposit-amount');
+          if (depositText) {
+            depositText.textContent = `From ${currencySymbol}${depositVal} deposit`;
+          }
+
+          const depositLabel = document.getElementById('book-deposit-label');
+          if (depositLabel) {
+            depositLabel.textContent = `Required Deposit (${pct}%):`;
+          }
+
+          const breakdownPrice = document.getElementById('book-breakdown-price');
+          const breakdownDeposit = document.getElementById('book-breakdown-deposit');
+          const breakdownRemaining = document.getElementById('book-breakdown-remaining');
+          if (breakdownPrice && breakdownDeposit && breakdownRemaining) {
+            breakdownPrice.textContent = `${currencySymbol}${productPrice.toFixed(2)}`;
+            breakdownDeposit.textContent = `${currencySymbol}${depositVal}`;
+            breakdownRemaining.textContent = `${currencySymbol}${(productPrice - parseFloat(depositVal)).toFixed(2)}`;
+          }
+        }
+
+        // Apply options visibility directly
+        const depositCard = document.querySelector('.buylater-option-card[data-option="book"]');
+        const reminderCard = document.querySelector('.buylater-option-card[data-option="remind"]');
+        const alertsCard = document.querySelector('.buylater-option-card[data-option="discount"]');
+
+        if (depositCard && data.show_deposit === false) {
+          depositCard.style.display = 'none';
+        }
+        if (reminderCard && data.show_reminders === false) {
+          reminderCard.style.display = 'none';
+        }
+        if (alertsCard && data.show_alerts === false) {
+          alertsCard.style.display = 'none';
+        }
+
+        if (data.show_deposit === false && data.show_reminders === false && data.show_alerts === false) {
+          triggerBtn.style.display = 'none';
         }
       }
     })

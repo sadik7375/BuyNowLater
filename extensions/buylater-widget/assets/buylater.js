@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const rawPrice = (triggerBtn.getAttribute('data-product-price') || '0').replace(/,/g, '');
   const productPrice = parseFloat(rawPrice);
   const currencySymbol = window.buylaterCurrencySymbol || '$';
-  let depositPercentage = 10; // Default fallback
+  let depositPercentage = window.buylaterDepositPercentage || 10; // Default fallback
 
   // Populate Booking Breakdown
   const breakdownPrice = document.getElementById('book-breakdown-price');
@@ -54,6 +54,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Initial update
   updateDepositDisplay();
+
+  // If hold duration days is already loaded from window, apply it
+  if (window.buylaterHoldDurationDays) {
+    const holdDaysSpan = document.getElementById('buylater-hold-days-display');
+    if (holdDaysSpan) {
+      holdDaysSpan.textContent = window.buylaterHoldDurationDays;
+    }
+  }
 
   // Fetch settings dynamically from the app proxy
   const shopDomain = window.buylaterShopDomain || new URL(window.location.href).hostname;
