@@ -607,6 +607,7 @@ class AppProxyController extends Controller
             'show_reminders' => $settings ? (bool) ($settings->show_reminders ?? true) : true,
             'show_alerts' => $settings ? (bool) ($settings->show_alerts ?? true) : true,
             'hold_duration_days' => $settings ? (int) ($settings->hold_duration_days ?? 14) : 14,
+            'button_text' => $settings ? $settings->button_text : null,
         ]);
     }
 
