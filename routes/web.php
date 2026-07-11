@@ -77,26 +77,27 @@ Route::get('/reminder/cancel/{token}', [AppProxyController::class, 'cancelRemind
 Route::get('/reminder/reschedule/{token}', [AppProxyController::class, 'showRescheduleForm'])->name('reminders.reschedule.form.alt');
 Route::post('/reminder/reschedule/{token}', [AppProxyController::class, 'rescheduleReminder'])->name('reminders.reschedule.alt');
 
+Route::get('/status-settings-db', function() {
+    try {
+        $settings = \App\Models\Setting::all()->map(function($s) {
+            return [
+                'id' => $s->id,
+                'shop_id' => $s->shop_id,
+                'shop_name' => $s->shop ? $s->shop->name : 'N/A',
+                'deposit_percentage' => $s->deposit_percentage,
+                'hold_duration_days' => $s->hold_duration_days,
+                'product_targeting_type' => $s->product_targeting_type,
+                'targeted_product_ids' => $s->targeted_product_ids,
+            ];
+        });
+        return response()->json($settings);
+    } catch (\Exception $e) {
+        return 'Failed: ' . $e->getMessage();
+    }
+});
+
 // Deployment Helpers (For hosting environments without SSH/Terminal access)
 Route::group(['prefix' => 'deploy'], function() {
-    Route::get('/settings-db', function() {
-        try {
-            $settings = \App\Models\Setting::all()->map(function($s) {
-                return [
-                    'id' => $s->id,
-                    'shop_id' => $s->shop_id,
-                    'shop_name' => $s->shop ? $s->shop->name : 'N/A',
-                    'deposit_percentage' => $s->deposit_percentage,
-                    'hold_duration_days' => $s->hold_duration_days,
-                    'product_targeting_type' => $s->product_targeting_type,
-                    'targeted_product_ids' => $s->targeted_product_ids,
-                ];
-            });
-            return response()->json($settings);
-        } catch (\Exception $e) {
-            return 'Failed: ' . $e->getMessage();
-        }
-    });
 
     Route::get('/migrate', function() {
         try {
