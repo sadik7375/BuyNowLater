@@ -3,7 +3,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 {{ 'buylater.css' | asset_url | stylesheet_tag }}
 
-<div class="buylater-btn-wrapper" style="display: flex; justify-content: {{ block.settings.button_alignment }}; width: 100%;">
+<div class="buylater-btn-wrapper" style="display: none; justify-content: {{ block.settings.button_alignment }}; width: 100%;">
   <button type="button" 
           class="buylater-btn" 
           style="font-size: {{ block.settings.button_font_size }}px; font-weight: {{ block.settings.button_font_weight }}; width: {% if block.settings.button_width_mode == 'full' %}100%{% elsif block.settings.button_width_mode == 'auto' %}auto{% else %}{{ block.settings.button_custom_width }}px{% endif %};"
@@ -239,6 +239,48 @@
   window.buylaterCustomerEmail = "{% if customer %}{{ customer.email }}{% endif %}";
 </script>
 <script src="{{ 'buylater.js' | asset_url }}" defer></script>
+<script>
+  (function() {
+    const triggerBtn = document.getElementById('buylater-trigger');
+    if (!triggerBtn) return;
+    const shopDomain = window.buylaterShopDomain || new URL(window.location.href).hostname;
+    const productId = triggerBtn.getAttribute('data-product-id') || '';
+    
+    fetch('/apps/buylater-proxy/settings?shop=' + encodeURIComponent(shopDomain) + '&product_id=' + encodeURIComponent(productId) + '&t=' + Date.now(), {
+      headers: { 'Accept': 'application/json' }
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Settings fetch failed');
+      return res.json();
+    })
+    .then(data => {
+      const btnWrapper = triggerBtn.closest('.buylater-btn-wrapper');
+      if (data && data.enabled === false) {
+        if (btnWrapper) {
+          btnWrapper.style.setProperty('display', 'none', 'important');
+        } else {
+          triggerBtn.style.display = 'none';
+        }
+      } else {
+        if (btnWrapper) {
+          btnWrapper.style.setProperty('display', 'flex', 'important');
+        } else {
+          triggerBtn.style.display = 'inline-block';
+        }
+      }
+    })
+    .catch(err => {
+      console.error('BuyLater inline settings error:', err);
+      // On error, default to showing the widget
+      const btnWrapper = triggerBtn.closest('.buylater-btn-wrapper');
+      if (btnWrapper) {
+        btnWrapper.style.setProperty('display', 'flex', 'important');
+      } else {
+        triggerBtn.style.display = 'inline-block';
+      }
+    });
+  })();
+</script>
 
 {% schema %}
 {

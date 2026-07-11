@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Fetch settings dynamically from the app proxy
   const shopDomain = window.buylaterShopDomain || new URL(window.location.href).hostname;
   const productId = triggerBtn.getAttribute('data-product-id') || '';
-  fetch(`/apps/buylater-proxy/settings?shop=${encodeURIComponent(shopDomain)}&product_id=${encodeURIComponent(productId)}`, {
+  fetch(`/apps/buylater-proxy/settings?shop=${encodeURIComponent(shopDomain)}&product_id=${encodeURIComponent(productId)}&t=${Date.now()}`, {
     headers: {
       'Accept': 'application/json'
     }
@@ -77,6 +77,13 @@ document.addEventListener('DOMContentLoaded', function() {
           triggerBtn.style.display = 'none';
         }
         return;
+      } else {
+        const btnWrapper = triggerBtn.closest('.buylater-btn-wrapper');
+        if (btnWrapper) {
+          btnWrapper.style.setProperty('display', 'flex', 'important');
+        } else {
+          triggerBtn.style.display = 'inline-block';
+        }
       }
       if (data.deposit_percentage) {
         depositPercentage = parseInt(data.deposit_percentage, 10);
