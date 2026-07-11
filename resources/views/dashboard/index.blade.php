@@ -1253,7 +1253,7 @@
                             </div>
                             <div class="booking-status-price">
                                 <span class="price-value">$55.80</span>
-                                <span class="status-pill deposit_paid">Deposit Paid</span>
+                                <span class="status-pill deposit_paid">Partial Paid</span>
                             </div>
                         </div>
                         <div class="booking-item">
@@ -1266,7 +1266,7 @@
                             </div>
                             <div class="booking-status-price">
                                 <span class="price-value">$31.20</span>
-                                <span class="status-pill deposit_paid">Deposit Paid</span>
+                                <span class="status-pill deposit_paid">Partial Paid</span>
                             </div>
                         </div>
                         <div class="booking-item">
@@ -1279,7 +1279,7 @@
                             </div>
                             <div class="booking-status-price">
                                 <span class="price-value">$62.50</span>
-                                <span class="status-pill pending">Pending</span>
+                                <span class="status-pill completed">Full Paid</span>
                             </div>
                         </div>
                     @else
@@ -1297,7 +1297,15 @@
                                 </div>
                                 <div class="booking-status-price">
                                     <span class="price-value">${{ number_format($booking->deposit_amount, 2) }}</span>
-                                    <span class="status-pill {{ $booking->status }}">{{ $booking->status === 'completed' ? 'Full Paid' : str_replace('_', ' ', $booking->status) }}</span>
+                                    <span class="status-pill {{ $booking->status }}">
+                                        @if($booking->status === 'completed')
+                                            Full Paid
+                                        @elseif($booking->status === 'deposit_paid')
+                                            Partial Paid
+                                        @else
+                                            {{ str_replace('_', ' ', $booking->status) }}
+                                        @endif
+                                    </span>
                                 </div>
                             </div>
                         @endforeach
@@ -1317,18 +1325,13 @@
                 </div>
                 <div class="donut-legend" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 12px;">
                     <div style="display: flex; align-items: center; gap: 6px;">
-                        <span style="width: 10px; height: 10px; border-radius: 50%; background-color: #6d7175; display: inline-block;"></span>
-                        <span style="color: var(--text-muted);">Pending:</span>
-                        <strong style="color: var(--text-main);">{{ $statusCounts['pending'] }}</strong>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="width: 10px; height: 10px; border-radius: 50%; background-color: #005ea2; display: inline-block;"></span>
-                        <span style="color: var(--text-muted);">Deposit Paid:</span>
+                        <span style="color: var(--text-muted);">Partial Paid:</span>
                         <strong style="color: var(--text-main);">{{ $statusCounts['deposit_paid'] }}</strong>
                     </div>
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="width: 10px; height: 10px; border-radius: 50%; background-color: #108043; display: inline-block;"></span>
-                        <span style="color: var(--text-muted);">Fully Paid:</span>
+                        <span style="color: var(--text-muted);">Full Paid:</span>
                         <strong style="color: var(--text-main);">{{ $statusCounts['completed'] }}</strong>
                     </div>
                     <div style="display: flex; align-items: center; gap: 6px;">
@@ -1483,8 +1486,7 @@
                     </div>
                     <select id="filter-bookings-status" class="filter-select" onchange="filterBookings()">
                         <option value="all">All Statuses</option>
-                        <option value="pending">Pending</option>
-                        <option value="deposit_paid">Deposit Paid</option>
+                        <option value="deposit_paid">Partial Paid</option>
                         <option value="completed">Full Paid</option>
                         <option value="expired">Expired</option>
                     </select>
@@ -1537,7 +1539,15 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="status-pill {{ $booking->status }}">{{ $booking->status === 'completed' ? 'Full Paid' : str_replace('_', ' ', $booking->status) }}</span>
+                                        <span class="status-pill {{ $booking->status }}">
+                                            @if($booking->status === 'completed')
+                                                Full Paid
+                                            @elseif($booking->status === 'deposit_paid')
+                                                Partial Paid
+                                            @else
+                                                {{ str_replace('_', ' ', $booking->status) }}
+                                            @endif
+                                        </span>
                                     </td>
                                     <td>
                                         @if($booking->expires_at)
@@ -2053,15 +2063,14 @@ function filterSubscribers() {
         const ctx = document.getElementById('statusDonutChart').getContext('2d');
         
         let chartData = {
-            labels: ['Pending', 'Deposit Paid', 'Fully Paid', 'Expired'],
+            labels: ['Partial Paid', 'Full Paid', 'Expired'],
             datasets: [{
                 data: [
-                    {{ $statusCounts['pending'] }},
                     {{ $statusCounts['deposit_paid'] }},
                     {{ $statusCounts['completed'] }},
                     {{ $statusCounts['expired'] }}
                 ],
-                backgroundColor: ['#6d7175', '#005ea2', '#108043', '#d82c0d'],
+                backgroundColor: ['#005ea2', '#108043', '#d82c0d'],
                 borderWidth: 2,
                 borderColor: '#ffffff',
                 hoverOffset: 4

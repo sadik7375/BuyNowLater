@@ -84,7 +84,7 @@ class CustomerBookingsTest extends TestCase
 
         $booking2 = Booking::create([
             'shop_id' => $realUser->id,
-            'email' => 'other.customer@example.com', // different email
+            'email' => $customerEmail, // same email, but pending status should be excluded
             'product_id' => '222',
             'product_title' => 'Product 2',
             'product_handle' => 'product-2',
@@ -113,5 +113,58 @@ class CustomerBookingsTest extends TestCase
                 ]
             ]
         ]);
+    }
+
+    public function test_dashboard_index_excludes_pending_bookings_and_sets_correct_active_bookings_count()
+    {
+        $this->withoutMiddleware();
+
+        $user = User::factory()->create([
+            'id' => 2,
+            'name' => 'test-shop-2.myshopify.com'
+        ]);
+
+        $this->actingAs($user);
+
+        // Create a pending booking
+        Booking::create([
+            'shop_id' => $user->id,
+            'email' => 'customer.pending@example.com',
+            'product_id' => '123',
+            'product_title' => 'Pending Product',
+            'product_handle' => 'pending-product',
+            'product_price' => 100.00,
+            'deposit_amount' => 10.00,
+            'remaining_balance' => 90.00,
+            'status' => 'pending',
+            'token' => 'pending_token',
+        ]);
+
+        // Create a deposit_paid booking
+        Booking::create([
+            'shop_id' => $user->id,
+            'email' => 'customer.paid@example.com',
+            'product_id' => '456',
+            'product_title' => 'Paid Product',
+            'product_handle' => 'paid-product',
+            'product_price' => 200.00,
+            'deposit_amount' => 20.00,
+            'remaining_balance' => 180.00,
+            'status' => 'deposit_paid',
+            'token' => 'paid_token',
+        ]);
+
+        $response = $this->get(route('home', ['shop' => 'test-shop-2.myshopify.com']));
+
+        $response->assertStatus(200);
+
+        // Assert that $bookings contains only the paid booking (1 booking)
+        $bookings = $response->viewData('bookings');
+        $this->assertCount(1, $bookings);
+        $this->assertEquals('paid_token', $bookings->first()->token);
+
+        // Assert that $activeBookings is 1 (excluding pending)
+        $activeBookings = $response->viewData('activeBookings');
+        $this->assertEquals(1, $activeBookings);
     }
 }

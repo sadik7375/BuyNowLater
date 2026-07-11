@@ -669,6 +669,7 @@ class AppProxyController extends Controller
 
             $bookings = Booking::where('shop_id', $shop->id)
                 ->where('email', $email)
+                ->where('status', '!=', 'pending')
                 ->orderBy('created_at', 'desc')
                 ->get()
                 ->map(function ($booking) use ($holdDurationDays) {

@@ -121,6 +121,7 @@ class DashboardController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
         $bookings    = Booking::where('shop_id', $shop->id)
+            ->where('status', '!=', 'pending')
             ->when($dateFilter !== 'all' && $start && $end, fn($q) => $q->whereBetween('created_at', [$start, $end]))
             ->orderBy('created_at', 'desc')
             ->get();
@@ -148,7 +149,7 @@ class DashboardController extends Controller
 
         // --- Status Counts (100% Dynamic from Database) ---
         $statusCounts = [
-            'pending'      => $bookings->where('status', 'pending')->count(),
+            'pending'      => 0,
             'deposit_paid' => $bookings->where('status', 'deposit_paid')->count(),
             'completed'    => $bookings->where('status', 'completed')->count(),
             'expired'      => $bookings->where('status', 'expired')->count(),
@@ -167,7 +168,7 @@ class DashboardController extends Controller
             ->sum('product_price');
 
         $activeBookings = Booking::where('shop_id', $shop->id)
-            ->whereIn('status', ['pending', 'deposit_paid'])
+            ->where('status', 'deposit_paid')
             ->when($dateFilter !== 'all' && $start && $end, fn($q) => $q->whereBetween('created_at', [$start, $end]))
             ->count();
 
