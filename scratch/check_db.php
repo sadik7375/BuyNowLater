@@ -1,20 +1,18 @@
 <?php
-
 require __DIR__ . '/../vendor/autoload.php';
 $app = require_once __DIR__ . '/../bootstrap/app.php';
-
-use Illuminate\Contracts\Console\Kernel;
-$kernel = $app->make(Kernel::class);
+$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
-$shops = \App\Models\User::all();
-echo "Total shops in DB: " . $shops->count() . "\n";
-foreach ($shops as $shop) {
-    echo "ID: " . $shop->id . " | Name (Domain): " . $shop->name . " | Email: " . $shop->email . "\n";
+use App\Models\User;
+use App\Models\Setting;
+
+echo "--- Users ---\n";
+foreach (User::all() as $u) {
+    echo "ID: {$u->id}, Name: {$u->name}\n";
 }
 
-$settings = \App\Models\Setting::all();
-echo "Total settings in DB: " . $settings->count() . "\n";
-foreach ($settings as $setting) {
-    echo "ID: " . $setting->id . " | Shop ID: " . $setting->shop_id . " | Deposit %: " . $setting->deposit_percentage . "\n";
+echo "\n--- Settings ---\n";
+foreach (Setting::all() as $s) {
+    echo "ID: {$s->id}, Shop ID: {$s->shop_id}, Deposit: {$s->deposit_percentage}%, Hold: {$s->hold_duration_days} days, Type: {$s->product_targeting_type}, Targets: {$s->targeted_product_ids}\n";
 }

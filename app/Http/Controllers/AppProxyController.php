@@ -585,6 +585,7 @@ class AppProxyController extends Controller
     public function getSettings(Request $request)
     {
         $shop = auth()->user();
+        $auth_used = $shop ? 'yes' : 'no';
         if (!$shop) {
             $shopDomain = $request->query('shop') ?: $request->input('shop');
             if ($shopDomain) {
@@ -592,11 +593,25 @@ class AppProxyController extends Controller
             }
         }
 
+        \Illuminate\Support\Facades\Log::info('AppProxy getSettings log:', [
+            'request_shop' => $request->query('shop') ?: $request->input('shop'),
+            'resolved_shop_id' => $shop ? $shop->id : null,
+            'resolved_shop_name' => $shop ? $shop->name : null,
+            'auth_used' => $auth_used,
+            'query_params' => $request->all(),
+        ]);
+
         if (!$shop) {
             return response()->json(['message' => 'Shop not found.'], 404);
         }
 
         $settings = Setting::where('shop_id', $shop->id)->first();
+
+        \Illuminate\Support\Facades\Log::info('AppProxy settings found:', [
+            'settings_exists' => $settings ? true : false,
+            'deposit_percentage' => $settings ? $settings->deposit_percentage : null,
+            'hold_duration_days' => $settings ? $settings->hold_duration_days : null,
+        ]);
 
         $showDeposit = $settings ? (bool) ($settings->show_deposit ?? true) : true;
 
