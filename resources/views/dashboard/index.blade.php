@@ -1050,10 +1050,113 @@
         transition: all 0.2s;
     }
 
-    .btn-downgrade:hover {
-        color: #ffffff;
-        border-color: #ffffff;
-        background-color: rgba(255, 255, 255, 0.05);
+    /* How it works & Benefits guide pages styling */
+    .guide-header {
+        margin-bottom: 28px;
+    }
+    .guide-header h2 {
+        font-size: 22px;
+        font-weight: 700;
+        margin: 0 0 6px 0;
+        color: var(--text-main);
+    }
+    .guide-header p {
+        font-size: 14px;
+        color: var(--text-muted);
+        margin: 0;
+    }
+    .guide-grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    .guide-grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    .guide-card-premium {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.015);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .guide-card-premium:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
+        border-color: #c9ccd0;
+    }
+    .guide-card-badge {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: rgba(0, 128, 96, 0.08);
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 16px;
+    }
+    .guide-card-premium h4 {
+        margin: 0 0 10px 0;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text-main);
+    }
+    .guide-card-premium p {
+        margin: 0;
+        font-size: 13.5px;
+        line-height: 1.5;
+        color: var(--text-muted);
+    }
+    .guide-timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        position: relative;
+        padding-left: 20px;
+    }
+    .guide-timeline::before {
+        content: '';
+        position: absolute;
+        left: 6px;
+        top: 8px;
+        bottom: 8px;
+        width: 2px;
+        background: var(--border-color);
+    }
+    .guide-timeline-item {
+        position: relative;
+        padding-left: 20px;
+    }
+    .guide-timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -19px;
+        top: 4px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        border: 2px solid var(--bg-card);
+    }
+    .guide-timeline-item h5 {
+        margin: 0 0 4px 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-main);
+    }
+    .guide-timeline-item p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--text-muted);
+        line-height: 1.45;
     }
 </style>
 
@@ -1085,6 +1188,15 @@
         <div class="sidebar-section-label">App</div>
         <button class="sidebar-btn" onclick="switchTab(event, 'tab-settings')">
             <span class="icon">⚙️</span> Settings
+        </button>
+
+        <hr class="sidebar-divider">
+        <div class="sidebar-section-label">Guide</div>
+        <button class="sidebar-btn" onclick="switchTab(event, 'tab-how-it-works')">
+            <span class="icon">📖</span> How It Works
+        </button>
+        <button class="sidebar-btn" onclick="switchTab(event, 'tab-benefits')">
+            <span class="icon">✨</span> Benefits
         </button>
     </nav>
 </aside>
@@ -1232,7 +1344,9 @@
         <button class="tab-button" onclick="switchTab(event, 'tab-reminders-list')">Reminders</button>
         <button class="tab-button" onclick="switchTab(event, 'tab-subscribers-list')">Price Alerts</button>
         <button class="tab-button" onclick="switchTab(event, 'tab-settings')">Settings</button>
-        </div>
+        <button class="tab-button" onclick="switchTab(event, 'tab-how-it-works')">How It Works</button>
+        <button class="tab-button" onclick="switchTab(event, 'tab-benefits')">Benefits</button>
+    </div>
 
     <!-- Tab 1: Overview Dashboard -->
     <div id="tab-overview" class="tab-content" style="display: block;">
@@ -1880,6 +1994,110 @@
                 </div>
             </div>
         </form>
+    </div>
+
+    <!-- Tab 6: How It Works -->
+    <div id="tab-how-it-works" class="tab-content" style="display: none;">
+        <div class="guide-header">
+            <h2>How It Works</h2>
+            <p>Understand the core features, options flow, and customer journey of the Buy Later app.</p>
+        </div>
+
+        <div class="panel-card" style="margin-bottom: 24px;">
+            <h3>🔄 Storefront Customer Journey</h3>
+            <div class="guide-timeline">
+                <div class="guide-timeline-item">
+                    <h5>1. Trigger Widget on Product Page</h5>
+                    <p>The "Buy Later" button is placed seamlessly next to or below your standard add-to-cart button using Shopify App Blocks. It dynamically loads configuration settings (colors, fonts, allowed options) directly from the application database.</p>
+                </div>
+                <div class="guide-timeline-item">
+                    <h5>2. Option Selection Modal</h5>
+                    <p>Clicking the button opens an attractive, clean modal presenting three flexible options to the customer: Book with Deposit, Set a Reminder, or Subscribe to Discount Alerts.</p>
+                </div>
+                <div class="guide-timeline-item">
+                    <h5>3. Processing the Selection</h5>
+                    <p>
+                        • <strong>Book It Now (Partial Paid)</strong>: The customer provides their email, pays the required deposit (e.g. 10%), and is redirected to checkout. A secure hold is created, and the status updates in your dashboard.<br>
+                        • <strong>Remind Me Later</strong>: The customer picks a custom date and time to receive an automated follow-up email containing a direct link to the product.<br>
+                        • <strong>Alert Me on Discount</strong>: Subscribes the customer to instant price drop alerts for the specific product.
+                    </p>
+                </div>
+                <div class="guide-timeline-item">
+                    <h5>4. Completing the Purchase</h5>
+                    <p>For deposit holds, customers can revisit their portal to pay the remaining balance, settling the draft order. Reminder and discount emails contain direct purchase links to ensure quick conversion.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="guide-grid-3">
+            <div class="guide-card-premium">
+                <div class="guide-card-badge">💰</div>
+                <h4>Deposit Holds</h4>
+                <p>Ensures immediate cash flow by collecting partial payments while reserving high-demand items for customers.</p>
+            </div>
+            <div class="guide-card-premium">
+                <div class="guide-card-badge">⏰</div>
+                <h4>Automated Reminders</h4>
+                <p>Draft orders are linked directly inside scheduler tasks to send professional reminder emails exactly when requested.</p>
+            </div>
+            <div class="guide-card-premium">
+                <div class="guide-card-badge">🔔</div>
+                <h4>Price Alert Engine</h4>
+                <p>Scans price updates across products and variants, immediately emailing subscribers if a discount is published.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 7: Benefits -->
+    <div id="tab-benefits" class="tab-content" style="display: none;">
+        <div class="guide-header">
+            <h2>Merchant &amp; Customer Benefits</h2>
+            <p>Discover how the Buy Later suite increases conversions, prevents cart abandonment, and drives customer loyalty.</p>
+        </div>
+
+        <div class="guide-grid-2">
+            <div class="guide-card-premium">
+                <div class="guide-card-badge">🚀</div>
+                <h4>Boost Storefront Conversions</h4>
+                <p>Lower the barrier to entry by offering low-deposit holds (e.g. 10% or 15% upfront). Customers who aren't ready to pay the full price today can lock in their purchase instantly, boosting your immediate sale counts.</p>
+            </div>
+            <div class="guide-card-premium">
+                <div class="guide-card-badge">📉</div>
+                <h4>Minimize Cart Abandonment</h4>
+                <p>Instead of leaving empty-handed when budget or timing isn't right, users can save products using custom reminders or discount alerts. This acts as a warm lead generator, keeping your brand fresh in their inbox.</p>
+            </div>
+            <div class="guide-card-premium">
+                <div class="guide-card-badge">📧</div>
+                <h4>High-Quality Retargeting List</h4>
+                <p>Every reminder request and price drop alert subscription captures the customer's email with their direct consent. Build an active list of warm leads with high buying intent for your store's products.</p>
+            </div>
+            <div class="guide-card-premium">
+                <div class="guide-card-badge">🔒</div>
+                <h4>Secure &amp; Compliant Holds</h4>
+                <p>All deposit reservations leverage Shopify's native Draft Order API, securing stock allocation and keeping inventory levels fully synchronized with your Shopify admin. Zero manual order reconciliations are required.</p>
+            </div>
+        </div>
+
+        <div class="panel-card">
+            <h3>✨ Customer Experience Perks</h3>
+            <p style="font-size: 13.5px; color: var(--text-muted); line-height: 1.6; margin: 0 0 16px 0;">
+                Shoppers love flexibility. By integrating Buy Later options, you offer an upscale shopping experience similar to modern retail layaway systems.
+            </p>
+            <div class="guide-grid-3" style="margin-bottom: 0;">
+                <div style="background: rgba(0,128,96,0.03); padding: 16px; border-radius: 8px;">
+                    <h5 style="margin:0 0 6px 0; font-size:13.5px; font-weight:600; color:var(--primary-color);">No credit checks</h5>
+                    <p style="margin:0; font-size:12.5px; color:var(--text-muted);">Risk-free reservation options with zero debt or interest charges.</p>
+                </div>
+                <div style="background: rgba(0,128,96,0.03); padding: 16px; border-radius: 8px;">
+                    <h5 style="margin:0 0 6px 0; font-size:13.5px; font-weight:600; color:var(--primary-color);">Secure checkouts</h5>
+                    <p style="margin:0; font-size:12.5px; color:var(--text-muted);">Processed directly through Shopify's secure storefront checkout.</p>
+                </div>
+                <div style="background: rgba(0,128,96,0.03); padding: 16px; border-radius: 8px;">
+                    <h5 style="margin:0 0 6px 0; font-size:13.5px; font-weight:600; color:var(--primary-color);">Self-serve portal</h5>
+                    <p style="margin:0; font-size:12.5px; color:var(--text-muted);">Storefront proxy lets customers check their balance and complete orders anytime.</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     </div><!-- /.dashboard-container -->
