@@ -211,13 +211,39 @@ class DashboardController extends Controller
 
         $monthlyUsageCount = $monthlyReminders + $monthlySubscribers;
 
+        $targetedProducts = [];
+        if (($settings->product_targeting_type ?? 'all') === 'specific' && !empty($settings->targeted_product_ids)) {
+            try {
+                $ids = array_filter(explode(',', $settings->targeted_product_ids));
+                if (!empty($ids)) {
+                    $response = $shop->api()->rest('GET', '/admin/api/' . config('shopify-app.api_version') . '/products.json', [
+                        'ids' => implode(',', $ids),
+                        'fields' => 'id,title,handle,image'
+                    ]);
+                    if (!$response['errors']) {
+                        $shopifyProducts = $response['body']['products'] ?? [];
+                        foreach ($shopifyProducts as $sp) {
+                            $targetedProducts[] = [
+                                'id' => (string) $sp['id'],
+                                'title' => $sp['title'],
+                                'handle' => $sp['handle'],
+                                'image' => $sp['image']['src'] ?? null,
+                            ];
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to fetch targeted products in index(): " . $e->getMessage());
+            }
+        }
+
         return view('dashboard.index', compact(
             'settings', 'reminders', 'subscribers', 'bookings',
             'revenueRecovered', 'activeBookings', 'alertSubscribersCount',
             'conversionRate', 'wishes', 'liveAlerts',
             'expiringToday', 'expiringTomorrow', 'expiringThisWeek', 'isMockExpiring',
             'statusCounts', 'isMockStatus', 'todayRemindersCount',
-            'dateFilter', 'start', 'end', 'monthlyUsageCount'
+            'dateFilter', 'start', 'end', 'monthlyUsageCount', 'targetedProducts'
         ));
     }
 
@@ -244,6 +270,45 @@ class DashboardController extends Controller
         return redirect()->to(route('home', $request->query()))->with('success', 'You have successfully downgraded to the Free Plan.');
     }
 
+    public function searchProducts(Request $request)
+    {
+        $shop = auth()->user();
+        $query = $request->query('q');
+
+        $params = [
+            'limit' => 20,
+            'fields' => 'id,title,handle,image',
+        ];
+        if (!empty($query)) {
+            $params['title'] = $query;
+        }
+
+        try {
+            $response = $shop->api()->rest(
+                'GET',
+                '/admin/api/' . config('shopify-app.api_version') . '/products.json',
+                $params
+            );
+
+            $products = [];
+            if (!$response['errors']) {
+                $shopifyProducts = $response['body']['products'] ?? [];
+                foreach ($shopifyProducts as $sp) {
+                    $products[] = [
+                        'id' => (string) $sp['id'],
+                        'title' => $sp['title'],
+                        'handle' => $sp['handle'],
+                        'image' => $sp['image']['src'] ?? null,
+                    ];
+                }
+            }
+            return response()->json($products);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to search products in searchProducts(): " . $e->getMessage());
+            return response()->json([]);
+        }
+    }
+
     public function saveSettings(Request $request)
     {
         $shop = auth()->user();
@@ -260,6 +325,8 @@ class DashboardController extends Controller
             'show_reminders'           => 'nullable|boolean',
             'show_alerts'              => 'nullable|boolean',
             'hold_duration_days'       => 'required|integer|min:1|max:365',
+            'product_targeting_type'   => 'nullable|string|in:all,specific',
+            'targeted_product_ids'     => 'nullable|string',
         ]);
 
         Setting::updateOrCreate(
@@ -276,6 +343,8 @@ class DashboardController extends Controller
                 'show_reminders'          => $request->has('show_reminders'),
                 'show_alerts'             => $request->has('show_alerts'),
                 'hold_duration_days'      => $request->input('hold_duration_days'),
+                'product_targeting_type'  => $request->input('product_targeting_type', 'all') ?: 'all',
+                'targeted_product_ids'    => $request->input('targeted_product_ids'),
             ]
         );
 

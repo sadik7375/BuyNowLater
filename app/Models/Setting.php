@@ -26,6 +26,8 @@ class Setting extends Model
         'show_reminders',
         'show_alerts',
         'hold_duration_days',
+        'product_targeting_type',
+        'targeted_product_ids',
     ];
 
     public function shop()

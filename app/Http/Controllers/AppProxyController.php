@@ -600,8 +600,31 @@ class AppProxyController extends Controller
 
         $showDeposit = $settings ? (bool) ($settings->show_deposit ?? true) : true;
 
+        // Check Product Targeting
+        $productTargetingType = $settings ? ($settings->product_targeting_type ?? 'all') : 'all';
+        $isWidgetEnabled = true;
+
+        if ($productTargetingType === 'specific') {
+            $targetedProductIdsStr = $settings ? $settings->targeted_product_ids : '';
+            $targetedProductIds = array_filter(explode(',', $targetedProductIdsStr));
+            $currentProductId = $request->query('product_id');
+            
+            $isWidgetEnabled = false;
+            if ($currentProductId) {
+                // Strip non-digits to handle format like "gid://shopify/Product/12345" or raw numeric "12345"
+                $cleanCurrentId = preg_replace('/[^0-9]/', '', $currentProductId);
+                foreach ($targetedProductIds as $id) {
+                    $cleanId = preg_replace('/[^0-9]/', '', $id);
+                    if ($cleanId !== '' && $cleanId === $cleanCurrentId) {
+                        $isWidgetEnabled = true;
+                        break;
+                    }
+                }
+            }
+        }
 
         return response()->json([
+            'enabled' => $isWidgetEnabled,
             'deposit_percentage' => $settings ? (int) $settings->deposit_percentage : 10,
             'show_deposit' => $showDeposit,
             'show_reminders' => $settings ? (bool) ($settings->show_reminders ?? true) : true,

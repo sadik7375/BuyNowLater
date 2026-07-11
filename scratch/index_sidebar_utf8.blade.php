@@ -1,4 +1,4 @@
-@extends('shopify-app::layouts.default')
+﻿@extends('shopify-app::layouts.default')
 
 @section('content')
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -31,7 +31,7 @@
         min-height: 100vh;
     }
 
-    /* ── LEFT SIDEBAR ── */
+    /* ΓöÇΓöÇ LEFT SIDEBAR ΓöÇΓöÇ */
     .sidebar {
         width: 220px;
         flex-shrink: 0;
@@ -128,7 +128,7 @@
         margin: 10px 12px;
     }
 
-    /* ── MAIN CONTENT ── */
+    /* ΓöÇΓöÇ MAIN CONTENT ΓöÇΓöÇ */
     .main-content {
         margin-left: 220px;
         flex: 1;
@@ -258,7 +258,7 @@
     .change-up { color: var(--secondary-color); }
     .change-down { color: var(--danger-color); }
 
-    /* Tabs navigation — kept for JS compatibility, hidden visually */
+    /* Tabs navigation ΓÇö kept for JS compatibility, hidden visually */
     .dashboard-tabs { display: none; }
     .tab-button { display: none; }
 
@@ -1050,119 +1050,16 @@
         transition: all 0.2s;
     }
 
-    /* How it works & Benefits guide pages styling */
-    .guide-header {
-        margin-bottom: 28px;
-    }
-    .guide-header h2 {
-        font-size: 22px;
-        font-weight: 700;
-        margin: 0 0 6px 0;
-        color: var(--text-main);
-    }
-    .guide-header p {
-        font-size: 14px;
-        color: var(--text-muted);
-        margin: 0;
-    }
-    .guide-grid-3 {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 20px;
-        margin-bottom: 30px;
-    }
-    .guide-grid-2 {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
-        margin-bottom: 30px;
-    }
-    .guide-card-premium {
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 24px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.015);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .guide-card-premium:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
-        border-color: #c9ccd0;
-    }
-    .guide-card-badge {
-        width: 38px;
-        height: 38px;
-        border-radius: 8px;
-        background: rgba(0, 128, 96, 0.08);
-        color: var(--primary-color);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 18px;
-        font-weight: 700;
-        margin-bottom: 16px;
-    }
-    .guide-card-premium h4 {
-        margin: 0 0 10px 0;
-        font-size: 15px;
-        font-weight: 600;
-        color: var(--text-main);
-    }
-    .guide-card-premium p {
-        margin: 0;
-        font-size: 13.5px;
-        line-height: 1.5;
-        color: var(--text-muted);
-    }
-    .guide-timeline {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        position: relative;
-        padding-left: 20px;
-    }
-    .guide-timeline::before {
-        content: '';
-        position: absolute;
-        left: 6px;
-        top: 8px;
-        bottom: 8px;
-        width: 2px;
-        background: var(--border-color);
-    }
-    .guide-timeline-item {
-        position: relative;
-        padding-left: 20px;
-    }
-    .guide-timeline-item::before {
-        content: '';
-        position: absolute;
-        left: -19px;
-        top: 4px;
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: var(--primary-color);
-        border: 2px solid var(--bg-card);
-    }
-    .guide-timeline-item h5 {
-        margin: 0 0 4px 0;
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--text-main);
-    }
-    .guide-timeline-item p {
-        margin: 0;
-        font-size: 13px;
-        color: var(--text-muted);
-        line-height: 1.45;
+    .btn-downgrade:hover {
+        color: #ffffff;
+        border-color: #ffffff;
+        background-color: rgba(255, 255, 255, 0.05);
     }
 </style>
 
 <div class="app-layout">
 
-<!-- ─────────────── SIDEBAR ─────────────── -->
+<!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ SIDEBAR ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ -->
 <aside class="sidebar">
     <div class="sidebar-brand">
         <h2>Buy<span>Later</span></h2>
@@ -1172,36 +1069,35 @@
     <nav class="sidebar-nav">
         <div class="sidebar-section-label">Main</div>
         <button class="sidebar-btn active" onclick="switchTab(event, 'tab-overview')">
-            <span class="icon">📈</span> Overview
+            <span class="icon">≡ƒôè</span> Overview
         </button>
         <button class="sidebar-btn" onclick="switchTab(event, 'tab-bookings-list')">
-            <span class="icon">💰</span> Bookings &amp; Deposits
+            <span class="icon">≡ƒÆ░</span> Bookings &amp; Deposits
         </button>
         <button class="sidebar-btn" onclick="switchTab(event, 'tab-reminders-list')">
-            <span class="icon">⏰</span> Reminders
+            <span class="icon">ΓÅ░</span> Reminders
         </button>
         <button class="sidebar-btn" onclick="switchTab(event, 'tab-subscribers-list')">
-            <span class="icon">🔔</span> Price Alerts
+            <span class="icon">≡ƒöö</span> Price Alerts
         </button>
 
         <hr class="sidebar-divider">
         <div class="sidebar-section-label">App</div>
-        <button class="sidebar-btn" onclick="switchTab(event, 'tab-settings')">
-            <span class="icon">⚙️</span> Settings
+        <button class="sidebar-btn" onclick="switchTab(event, 'tab-price-plan')">
+            <span class="icon">≡ƒÆÄ</span> Price Plan
+        </button>
+        <button class="sidebar-btn" onclick="switchTab(event, 'tab-how-it-works')">
+            <span class="icon">≡ƒôû</span> How It Works
         </button>
 
         <hr class="sidebar-divider">
-        <div class="sidebar-section-label">Guide</div>
-        <button class="sidebar-btn" onclick="switchTab(event, 'tab-how-it-works')">
-            <span class="icon">📖</span> How It Works
-        </button>
-        <button class="sidebar-btn" onclick="switchTab(event, 'tab-benefits')">
-            <span class="icon">✨</span> Benefits
+        <button class="sidebar-btn" onclick="switchTab(event, 'tab-settings')">
+            <span class="icon">ΓÜÖ∩╕Å</span> Settings
         </button>
     </nav>
 </aside>
 
-<!-- ─────────────── MAIN CONTENT ─────────────── -->
+<!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ MAIN CONTENT ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ -->
 <div class="main-content">
 <div class="dashboard-container">
 
@@ -1209,6 +1105,7 @@
         $shop = auth()->user();
         $isFreemium = $shop->isFreemium();
     @endphp
+
 
     <div class="filter-toolbar-container">
         <div class="filter-presets">
@@ -1241,7 +1138,7 @@
         <div class="expiring-warning-box warning-danger">
             <div class="warning-title">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                🚨 Expiring Today
+                ≡ƒÜ¿ Expiring Today
             </div>
             <ul class="warning-list">
                 @foreach($expiringToday as $booking)
@@ -1260,7 +1157,7 @@
         <div class="expiring-warning-box warning-amber">
             <div class="warning-title">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                ⚠️ Expiring Tomorrow
+                ΓÜá∩╕Å Expiring Tomorrow
             </div>
             <ul class="warning-list">
                 @foreach($expiringTomorrow as $booking)
@@ -1344,8 +1241,8 @@
         <button class="tab-button" onclick="switchTab(event, 'tab-reminders-list')">Reminders</button>
         <button class="tab-button" onclick="switchTab(event, 'tab-subscribers-list')">Price Alerts</button>
         <button class="tab-button" onclick="switchTab(event, 'tab-settings')">Settings</button>
+        <button class="tab-button" onclick="switchTab(event, 'tab-price-plan')">Price Plan</button>
         <button class="tab-button" onclick="switchTab(event, 'tab-how-it-works')">How It Works</button>
-        <button class="tab-button" onclick="switchTab(event, 'tab-benefits')">Benefits</button>
     </div>
 
     <!-- Tab 1: Overview Dashboard -->
@@ -1367,7 +1264,7 @@
                             </div>
                             <div class="booking-status-price">
                                 <span class="price-value">$55.80</span>
-                                <span class="status-pill deposit_paid">Partial Paid</span>
+                                <span class="status-pill deposit_paid">Deposit Paid</span>
                             </div>
                         </div>
                         <div class="booking-item">
@@ -1380,7 +1277,7 @@
                             </div>
                             <div class="booking-status-price">
                                 <span class="price-value">$31.20</span>
-                                <span class="status-pill deposit_paid">Partial Paid</span>
+                                <span class="status-pill deposit_paid">Deposit Paid</span>
                             </div>
                         </div>
                         <div class="booking-item">
@@ -1393,7 +1290,7 @@
                             </div>
                             <div class="booking-status-price">
                                 <span class="price-value">$62.50</span>
-                                <span class="status-pill completed">Full Paid</span>
+                                <span class="status-pill pending">Pending</span>
                             </div>
                         </div>
                     @else
@@ -1411,15 +1308,7 @@
                                 </div>
                                 <div class="booking-status-price">
                                     <span class="price-value">${{ number_format($booking->deposit_amount, 2) }}</span>
-                                    <span class="status-pill {{ $booking->status }}">
-                                        @if($booking->status === 'completed')
-                                            Full Paid
-                                        @elseif($booking->status === 'deposit_paid')
-                                            Partial Paid
-                                        @else
-                                            {{ str_replace('_', ' ', $booking->status) }}
-                                        @endif
-                                    </span>
+                                    <span class="status-pill {{ $booking->status }}">{{ $booking->status === 'completed' ? 'Full Paid' : str_replace('_', ' ', $booking->status) }}</span>
                                 </div>
                             </div>
                         @endforeach
@@ -1439,13 +1328,18 @@
                 </div>
                 <div class="donut-legend" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 12px;">
                     <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="width: 10px; height: 10px; border-radius: 50%; background-color: #6d7175; display: inline-block;"></span>
+                        <span style="color: var(--text-muted);">Pending:</span>
+                        <strong style="color: var(--text-main);">{{ $statusCounts['pending'] }}</strong>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="width: 10px; height: 10px; border-radius: 50%; background-color: #005ea2; display: inline-block;"></span>
-                        <span style="color: var(--text-muted);">Partial Paid:</span>
+                        <span style="color: var(--text-muted);">Deposit Paid:</span>
                         <strong style="color: var(--text-main);">{{ $statusCounts['deposit_paid'] }}</strong>
                     </div>
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="width: 10px; height: 10px; border-radius: 50%; background-color: #108043; display: inline-block;"></span>
-                        <span style="color: var(--text-muted);">Full Paid:</span>
+                        <span style="color: var(--text-muted);">Fully Paid:</span>
                         <strong style="color: var(--text-main);">{{ $statusCounts['completed'] }}</strong>
                     </div>
                     <div style="display: flex; align-items: center; gap: 6px;">
@@ -1600,7 +1494,8 @@
                     </div>
                     <select id="filter-bookings-status" class="filter-select" onchange="filterBookings()">
                         <option value="all">All Statuses</option>
-                        <option value="deposit_paid">Partial Paid</option>
+                        <option value="pending">Pending</option>
+                        <option value="deposit_paid">Deposit Paid</option>
                         <option value="completed">Full Paid</option>
                         <option value="expired">Expired</option>
                     </select>
@@ -1653,15 +1548,7 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="status-pill {{ $booking->status }}">
-                                            @if($booking->status === 'completed')
-                                                Full Paid
-                                            @elseif($booking->status === 'deposit_paid')
-                                                Partial Paid
-                                            @else
-                                                {{ str_replace('_', ' ', $booking->status) }}
-                                            @endif
-                                        </span>
+                                        <span class="status-pill {{ $booking->status }}">{{ $booking->status === 'completed' ? 'Full Paid' : str_replace('_', ' ', $booking->status) }}</span>
                                     </td>
                                     <td>
                                         @if($booking->expires_at)
@@ -1673,7 +1560,7 @@
                                             <span style="@if($isUrgent) color: var(--danger-color); font-weight:700; @endif">
                                                 {{ $expiresAt->format('M j, Y') }}
                                                 @if($isUrgent)
-                                                    <br><small>🚨 ({{ round($daysLeft) }} days left)</small>
+                                                    <br><small>≡ƒÜ¿ ({{ round($daysLeft) }} days left)</small>
                                                 @endif
                                             </span>
                                         @else
@@ -1872,47 +1759,6 @@
                 </div>
             </div>
 
-            <!-- Card 1.5: Product Targeting -->
-            <div class="panel-card" style="margin-bottom: 20px;">
-                <h3>Product Targeting & Visibility</h3>
-                <p style="font-size: 13px; color: var(--text-muted); margin-top: -10px; margin-bottom: 20px;">Choose where the "Buy Now Later" widget should be visible on your storefront.</p>
-                
-                <div class="form-group" style="margin-bottom: 16px;">
-                    <div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap; margin-top: 8px;">
-                        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13.5px; font-weight: 500; color: var(--text-main);">
-                            <input type="radio" name="product_targeting_type" value="all" {{ ($settings->product_targeting_type ?? 'all') === 'all' ? 'checked' : '' }} onchange="toggleProductSelector()" style="width: 16px; height: 16px; accent-color: var(--primary-color);">
-                            Show on All Products
-                        </label>
-                        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13.5px; font-weight: 500; color: var(--text-main);">
-                            <input type="radio" name="product_targeting_type" value="specific" {{ ($settings->product_targeting_type ?? 'all') === 'specific' ? 'checked' : '' }} onchange="toggleProductSelector()" style="width: 16px; height: 16px; accent-color: var(--primary-color);">
-                            Show only on Selected Products
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Product Selector container -->
-                <div id="product-selector-container" style="display: {{ ($settings->product_targeting_type ?? 'all') === 'specific' ? 'block' : 'none' }}; border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 16px;">
-                    <div class="form-group" style="position: relative; margin-bottom: 16px;">
-                        <label for="product-search-input" style="font-weight: 600; margin-bottom: 8px; display: block;">Search Products to Add</label>
-                        <div class="search-input-wrapper" style="width: 100%; max-width: none;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                            <input type="text" id="product-search-input" placeholder="Type product name..." oninput="handleProductSearch()" style="width: 100%; border: none; background: transparent; outline: none; padding: 8px 0; color: var(--text-main); font-size: 13.5px;">
-                        </div>
-                        <!-- Search dropdown results -->
-                        <div id="product-search-results" style="position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: none; z-index: 1000; max-height: 250px; overflow-y: auto; margin-top: 4px;"></div>
-                    </div>
-
-                    <div>
-                        <label style="font-weight: 600; margin-bottom: 12px; display: block;">Selected Products</label>
-                        <div id="selected-products-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; background: #fafafa; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px;">
-                            <!-- Products will be added dynamically here -->
-                        </div>
-                    </div>
-
-                    <input type="hidden" id="targeted_product_ids" name="targeted_product_ids" value="{{ $settings->targeted_product_ids }}">
-                </div>
-            </div>
-
             <!-- Card 2: Email Templates -->
             <div class="panel-card">
                 <h3>Email Templates & Sender Display</h3>
@@ -1926,53 +1772,7 @@
                 </div>
                 <div class="form-group">
                     <label for="reminder_email_template">Reminder Email HTMLTemplate</label>
-                    <textarea id="reminder_email_template" name="reminder_email_template" rows="8">{{ $settings->reminder_email_template ?? '<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f6f6f6; margin: 0; padding: 0; color: #333; }
-    .email-container { max-width: 600px; margin: 20px auto; background: #fff; border-radius: 8px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-    .header { font-size: 24px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; letter-spacing: -0.02em; }
-    .product-details { display: flex; align-items: center; border: 1px solid #f0f0f0; border-radius: 8px; padding: 15px; margin-bottom: 25px; background-color: #fafafa; }
-    .product-img { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; margin-right: 20px; }
-    .product-info h3 { margin: 0 0 5px 0; font-size: 16px; font-weight: 600; }
-    .product-info p { margin: 0; color: #666; font-size: 14px; }
-    .actions { margin-bottom: 25px; }
-    .btn { display: inline-block; padding: 12px 24px; background: #000; color: #fff !important; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
-    .footer { font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 20px; text-align: center; }
-  </style>
-</head>
-<body>
-  <div class="email-container">
-    <div class="header">BuyLater</div>
-    <p>Hi there,</p>
-    <p>You asked us to remind you about the following product on our store. We wanted to let you know it is still waiting for you!</p>
-    
-    <div class="product-details">
-      {product_image_tag}
-      <div class="product-info">
-        <h3>{product_title}</h3>
-        <p>Price: {product_price}</p>
-      </div>
-    </div>
-    
-    <div class="actions">
-      <a href="{product_link}" class="btn">View Product & Buy Now</a>
-    </div>
-    
-    <p style="font-size:13px; color:#666; margin-top: 30px;">Need more time or changed your mind? Use the links below to update your reminder:</p>
-    <div style="margin-bottom:25px;">
-      <a href="{reschedule_link}" style="color:#0066cc; text-decoration:underline; font-size:13px; margin-right:15px;">Reschedule Reminder</a>
-      <a href="{cancel_link}" style="color:#cc0000; text-decoration:underline; font-size:13px;">Cancel Reminder</a>
-    </div>
-    
-    <div class="footer">
-      This reminder was sent to you at your request.
-    </div>
-  </div>
-</body>
-</html>' }}</textarea>
+                    <textarea id="reminder_email_template" name="reminder_email_template" rows="8">{{ $settings->reminder_email_template }}</textarea>
                 </div>
                 <hr style="border: none; border-top: 1px solid var(--border-color); margin: 24px 0;">
                 <div class="form-group">
@@ -1981,53 +1781,7 @@
                 </div>
                 <div class="form-group">
                     <label for="discount_email_template">Price Drop Email HTML Template</label>
-                    <textarea id="discount_email_template" name="discount_email_template" rows="8">{{ $settings->discount_email_template ?? '<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f6f6f6; margin: 0; padding: 0; color: #333; }
-    .email-container { max-width: 600px; margin: 20px auto; background: #fff; border-radius: 8px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-    .header { font-size: 24px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; letter-spacing: -0.02em; color: #000; }
-    .product-details { display: flex; align-items: center; border: 1px solid #f0f0f0; border-radius: 8px; padding: 15px; margin-bottom: 25px; background-color: #fafafa; }
-    .product-img { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; margin-right: 20px; }
-    .product-info h3 { margin: 0 0 5px 0; font-size: 16px; font-weight: 600; }
-    .product-info p { margin: 0; color: #666; font-size: 14px; }
-    .price-box { margin-top: 5px; font-size: 14px; }
-    .old-price { text-decoration: line-through; color: #888; margin-right: 10px; }
-    .new-price { color: #d9534f; font-weight: bold; font-size: 16px; }
-    .actions { margin-bottom: 25px; }
-    .btn { display: inline-block; padding: 12px 24px; background: #d9534f; color: #fff !important; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
-    .footer { font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 20px; text-align: center; }
-  </style>
-</head>
-<body>
-  <div class="email-container">
-    <div class="header">Price Drop Alert!</div>
-    <p>Hi there,</p>
-    <p>Good news! A product you saved for later is now on sale. Check out the price drop below!</p>
-    
-    <div class="product-details">
-      {product_image_tag}
-      <div class="product-info">
-        <h3>{product_title}</h3>
-        <div class="price-box">
-          <span class="old-price">{old_price}</span>
-          <span class="new-price">{new_price}</span>
-        </div>
-      </div>
-    </div>
-    
-    <div class="actions">
-      <a href="{product_link}" class="btn">Get Discount Now</a>
-    </div>
-    
-    <div class="footer">
-      You are receiving this because you subscribed to price drop alerts for this product.
-    </div>
-  </div>
-</body>
-</html>' }}</textarea>
+                    <textarea id="discount_email_template" name="discount_email_template" rows="8">{{ $settings->discount_email_template }}</textarea>
                 </div>
 
                 <div style="text-align: right; margin-top: 20px;">
@@ -2037,278 +1791,145 @@
         </form>
     </div>
 
-    <!-- Tab 6: How It Works -->
+    <!-- Tab 6: Price Plan -->
+    <div id="tab-price-plan" class="tab-content" style="display: none;">
+        <div class="panel-card" style="margin-bottom: 8px;">
+            <h3 style="font-size:22px; margin-bottom:4px;">≡ƒÆÄ Price Plan</h3>
+            <p style="color:var(--text-muted); margin:0 0 28px; font-size:14px;">Simple, transparent pricing. No hidden fees.</p>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:32px;">
+                <!-- Free Plan Card -->
+                <div style="border:2px solid var(--border-color); border-radius:14px; padding:28px; text-align:center;">
+                    <div style="display:inline-block; padding:4px 14px; border-radius:20px; background:#f6f6f7; color:#6d7175; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; border:1px solid #e1e3e5; margin-bottom:16px;">Free</div>
+                    <div style="font-size:48px; font-weight:800; color:var(--text-main); line-height:1; margin:0 0 4px;">$0</div>
+                    <div style="color:var(--text-muted); font-size:13px; margin-bottom:24px;">forever free</div>
+                    <ul style="list-style:none; padding:0; margin:0 0 24px; text-align:left;">
+                        <li style="padding:10px 0; border-bottom:1px solid var(--border-color); font-size:14px; display:flex; align-items:center; gap:10px;"><span style="color:var(--primary-color);">Γ£ô</span> Remind Me Later (unlimited)</li>
+                        <li style="padding:10px 0; border-bottom:1px solid var(--border-color); font-size:14px; display:flex; align-items:center; gap:10px;"><span style="color:var(--primary-color);">Γ£ô</span> Price Drop Alerts (unlimited)</li>
+                        <li style="padding:10px 0; border-bottom:1px solid var(--border-color); font-size:14px; display:flex; align-items:center; gap:10px;"><span style="color:var(--primary-color);">Γ£ô</span> Dashboard Analytics</li>
+                        <li style="padding:10px 0; border-bottom:1px solid var(--border-color); font-size:14px; display:flex; align-items:center; gap:10px;"><span style="color:var(--primary-color);">Γ£ô</span> Automated Email Reminders</li>
+                        <li style="padding:10px 0; border-bottom:1px solid var(--border-color); font-size:14px; display:flex; align-items:center; gap:10px;"><span style="color:#ccc;">Γ£ò</span> <span style="color:#aaa;">Deposit Hold Bookings</span></li>
+                        <li style="padding:10px 0; font-size:14px; display:flex; align-items:center; gap:10px;"><span style="color:#ccc;">Γ£ò</span> <span style="color:#aaa;">Send Balance Reminders</span></li>
+                    </ul>
+                    <span style="display:block; width:100%; padding:12px; border-radius:10px; background:#f6f6f7; color:#6d7175; border:1px solid #e1e3e5; font-weight:600; font-size:14px; box-sizing:border-box;">Current Plan</span>
+                </div>
+
+                <!-- Pro Plan Card -->
+                <div style="border:2px solid var(--primary-color); border-radius:14px; padding:28px; text-align:center; box-shadow:0 0 0 1px var(--primary-color), 0 8px 24px rgba(0,128,96,0.12); position:relative; overflow:hidden;">
+                    <div style="position:absolute;top:14px;right:-26px;background:var(--primary-color);color:white;font-size:10px;font-weight:700;letter-spacing:1px;padding:4px 34px;transform:rotate(45deg);">BEST VALUE</div>
+                    <div style="display:inline-block; padding:4px 14px; border-radius:20px; background:#e6f4f1; color:var(--primary-color); font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; border:1px solid var(--primary-color); margin-bottom:16px;">Pro</div>
+                    <div style="font-size:48px; font-weight:800; color:var(--text-main); line-height:1; margin:0 0 4px;"><span style="font-size:20px; vertical-align:super; color:var(--text-muted);">$</span>5</div>
+                    <div style="color:var(--text-muted); font-size:13px; margin-bottom:24px;">per month</div>
+                    <ul style="list-style:none; padding:0; margin:0 0 24px; text-align:left;">
+                        <li style="padding:10px 0; border-bottom:1px solid var(--border-color); font-size:14px; display:flex; align-items:center; gap:10px;"><span style="color:var(--primary-color);">Γ£ô</span> Everything in Free</li>
+                        <li style="padding:10px 0; border-bottom:1px solid var(--border-color); font-size:14px; display:flex; align-items:center; gap:10px;"><span style="color:var(--primary-color);">Γ£ô</span> Deposit Hold Bookings</li>
+                        <li style="padding:10px 0; border-bottom:1px solid var(--border-color); font-size:14px; display:flex; align-items:center; gap:10px;"><span style="color:var(--primary-color);">Γ£ô</span> Send Balance Reminder Emails</li>
+                        <li style="padding:10px 0; border-bottom:1px solid var(--border-color); font-size:14px; display:flex; align-items:center; gap:10px;"><span style="color:var(--primary-color);">Γ£ô</span> Booking Status Tracking</li>
+                        <li style="padding:10px 0; border-bottom:1px solid var(--border-color); font-size:14px; display:flex; align-items:center; gap:10px;"><span style="color:var(--primary-color);">Γ£ô</span> Priority Support</li>
+                        <li style="padding:10px 0; font-size:14px; display:flex; align-items:center; gap:10px;"><span style="color:var(--primary-color);">Γ£ô</span> Unlimited Events</li>
+                    </ul>
+                    <a href="{{ route('billing', array_merge(['plan' => 1], request()->query())) }}" target="_top" style="display:block; width:100%; padding:12px; border-radius:10px; background:var(--primary-color); color:white; border:none; font-weight:700; font-size:14px; text-decoration:none; box-sizing:border-box; cursor:pointer; transition:background 0.2s;">Upgrade to Pro ΓåÆ</a>
+                </div>
+            </div>
+
+            <!-- FAQ -->
+            <div style="border-top:1px solid var(--border-color); padding-top:24px;">
+                <h3 style="font-size:17px; margin-bottom:20px;">Frequently Asked Questions</h3>
+                <div style="padding:14px 0; border-bottom:1px solid var(--border-color);">
+                    <strong style="font-size:14px;">Can I cancel anytime?</strong>
+                    <p style="font-size:13px; color:var(--text-muted); margin:6px 0 0;">Yes! Cancel or downgrade at any time. No long-term commitments.</p>
+                </div>
+                <div style="padding:14px 0; border-bottom:1px solid var(--border-color);">
+                    <strong style="font-size:14px;">What happens to data if I downgrade?</strong>
+                    <p style="font-size:13px; color:var(--text-muted); margin:6px 0 0;">All existing data is retained. You simply lose access to Pro-only features like deposit bookings.</p>
+                </div>
+                <div style="padding:14px 0;">
+                    <strong style="font-size:14px;">Is there a free trial?</strong>
+                    <p style="font-size:13px; color:var(--text-muted); margin:6px 0 0;">The Free plan is available indefinitely. Pro is $5/month ΓÇö cancel anytime.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 7: How It Works & Benefits -->
     <div id="tab-how-it-works" class="tab-content" style="display: none;">
-        <div class="guide-header">
-            <h2>How It Works</h2>
-            <p>Understand the core features, options flow, and customer journey of the Buy Later app.</p>
-        </div>
-
-        <div class="panel-card" style="margin-bottom: 24px;">
-            <h3>🔄 Storefront Customer Journey</h3>
-            <div class="guide-timeline">
-                <div class="guide-timeline-item">
-                    <h5>1. Trigger Widget on Product Page</h5>
-                    <p>The "Buy Later" button is placed seamlessly next to or below your standard add-to-cart button using Shopify App Blocks. It dynamically loads configuration settings (colors, fonts, allowed options) directly from the application database.</p>
-                </div>
-                <div class="guide-timeline-item">
-                    <h5>2. Option Selection Modal</h5>
-                    <p>Clicking the button opens an attractive, clean modal presenting three flexible options to the customer: Book with Deposit, Set a Reminder, or Subscribe to Discount Alerts.</p>
-                </div>
-                <div class="guide-timeline-item">
-                    <h5>3. Processing the Selection</h5>
-                    <p>
-                        • <strong>Book It Now (Partial Paid)</strong>: The customer provides their email, pays the required deposit (e.g. 10%), and is redirected to checkout. A secure hold is created, and the status updates in your dashboard.<br>
-                        • <strong>Remind Me Later</strong>: The customer picks a custom date and time to receive an automated follow-up email containing a direct link to the product.<br>
-                        • <strong>Alert Me on Discount</strong>: Subscribes the customer to instant price drop alerts for the specific product.
-                    </p>
-                </div>
-                <div class="guide-timeline-item">
-                    <h5>4. Completing the Purchase</h5>
-                    <p>For deposit holds, customers can revisit their portal to pay the remaining balance, settling the draft order. Reminder and discount emails contain direct purchase links to ensure quick conversion.</p>
-                </div>
+        <!-- Steps Grid -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+            <div class="panel-card">
+                <div style="font-size:28px; margin-bottom:10px;">≡ƒ¢ì∩╕Å</div>
+                <div style="width:32px; height:32px; border-radius:50%; background:var(--primary-color); color:white; font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-bottom:12px;">1</div>
+                <h3 style="font-size:15px; margin:0 0 8px;">Customer Finds a Product</h3>
+                <p style="font-size:13px; color:var(--text-muted); margin:0; line-height:1.6;">A shopper visits your store but isn't ready to buy. They see the <strong>"Buy Later"</strong> button on the product page.</p>
+            </div>
+            <div class="panel-card">
+                <div style="font-size:28px; margin-bottom:10px;">≡ƒöö</div>
+                <div style="width:32px; height:32px; border-radius:50%; background:var(--primary-color); color:white; font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-bottom:12px;">2</div>
+                <h3 style="font-size:15px; margin:0 0 8px;">Sets a Reminder or Alert</h3>
+                <p style="font-size:13px; color:var(--text-muted); margin:0; line-height:1.6;">The customer chooses a reminder time or signs up for a price drop alert for that product.</p>
+            </div>
+            <div class="panel-card">
+                <div style="font-size:28px; margin-bottom:10px;">≡ƒÆ│</div>
+                <div style="width:32px; height:32px; border-radius:50%; background:var(--primary-color); color:white; font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-bottom:12px;">3</div>
+                <h3 style="font-size:15px; margin:0 0 8px;">Places a Deposit Hold (Pro)</h3>
+                <p style="font-size:13px; color:var(--text-muted); margin:0; line-height:1.6;">With Pro, customers can hold an item by paying a small deposit (e.g. 10%) and pay the rest later.</p>
+            </div>
+            <div class="panel-card">
+                <div style="font-size:28px; margin-bottom:10px;">Γ£à</div>
+                <div style="width:32px; height:32px; border-radius:50%; background:var(--primary-color); color:white; font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; margin-bottom:12px;">4</div>
+                <h3 style="font-size:15px; margin:0 0 8px;">Completes the Purchase</h3>
+                <p style="font-size:13px; color:var(--text-muted); margin:0; line-height:1.6;">You send a reminder or alert. The customer returns and completes their order ΓÇö revenue recovered!</p>
             </div>
         </div>
 
-        <div class="guide-grid-3">
-            <div class="guide-card-premium">
-                <div class="guide-card-badge">💰</div>
-                <h4>Deposit Holds</h4>
-                <p>Ensures immediate cash flow by collecting partial payments while reserving high-demand items for customers.</p>
-            </div>
-            <div class="guide-card-premium">
-                <div class="guide-card-badge">⏰</div>
-                <h4>Automated Reminders</h4>
-                <p>Draft orders are linked directly inside scheduler tasks to send professional reminder emails exactly when requested.</p>
-            </div>
-            <div class="guide-card-premium">
-                <div class="guide-card-badge">🔔</div>
-                <h4>Price Alert Engine</h4>
-                <p>Scans price updates across products and variants, immediately emailing subscribers if a discount is published.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tab 7: Benefits -->
-    <div id="tab-benefits" class="tab-content" style="display: none;">
-        <div class="guide-header">
-            <h2>Merchant &amp; Customer Benefits</h2>
-            <p>Discover how the Buy Later suite increases conversions, prevents cart abandonment, and drives customer loyalty.</p>
-        </div>
-
-        <div class="guide-grid-2">
-            <div class="guide-card-premium">
-                <div class="guide-card-badge">🚀</div>
-                <h4>Boost Storefront Conversions</h4>
-                <p>Lower the barrier to entry by offering low-deposit holds (e.g. 10% or 15% upfront). Customers who aren't ready to pay the full price today can lock in their purchase instantly, boosting your immediate sale counts.</p>
-            </div>
-            <div class="guide-card-premium">
-                <div class="guide-card-badge">📉</div>
-                <h4>Minimize Cart Abandonment</h4>
-                <p>Instead of leaving empty-handed when budget or timing isn't right, users can save products using custom reminders or discount alerts. This acts as a warm lead generator, keeping your brand fresh in their inbox.</p>
-            </div>
-            <div class="guide-card-premium">
-                <div class="guide-card-badge">📧</div>
-                <h4>High-Quality Retargeting List</h4>
-                <p>Every reminder request and price drop alert subscription captures the customer's email with their direct consent. Build an active list of warm leads with high buying intent for your store's products.</p>
-            </div>
-            <div class="guide-card-premium">
-                <div class="guide-card-badge">🔒</div>
-                <h4>Secure &amp; Compliant Holds</h4>
-                <p>All deposit reservations leverage Shopify's native Draft Order API, securing stock allocation and keeping inventory levels fully synchronized with your Shopify admin. Zero manual order reconciliations are required.</p>
-            </div>
-        </div>
-
-        <div class="panel-card">
-            <h3>✨ Customer Experience Perks</h3>
-            <p style="font-size: 13.5px; color: var(--text-muted); line-height: 1.6; margin: 0 0 16px 0;">
-                Shoppers love flexibility. By integrating Buy Later options, you offer an upscale shopping experience similar to modern retail layaway systems.
-            </p>
-            <div class="guide-grid-3" style="margin-bottom: 0;">
-                <div style="background: rgba(0,128,96,0.03); padding: 16px; border-radius: 8px;">
-                    <h5 style="margin:0 0 6px 0; font-size:13.5px; font-weight:600; color:var(--primary-color);">No credit checks</h5>
-                    <p style="margin:0; font-size:12.5px; color:var(--text-muted);">Risk-free reservation options with zero debt or interest charges.</p>
+        <!-- Benefits -->
+        <div class="panel-card" style="margin-bottom:16px;">
+            <h3>≡ƒÜÇ Key Benefits for Your Store</h3>
+            <div style="display:flex; flex-direction:column; gap:0;">
+                <div style="display:flex; gap:16px; align-items:flex-start; padding:16px 0; border-bottom:1px solid var(--border-color);">
+                    <div style="width:44px; height:44px; border-radius:12px; background:#e6f4f1; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">≡ƒÆ░</div>
+                    <div><strong style="font-size:14px;">Recover Lost Revenue</strong><p style="font-size:13px; color:var(--text-muted); margin:4px 0 0; line-height:1.5;">Turn window shoppers into buyers with timely email nudges and reminders.</p></div>
                 </div>
-                <div style="background: rgba(0,128,96,0.03); padding: 16px; border-radius: 8px;">
-                    <h5 style="margin:0 0 6px 0; font-size:13.5px; font-weight:600; color:var(--primary-color);">Secure checkouts</h5>
-                    <p style="margin:0; font-size:12.5px; color:var(--text-muted);">Processed directly through Shopify's secure storefront checkout.</p>
+                <div style="display:flex; gap:16px; align-items:flex-start; padding:16px 0; border-bottom:1px solid var(--border-color);">
+                    <div style="width:44px; height:44px; border-radius:12px; background:#e6f2ff; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">≡ƒôè</div>
+                    <div><strong style="font-size:14px;">Know What Products Are Trending</strong><p style="font-size:13px; color:var(--text-muted); margin:4px 0 0; line-height:1.5;">See which products get the most interest ΓÇö plan inventory and promotions better.</p></div>
                 </div>
-                <div style="background: rgba(0,128,96,0.03); padding: 16px; border-radius: 8px;">
-                    <h5 style="margin:0 0 6px 0; font-size:13.5px; font-weight:600; color:var(--primary-color);">Self-serve portal</h5>
-                    <p style="margin:0; font-size:12.5px; color:var(--text-muted);">Storefront proxy lets customers check their balance and complete orders anytime.</p>
+                <div style="display:flex; gap:16px; align-items:flex-start; padding:16px 0; border-bottom:1px solid var(--border-color);">
+                    <div style="width:44px; height:44px; border-radius:12px; background:#fff5e6; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">ΓÅ░</div>
+                    <div><strong style="font-size:14px;">Automated Reminder Emails</strong><p style="font-size:13px; color:var(--text-muted); margin:4px 0 0; line-height:1.5;">Customers pick their own reminder time. Emails send automatically. Zero manual work.</p></div>
+                </div>
+                <div style="display:flex; gap:16px; align-items:flex-start; padding:16px 0;">
+                    <div style="width:44px; height:44px; border-radius:12px; background:#f5e6ff; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">≡ƒÅ╖∩╕Å</div>
+                    <div><strong style="font-size:14px;">Price Drop Alerts Drive Sales</strong><p style="font-size:13px; color:var(--text-muted); margin:4px 0 0; line-height:1.5;">Any discount on a subscribed product triggers an instant email ΓÇö bringing them back to buy.</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Setup -->
+        <div style="background:linear-gradient(135deg,#e6f4f1,#f0faf6); border:1px solid #b2ddd2; border-radius:14px; padding:28px;">
+            <h3 style="color:var(--primary-color); margin:0 0 6px; font-size:18px;">ΓÜí Quick Setup Guide</h3>
+            <p style="font-size:13px; color:#4a7c6f; margin:0 0 20px;">Get up and running in under 5 minutes.</p>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <div style="display:flex; gap:14px; background:white; border-radius:10px; padding:14px 18px; border:1px solid #b2ddd2;">
+                    <div style="width:26px; height:26px; border-radius:50%; background:var(--primary-color); color:white; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px;">1</div>
+                    <div><strong style="font-size:13px;">Install Widget on Theme</strong><p style="font-size:12px; color:var(--text-muted); margin:4px 0 0;">Shopify Admin ΓåÆ Online Store ΓåÆ Themes ΓåÆ Customize ΓåÆ Add BuyNowLater block to product page.</p></div>
+                </div>
+                <div style="display:flex; gap:14px; background:white; border-radius:10px; padding:14px 18px; border:1px solid #b2ddd2;">
+                    <div style="width:26px; height:26px; border-radius:50%; background:var(--primary-color); color:white; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px;">2</div>
+                    <div><strong style="font-size:13px;">Configure Settings</strong><p style="font-size:12px; color:var(--text-muted); margin:4px 0 0;">Set button text, deposit percentage, and enable features from the Settings tab.</p></div>
+                </div>
+                <div style="display:flex; gap:14px; background:white; border-radius:10px; padding:14px 18px; border:1px solid #b2ddd2;">
+                    <div style="width:26px; height:26px; border-radius:50%; background:var(--primary-color); color:white; font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:2px;">3</div>
+                    <div><strong style="font-size:13px;">Monitor Your Dashboard</strong><p style="font-size:12px; color:var(--text-muted); margin:4px 0 0;">Track reminders, alerts, and bookings. Send manual follow-ups anytime.</p></div>
                 </div>
             </div>
         </div>
     </div>
 
-    </div><!-- /.dashboard-container -->
+</div><!-- /.dashboard-container -->
 </div><!-- /.main-content -->
 </div><!-- /.app-layout -->
 
 <script>
-// Product Targeting Selector
-let selectedProducts = @json($targetedProducts) || [];
-
-function toggleProductSelector() {
-    const container = document.getElementById('product-selector-container');
-    const selectedRadio = document.querySelector('input[name="product_targeting_type"]:checked');
-    if (container && selectedRadio) {
-        container.style.display = selectedRadio.value === 'specific' ? 'block' : 'none';
-    }
-}
-
-function renderSelectedProducts() {
-    const listEl = document.getElementById('selected-products-list');
-    const hiddenInput = document.getElementById('targeted_product_ids');
-    if (!listEl || !hiddenInput) return;
-
-    listEl.innerHTML = '';
-    
-    if (selectedProducts.length === 0) {
-        listEl.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 12px 0;">No products selected. Search above to add products.</div>';
-        hiddenInput.value = '';
-        return;
-    }
-
-    selectedProducts.forEach(prod => {
-        const item = document.createElement('div');
-        item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);';
-        
-        const imgHtml = prod.image 
-            ? `<img src="${prod.image}" alt="${prod.title}" style="width: 32px; height: 32px; object-fit: cover; border-radius: 4px; margin-right: 12px; border: 1px solid var(--border-color);"/>`
-            : `<div style="width: 32px; height: 32px; border-radius: 4px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 14px; margin-right: 12px; border: 1px solid var(--border-color);">📦</div>`;
-
-        item.innerHTML = `
-            <div style="display: flex; align-items: center; overflow: hidden; flex: 1; margin-right: 12px;">
-                ${imgHtml}
-                <span style="font-size: 13.5px; font-weight: 500; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${prod.title}</span>
-            </div>
-            <button type="button" onclick="removeProduct('${prod.id}')" style="background: none; border: none; color: #d82c0d; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 4px; transition: background 0.15s ease;" onmouseover="this.style.background='rgba(216,44,13,0.05)'" onmouseout="this.style.background='none'">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-        `;
-        listEl.appendChild(item);
-    });
-
-    hiddenInput.value = selectedProducts.map(p => p.id).join(',');
-}
-
-function removeProduct(id) {
-    selectedProducts = selectedProducts.filter(p => String(p.id) !== String(id));
-    renderSelectedProducts();
-}
-
-let searchTimeout = null;
-async function handleProductSearch() {
-    const input = document.getElementById('product-search-input');
-    const resultsEl = document.getElementById('product-search-results');
-    if (!input || !resultsEl) return;
-
-    const query = input.value.trim();
-    if (query.length < 2) {
-        resultsEl.style.display = 'none';
-        resultsEl.innerHTML = '';
-        return;
-    }
-
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(async () => {
-        resultsEl.innerHTML = '<div style="padding: 12px; text-align: center; font-size: 13px; color: var(--text-muted);">Searching...</div>';
-        resultsEl.style.display = 'block';
-
-        let token = '';
-        try {
-            if (window.shopify && typeof window.shopify.idToken === 'function') {
-                token = await window.shopify.idToken();
-            }
-        } catch (err) {
-            console.error('Failed to retrieve Shopify session token for product search:', err);
-        }
-
-        const url = new URL('{{ route("products.search") }}', window.location.origin);
-        const searchParams = new URLSearchParams(window.location.search);
-        for (const [key, val] of searchParams.entries()) {
-            url.searchParams.set(key, val);
-        }
-        url.searchParams.set('q', query);
-        if (token) {
-            url.searchParams.set('token', token);
-        }
-
-        try {
-            const res = await fetch(url.toString(), {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-            if (!res.ok) throw new Error('Search failed');
-            
-            const products = await res.json();
-            resultsEl.innerHTML = '';
-
-            if (products.length === 0) {
-                resultsEl.innerHTML = '<div style="padding: 12px; text-align: center; font-size: 13px; color: var(--text-muted);">No products found.</div>';
-                return;
-            }
-
-            products.forEach(prod => {
-                const isAlreadySelected = selectedProducts.some(p => String(p.id) === String(prod.id));
-                const item = document.createElement('div');
-                item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.15s ease;';
-                item.onmouseover = () => { item.style.background = '#f5f5f5'; };
-                item.onmouseout = () => { item.style.background = '#ffffff'; };
-                
-                const imgHtml = prod.image 
-                    ? `<img src="${prod.image}" alt="${prod.title}" style="width: 28px; height: 28px; object-fit: cover; border-radius: 4px; margin-right: 10px; border: 1px solid var(--border-color);"/>`
-                    : `<div style="width: 28px; height: 28px; border-radius: 4px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-right: 10px; border: 1px solid var(--border-color);">📦</div>`;
-
-                const actionBtn = isAlreadySelected
-                    ? `<span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Added</span>`
-                    : `<button type="button" style="background: var(--primary-color); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 500; cursor: pointer; transition: opacity 0.15s ease;">Add</button>`;
-
-                item.innerHTML = `
-                    <div style="display: flex; align-items: center; overflow: hidden; flex: 1; margin-right: 12px;">
-                        ${imgHtml}
-                        <span style="font-size: 13px; font-weight: 500; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${prod.title}</span>
-                    </div>
-                    <div>${actionBtn}</div>
-                `;
-
-                if (!isAlreadySelected) {
-                    item.querySelector('button').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        selectedProducts.push(prod);
-                        renderSelectedProducts();
-                        input.value = '';
-                        resultsEl.style.display = 'none';
-                        resultsEl.innerHTML = '';
-                    });
-                }
-
-                resultsEl.appendChild(item);
-            });
-        } catch (err) {
-            console.error('Error during product search:', err);
-            resultsEl.innerHTML = '<div style="padding: 12px; text-align: center; font-size: 13px; color: #d82c0d;">Failed to load search results.</div>';
-        }
-    }, 300);
-}
-
-// Close search dropdown on click outside
-document.addEventListener('click', function(e) {
-    const resultsEl = document.getElementById('product-search-results');
-    const input = document.getElementById('product-search-input');
-    if (resultsEl && input && !resultsEl.contains(e.target) && e.target !== input) {
-        resultsEl.style.display = 'none';
-    }
-});
-
-// Initialize targeting UI on load
-document.addEventListener('DOMContentLoaded', function() {
-    renderSelectedProducts();
-});
-
     function switchTab(event, tabId) {
         const tabContents = document.querySelectorAll('.tab-content');
         tabContents.forEach(content => content.style.display = 'none');
@@ -2485,14 +2106,15 @@ function filterSubscribers() {
         const ctx = document.getElementById('statusDonutChart').getContext('2d');
         
         let chartData = {
-            labels: ['Partial Paid', 'Full Paid', 'Expired'],
+            labels: ['Pending', 'Deposit Paid', 'Fully Paid', 'Expired'],
             datasets: [{
                 data: [
+                    {{ $statusCounts['pending'] }},
                     {{ $statusCounts['deposit_paid'] }},
                     {{ $statusCounts['completed'] }},
                     {{ $statusCounts['expired'] }}
                 ],
-                backgroundColor: ['#005ea2', '#108043', '#d82c0d'],
+                backgroundColor: ['#6d7175', '#005ea2', '#108043', '#d82c0d'],
                 borderWidth: 2,
                 borderColor: '#ffffff',
                 hoverOffset: 4

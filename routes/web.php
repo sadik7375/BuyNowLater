@@ -26,6 +26,7 @@ Log::info('Web Route Match:', [
 // Embedded App Dashboard Routes (Admin Area)
 Route::group(['middleware' => ['verify.shopify']], function () {
     Route::match(['get', 'post'], '/', [DashboardController::class, 'index'])->name('home');
+    Route::get('/admin/products/search', [DashboardController::class, 'searchProducts'])->name('products.search');
     Route::post('/admin/settings', [DashboardController::class, 'saveSettings'])->name('settings.save');
     Route::post('/admin/bookings/{id}/send-balance-link', [DashboardController::class, 'sendBalanceLink'])->name('bookings.send_balance_link');
     Route::post('/admin/bookings/{id}/send-reminder', [DashboardController::class, 'sendReminder'])->name('bookings.send_reminder');

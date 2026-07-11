@@ -115,4 +115,75 @@ class SettingsTest extends TestCase
             'hold_duration_days' => 25,
         ]);
     }
+
+    public function test_can_save_settings_with_product_targeting()
+    {
+        $this->withoutMiddleware();
+
+        $user = User::factory()->create([
+            'name' => 'test-shop.myshopify.com'
+        ]);
+
+        $this->actingAs($user);
+
+        $response = $this->post(route('settings.save'), [
+            'sender_display_name' => 'Test Sender',
+            'deposit_percentage' => 15,
+            'button_text' => 'Buy Later',
+            'reminder_email_subject' => 'Reminder Subject',
+            'discount_email_subject' => 'Discount Subject',
+            'hold_duration_days' => 15,
+            'show_deposit' => 1,
+            'show_reminders' => 1,
+            'show_alerts' => 1,
+            'product_targeting_type' => 'specific',
+            'targeted_product_ids' => '12345,67890',
+        ]);
+
+        $response->assertStatus(302);
+        
+        $setting = Setting::where('shop_id', $user->id)->first();
+        $this->assertNotNull($setting);
+        $this->assertEquals('specific', $setting->product_targeting_type);
+        $this->assertEquals('12345,67890', $setting->targeted_product_ids);
+    }
+
+    public function test_get_settings_via_proxy_filters_product_targeting()
+    {
+        $user = User::factory()->create([
+            'name' => 'test-shop.myshopify.com'
+        ]);
+
+        // Specific targeting with product 12345
+        Setting::create([
+            'shop_id' => $user->id,
+            'sender_display_name' => 'Test Sender',
+            'deposit_percentage' => 20,
+            'button_text' => 'Buy Later',
+            'reminder_email_subject' => 'Reminder Subject',
+            'discount_email_subject' => 'Discount Subject',
+            'hold_duration_days' => 14,
+            'show_deposit' => true,
+            'show_reminders' => true,
+            'show_alerts' => true,
+            'product_targeting_type' => 'specific',
+            'targeted_product_ids' => '12345',
+        ]);
+
+        // Request without product_id -> disabled
+        $response1 = $this->get('/apps/buylater-proxy/settings?shop=test-shop.myshopify.com&path_prefix=/apps/buylater-proxy');
+        $response1->assertJson(['enabled' => false]);
+
+        // Request with non-matching product_id -> disabled
+        $response2 = $this->get('/apps/buylater-proxy/settings?shop=test-shop.myshopify.com&path_prefix=/apps/buylater-proxy&product_id=99999');
+        $response2->assertJson(['enabled' => false]);
+
+        // Request with matching product_id -> enabled
+        $response3 = $this->get('/apps/buylater-proxy/settings?shop=test-shop.myshopify.com&path_prefix=/apps/buylater-proxy&product_id=12345');
+        $response3->assertJson(['enabled' => true]);
+
+        // Request with matching product_id in Shopify global id format -> enabled
+        $response4 = $this->get('/apps/buylater-proxy/settings?shop=test-shop.myshopify.com&path_prefix=/apps/buylater-proxy&product_id=gid://shopify/Product/12345');
+        $response4->assertJson(['enabled' => true]);
+    }
 }
