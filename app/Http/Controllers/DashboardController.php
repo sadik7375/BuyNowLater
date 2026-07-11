@@ -275,37 +275,81 @@ class DashboardController extends Controller
         $shop = auth()->user();
         $query = $request->query('q');
 
-        $params = [
-            'limit' => 20,
-            'fields' => 'id,title,handle,image',
-        ];
-        if (!empty($query)) {
-            $params['title'] = $query;
-        }
+        // GraphQL Query for partial/fuzzy title search
+        $gqlQuery = '
+            query searchProducts($queryStr: String) {
+                products(first: 20, query: $queryStr) {
+                    edges {
+                        node {
+                            id
+                            title
+                            handle
+                            featuredImage {
+                                url
+                            }
+                        }
+                    }
+                }
+            }
+        ';
+
+        // Construct wildcard query for title search (Lucene syntax)
+        $queryStr = !empty($query) ? 'title:*' . $query . '*' : null;
 
         try {
-            $response = $shop->api()->rest(
-                'GET',
-                '/admin/api/' . config('shopify-app.api_version') . '/products.json',
-                $params
-            );
-
+            $response = $shop->api()->graph($gqlQuery, ['queryStr' => $queryStr]);
+            
             $products = [];
             if (!$response['errors']) {
-                $shopifyProducts = $response['body']['products'] ?? [];
-                foreach ($shopifyProducts as $sp) {
+                $edges = $response['body']['data']['products']['edges'] ?? [];
+                foreach ($edges as $edge) {
+                    $node = $edge['node'];
+                    $numericId = preg_replace('/[^0-9]/', '', $node['id']);
                     $products[] = [
-                        'id' => (string) $sp['id'],
-                        'title' => $sp['title'],
-                        'handle' => $sp['handle'],
-                        'image' => $sp['image']['src'] ?? null,
+                        'id' => (string) $numericId,
+                        'title' => $node['title'] ?? '',
+                        'handle' => $node['handle'] ?? '',
+                        'image' => $node['featuredImage']['url'] ?? null,
                     ];
                 }
             }
             return response()->json($products);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Failed to search products in searchProducts(): " . $e->getMessage());
-            return response()->json([]);
+            \Illuminate\Support\Facades\Log::error("Failed to search products in searchProducts() via GraphQL: " . $e->getMessage());
+
+            // Fallback to REST API if GraphQL fails
+            $params = [
+                'limit' => 20,
+                'fields' => 'id,title,handle,image',
+            ];
+            if (!empty($query)) {
+                $params['title'] = $query;
+            }
+
+            try {
+                $restResponse = $shop->api()->rest(
+                    'GET',
+                    '/admin/api/' . config('shopify-app.api_version') . '/products.json',
+                    $params
+                );
+
+                $products = [];
+                if (!$restResponse['errors']) {
+                    $shopifyProducts = $restResponse['body']['products'] ?? [];
+                    foreach ($shopifyProducts as $sp) {
+                        $products[] = [
+                            'id' => (string) $sp['id'],
+                            'title' => $sp['title'],
+                            'handle' => $sp['handle'],
+                            'image' => $sp['image']['src'] ?? null,
+                        ];
+                    }
+                }
+                return response()->json($products);
+            } catch (\Exception $restEx) {
+                \Illuminate\Support\Facades\Log::error("REST Fallback failed in searchProducts(): " . $restEx->getMessage());
+                return response()->json([]);
+            }
         }
     }
 
