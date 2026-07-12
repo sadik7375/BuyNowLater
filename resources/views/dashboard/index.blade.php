@@ -2087,6 +2087,45 @@
                 <p>Scans price updates across products and variants, immediately emailing subscribers if a discount is published.</p>
             </div>
         </div>
+
+        <div class="panel-card" style="margin-top: 32px; border-top: 4px solid var(--primary-color);">
+            <h3>✉️ Feedback &amp; Complaint Form</h3>
+            <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 20px;">
+                Have a feature suggestion, found a bug, or want to register a complaint? Let us know directly. We value your input and respond to support messages within 24 hours.
+            </p>
+            
+            <form id="feedback-form" style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="guide-grid-2" style="margin-bottom: 0; gap: 16px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="feedback_type" style="font-weight: 500;">Feedback Type</label>
+                        <select id="feedback_type" name="feedback_type" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit;" required>
+                            <option value="General Feedback">General Feedback</option>
+                            <option value="Bug Report">Report a Bug</option>
+                            <option value="Feature Request">Feature Request</option>
+                            <option value="Complaint">Complaint</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="feedback_contact" style="font-weight: 500;">Contact Email</label>
+                        <input type="email" id="feedback_contact" name="feedback_contact" value="{{ $shop->email ?? '' }}" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit;" required>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="feedback_subject" style="font-weight: 500;">Subject</label>
+                    <input type="text" id="feedback_subject" name="feedback_subject" placeholder="What is this about?" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit;" required>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="feedback_message" style="font-weight: 500;">Message</label>
+                    <textarea id="feedback_message" name="feedback_message" rows="4" placeholder="Detail your feedback, suggestion or complaint..." style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; resize: vertical;" required></textarea>
+                </div>
+
+                <div style="text-align: right;">
+                    <button type="submit" id="feedback-submit-btn" class="btn-save" style="margin-top: 8px;">Submit Feedback</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Tab 7: Benefits -->
@@ -2750,6 +2789,73 @@ function filterSubscribers() {
             }
         }
     });
+
+    // Feedback form submission handler
+    const feedbackForm = document.getElementById('feedback-form');
+    if (feedbackForm) {
+        feedbackForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('feedback-submit-btn');
+            if (!btn) return;
+
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Submitting...';
+
+            let token = '';
+            try {
+                if (window.shopify && typeof window.shopify.idToken === 'function') {
+                    token = await window.shopify.idToken();
+                }
+            } catch (err) {
+                console.error('Failed to retrieve Shopify session token:', err);
+            }
+
+            const formData = new FormData(feedbackForm);
+            const url = new URL('{{ route("feedback.submit") }}', window.location.origin);
+            
+            // Append query params for shop verification
+            const searchParams = new URLSearchParams(window.location.search);
+            for (const [key, val] of searchParams.entries()) {
+                url.searchParams.set(key, val);
+            }
+            if (token) {
+                url.searchParams.set('token', token);
+            }
+
+            try {
+                const res = await fetch(url.toString(), {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    // Success
+                    btn.innerHTML = 'Success!';
+                    btn.style.background = '#108043';
+                    feedbackForm.reset();
+                    alert(data.message || 'Feedback submitted successfully. Thank you!');
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                        btn.style.background = '';
+                    }, 3000);
+                } else {
+                    throw new Error(data.message || 'Submission failed');
+                }
+            } catch (err) {
+                console.error('Feedback error:', err);
+                alert(err.message || 'Failed to submit feedback. Please try again.');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+    }
 </script>
 
 <!-- Crisp Live Chat Integration -->

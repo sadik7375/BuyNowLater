@@ -901,6 +901,90 @@ class DashboardController extends Controller
     }
 
     /**
+     * Handle Merchant Feedback/Complaints Submission.
+     */
+    public function submitFeedback(Request $request)
+    {
+        $shop = auth()->user();
+        if (!$shop) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized or session expired.'], 401);
+        }
+
+        $request->validate([
+            'feedback_type' => 'required|string',
+            'feedback_contact' => 'required|email',
+            'feedback_subject' => 'required|string|max:255',
+            'feedback_message' => 'required|string',
+        ]);
+
+        $feedbackType = $request->input('feedback_type');
+        $contactEmail = $request->input('feedback_contact');
+        $subjectText = $request->input('feedback_subject');
+        $messageText = $request->input('feedback_message');
+
+        // Construct notification email body
+        $htmlContent = "
+            <h2>New Support Feedback/Complaint</h2>
+            <p><strong>Shop:</strong> {$shop->name}</p>
+            <p><strong>Contact Email:</strong> {$contactEmail}</p>
+            <p><strong>Feedback Type:</strong> {$feedbackType}</p>
+            <p><strong>Subject:</strong> {$subjectText}</p>
+            <hr style='border: none; border-top: 1px solid #ddd; margin: 15px 0;' />
+            <p><strong>Message:</strong></p>
+            <div style='background: #f9f9f9; padding: 15px; border-radius: 6px; border: 1px solid #eee; white-space: pre-wrap;'>
+                " . e($messageText) . "
+            </div>
+        ";
+
+        $subject = "[BuyLater Admin Support] {$feedbackType}: {$subjectText}";
+
+        // Send to developer (configurable in .env, falling back to sadik7375@gmail.com)
+        $developerEmail = env('DEVELOPER_FEEDBACK_EMAIL', 'sadik7375@gmail.com');
+
+        // Get SendGrid credentials (priority: shop-specific settings, fallback: global config)
+        $setting = Setting::where('shop_id', $shop->id)->first();
+        $apiKey = $setting->sendgrid_api_key ?? config('services.sendgrid.api_key');
+        $fromEmail = $setting->sendgrid_from_email ?? config('services.sendgrid.from_email');
+
+        // Fallback sender if not configured
+        if (empty($fromEmail)) {
+            $fromEmail = config('mail.from.address') ?: 'no-reply@buynowlater.com';
+        }
+
+        try {
+            $sent = \App\Services\SendGridService::send($apiKey, $fromEmail, $developerEmail, $subject, $htmlContent);
+            if ($sent) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Thank you! Your feedback has been sent successfully. We will get back to you soon.'
+                ]);
+            } else {
+                throw new \Exception('Failed to deliver email through SendGridService.');
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Feedback submission email failed: ' . $e->getMessage());
+            
+            // Try standard Laravel Mail direct fallback
+            try {
+                \Illuminate\Support\Facades\Mail::html($htmlContent, function ($message) use ($developerEmail, $subject) {
+                    $message->to($developerEmail)
+                            ->subject($subject);
+                });
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Thank you! Your feedback has been sent successfully. We will get back to you soon.'
+                ]);
+            } catch (\Exception $mailEx) {
+                \Illuminate\Support\Facades\Log::error('Feedback fallback Laravel Mail failed: ' . $mailEx->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unable to send feedback at this time. Please contact us via email.'
+                ], 500);
+            }
+        }
+    }
+
+    /**
      * Convert response object/array to standard array.
      */
     private function normalizeDraftOrder($draftOrder)
