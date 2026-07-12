@@ -2751,4 +2751,17 @@ function filterSubscribers() {
         }
     });
 </script>
+
+<!-- Crisp Live Chat Integration -->
+<script type="text/javascript">
+  window.$crisp=[];
+  window.CRISP_WEBSITE_ID="69483358-0847-4a5c-9e02-ed71cbc48f1e";
+  (function(){
+    d=document;
+    s=d.createElement("script");
+    s.src="https://client.crisp.chat/l.js";
+    s.async=1;
+    d.getElementsByTagName("head")[0].appendChild(s);
+  })();
+</script>
 @endsection
