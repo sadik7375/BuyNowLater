@@ -21,6 +21,7 @@ class Booking extends Model
         'deposit_amount',
         'remaining_balance',
         'draft_order_id',
+        'order_id',
         'checkout_url',
         'status',
         'token',
