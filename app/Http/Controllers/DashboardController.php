@@ -490,7 +490,18 @@ class DashboardController extends Controller
 
                 if ($needsNewDraftOrder) {
                     if ($booking->variant_id) {
-                        $depositPercentage = round(($booking->deposit_amount / $booking->product_price) * 100);
+                        // Fetch actual variant price to calculate correct fixed-amount discount
+                        $actualVariantPrice = (float) $booking->product_price;
+                        try {
+                            $variantRes = $shop->api()->rest('GET', '/admin/api/' . config('shopify-app.api_version') . '/variants/' . $booking->variant_id . '.json');
+                            if ($variantRes['errors'] === false && isset($variantRes['body']['variant'])) {
+                                $vData = $variantRes['body']['variant'];
+                                if (is_object($vData) && method_exists($vData, 'toArray')) { $vData = $vData->toArray(); }
+                                elseif (is_object($vData)) { $vData = json_decode(json_encode($vData), true); }
+                                $actualVariantPrice = (float) ($vData['price'] ?? $booking->product_price);
+                            }
+                        } catch (\Exception $e) { /* fallback to product_price */ }
+                        $discountAmount = max(0, $actualVariantPrice - (float) $booking->deposit_amount);
                         $lineItems = [
                             [
                                 'variant_id' => (int) $booking->variant_id,
@@ -499,8 +510,8 @@ class DashboardController extends Controller
                                 'applied_discount' => [
                                     'title' => 'Deposit Payment Adjustment',
                                     'description' => 'Original Deposit Paid',
-                                    'value' => number_format($depositPercentage, 2, '.', ''),
-                                    'value_type' => 'percentage',
+                                    'value' => number_format($discountAmount, 2, '.', ''),
+                                    'value_type' => 'fixed_amount',
                                 ],
                             ]
                         ];
@@ -597,8 +608,18 @@ class DashboardController extends Controller
                     $token = $booking->token;
 
                     if ($booking->variant_id) {
-                        $depositPercentage = round(($booking->deposit_amount / $booking->product_price) * 100);
-                        $discountPercentage = 100 - $depositPercentage;
+                        // Fetch actual variant price to calculate correct fixed-amount discount
+                        $actualVariantPrice = $productPrice;
+                        try {
+                            $variantRes = $shop->api()->rest('GET', '/admin/api/' . config('shopify-app.api_version') . '/variants/' . $booking->variant_id . '.json');
+                            if ($variantRes['errors'] === false && isset($variantRes['body']['variant'])) {
+                                $vData = $variantRes['body']['variant'];
+                                if (is_object($vData) && method_exists($vData, 'toArray')) { $vData = $vData->toArray(); }
+                                elseif (is_object($vData)) { $vData = json_decode(json_encode($vData), true); }
+                                $actualVariantPrice = (float) ($vData['price'] ?? $productPrice);
+                            }
+                        } catch (\Exception $e) { /* fallback to product_price */ }
+                        $discountAmount = max(0, $actualVariantPrice - $depositAmount);
                         $lineItems = [[
                             'variant_id'        => (int) $booking->variant_id,
                             'quantity'          => 1,
@@ -606,8 +627,8 @@ class DashboardController extends Controller
                             'applied_discount'  => [
                                 'title'       => 'Deposit Payment Adjustment',
                                 'description' => 'Buy Now Later deposit discount',
-                                'value'       => number_format($discountPercentage, 2, '.', ''),
-                                'value_type'  => 'percentage',
+                                'value'       => number_format($discountAmount, 2, '.', ''),
+                                'value_type'  => 'fixed_amount',
                             ],
                             'properties'        => [
                                 ['name' => '_token', 'value' => $token],
@@ -808,7 +829,18 @@ class DashboardController extends Controller
 
             if ($needsNewDraftOrder) {
                 if ($booking->variant_id) {
-                    $depositPercentage = round(($booking->deposit_amount / $booking->product_price) * 100);
+                    // Fetch actual variant price to calculate correct fixed-amount discount
+                    $actualVariantPrice = (float) $booking->product_price;
+                    try {
+                        $variantRes = $shop->api()->rest('GET', '/admin/api/' . config('shopify-app.api_version') . '/variants/' . $booking->variant_id . '.json');
+                        if ($variantRes['errors'] === false && isset($variantRes['body']['variant'])) {
+                            $vData = $variantRes['body']['variant'];
+                            if (is_object($vData) && method_exists($vData, 'toArray')) { $vData = $vData->toArray(); }
+                            elseif (is_object($vData)) { $vData = json_decode(json_encode($vData), true); }
+                            $actualVariantPrice = (float) ($vData['price'] ?? $booking->product_price);
+                        }
+                    } catch (\Exception $e) { /* fallback to product_price */ }
+                    $discountAmount = max(0, $actualVariantPrice - (float) $booking->deposit_amount);
                     $lineItems = [
                         [
                             'variant_id' => (int) $booking->variant_id,
@@ -817,8 +849,8 @@ class DashboardController extends Controller
                             'applied_discount' => [
                                 'title' => 'Deposit Payment Adjustment',
                                 'description' => 'Original Deposit Paid',
-                                'value' => number_format($depositPercentage, 2, '.', ''),
-                                'value_type' => 'percentage',
+                                'value' => number_format($discountAmount, 2, '.', ''),
+                                'value_type' => 'fixed_amount',
                             ],
                         ]
                     ];

@@ -412,7 +412,44 @@ class AppProxyController extends Controller
         }
 
         if ($variantId) {
-            $discountPercentage = 100 - $depositPercentage;
+            // Fetch actual variant price from Shopify so we can calculate
+            // the correct fixed-amount discount. The product page may show a
+            // "compare at" price (e.g. $814) while the variant's real selling
+            // price is different (e.g. $570). A percentage discount would
+            // apply to the variant price and produce the wrong checkout total.
+            $actualVariantPrice = $productPrice; // fallback
+            try {
+                $variantRes = $shop->api()->rest(
+                    'GET',
+                    '/admin/api/' . config('shopify-app.api_version') . '/variants/' . $variantId . '.json'
+                );
+                if ($variantRes['errors'] === false && isset($variantRes['body']['variant'])) {
+                    $variantData = $variantRes['body']['variant'];
+                    if (is_object($variantData) && method_exists($variantData, 'toArray')) {
+                        $variantData = $variantData->toArray();
+                    } elseif (is_object($variantData)) {
+                        $variantData = json_decode(json_encode($variantData), true);
+                    }
+                    $actualVariantPrice = (float) ($variantData['price'] ?? $productPrice);
+                    Log::info('Fetched actual variant price', [
+                        'variant_id' => $variantId,
+                        'variant_price' => $actualVariantPrice,
+                        'product_price_from_form' => $productPrice,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Could not fetch variant price, using product price as fallback', [
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+            // Calculate fixed-amount discount: variant_price - deposit_amount
+            // This ensures the checkout total is always exactly the deposit amount
+            $discountAmount = $actualVariantPrice - $depositAmount;
+            if ($discountAmount < 0) {
+                $discountAmount = 0;
+            }
+
             $lineItems = [[
                 'variant_id'        => (int) $variantId,
                 'quantity'          => 1,
@@ -420,8 +457,8 @@ class AppProxyController extends Controller
                 'applied_discount'  => [
                     'title'       => 'Deposit Payment Adjustment',
                     'description' => 'Buy Now Later deposit discount',
-                    'value'       => number_format($discountPercentage, 2, '.', ''),
-                    'value_type'  => 'percentage',
+                    'value'       => number_format($discountAmount, 2, '.', ''),
+                    'value_type'  => 'fixed_amount',
                 ],
                 'properties'        => [
                     ['name' => '_token', 'value' => $token],
