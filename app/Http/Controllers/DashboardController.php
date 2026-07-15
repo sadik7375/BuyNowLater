@@ -69,6 +69,8 @@ class DashboardController extends Controller
                                         $booking->update([
                                             'status' => 'deposit_paid',
                                             'expires_at' => now()->addDays($holdDurationDays),
+                                            'draft_order_id' => null,
+                                            'checkout_url' => null,
                                         ]);
                                         \Illuminate\Support\Facades\Log::info("Sync index: Booking ID {$booking->id} deposit paid on Shopify. Status updated to deposit_paid.");
                                     } elseif ($booking->status === 'deposit_paid' && $isRemaining) {
@@ -420,6 +422,8 @@ class DashboardController extends Controller
                                 $booking->update([
                                     'status' => 'deposit_paid',
                                     'expires_at' => now()->addDays($holdDurationDays),
+                                    'draft_order_id' => null,
+                                    'checkout_url' => null,
                                 ]);
                                 $booking->status = 'deposit_paid';
                                 \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} deposit paid on Shopify. Status updated to deposit_paid.");
@@ -489,90 +493,9 @@ class DashboardController extends Controller
                 }
 
                 if ($needsNewDraftOrder) {
-                    if ($booking->variant_id) {
-                        // Fetch actual variant price to calculate correct fixed-amount discount
-                        $actualVariantPrice = (float) $booking->product_price;
-                        try {
-                            $variantRes = $shop->api()->rest('GET', '/admin/api/' . config('shopify-app.api_version') . '/variants/' . $booking->variant_id . '.json');
-                            if ($variantRes['errors'] === false && isset($variantRes['body']['variant'])) {
-                                $vData = $variantRes['body']['variant'];
-                                if (is_object($vData) && method_exists($vData, 'toArray')) { $vData = $vData->toArray(); }
-                                elseif (is_object($vData)) { $vData = json_decode(json_encode($vData), true); }
-                                $actualVariantPrice = (float) ($vData['price'] ?? $booking->product_price);
-                            }
-                        } catch (\Exception $e) { /* fallback to product_price */ }
-                        $discountAmount = max(0, $actualVariantPrice - (float) $booking->deposit_amount);
-                        $lineItems = [
-                            [
-                                'variant_id' => (float) $booking->variant_id,
-                                'quantity' => 1,
-                                'requires_shipping' => true,
-                                'applied_discount' => [
-                                    'title' => 'Deposit Payment Adjustment',
-                                    'description' => 'Original Deposit Paid',
-                                    'value' => number_format($discountAmount, 2, '.', ''),
-                                    'value_type' => 'fixed_amount',
-                                ],
-                            ]
-                        ];
-                    } else {
-                        $lineItems = [
-                            [
-                                'title' => 'Remaining Balance - ' . $booking->product_title,
-                                'price' => number_format($booking->remaining_balance, 2, '.', ''),
-                                'quantity' => 1,
-                                'requires_shipping' => true,
-                            ]
-                        ];
-                    }
-
-                    // Create Draft Order using Shopify REST API via Osiset/Laravel-Shopify
-                    $draftOrderData = [
-                        'draft_order' => [
-                            'line_items' => $lineItems,
-                            'customer' => [
-                                'email' => $booking->email,
-                                'first_name' => $booking->customer_name ?? 'Valued',
-                                'last_name' => 'Customer'
-                            ],
-                            'use_customer_default_address' => true,
-                            'note' => 'Remaining balance payment. Original Deposit Paid: $' . number_format($booking->deposit_amount, 2),
-                            'note_attributes' => [
-                                [
-                                    'name' => 'buylater_token',
-                                    'value' => $booking->token
-                                ],
-                                [
-                                    'name' => 'Original Deposit Paid',
-                                    'value' => '$' . number_format($booking->deposit_amount, 2)
-                                ]
-                            ]
-                        ]
-                    ];
-
-                    $response = $shop->api()->rest('POST', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json', $draftOrderData);
-
-                    if ($response['errors']) {
-                        throw new \Exception('Shopify Draft Order API Error: ' . json_encode($response['body']));
-                    }
-
-                    $draftOrder = $response['body']['draft_order'] ?? null;
-                    if ($draftOrder) {
-                        $draftOrder = $this->normalizeDraftOrder($draftOrder);
-                        $draftOrderId = $draftOrder['id'] ?? null;
-                        // Fix 32-bit PHP integer overflow: extract ID from GraphQL string
-                        $gqlId = $draftOrder['admin_graphql_api_id'] ?? null;
-                        if ($gqlId && preg_match('/DraftOrder\/(\d+)/', $gqlId, $matches)) {
-                            $draftOrderId = $matches[1];
-                        } elseif ($draftOrderId !== null) {
-                            $draftOrderId = (string) $draftOrderId;
-                        }
-                        $checkoutUrl = $draftOrder['invoice_url'] ?? null;
-
-                        $booking->update([
-                            'draft_order_id' => $draftOrderId,
-                            'checkout_url' => $checkoutUrl
-                        ]);
+                    $checkoutUrl = $booking->createRemainingBalanceDraftOrder();
+                    if (!$checkoutUrl) {
+                        return back()->with('error', 'Failed to generate Shopify draft order for remaining balance.');
                     }
                 }
 

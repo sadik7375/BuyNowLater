@@ -161,6 +161,8 @@ class OrdersPaidJob implements ShouldQueue
                             'order_id'      => $orderId,
                             'customer_name' => $customerName,
                             'expires_at'    => now()->addDays($holdDurationDays),
+                            'draft_order_id'=> null,
+                            'checkout_url'  => null,
                         ]);
                         Log::info('OrdersPaidJob: Booking updated to deposit_paid', ['booking_id' => $booking->id]);
                     } else {

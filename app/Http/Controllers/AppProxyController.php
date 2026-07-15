@@ -705,12 +705,18 @@ class AppProxyController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get()
                 ->map(function ($booking) use ($holdDurationDays) {
-                    $bookingArray = $booking->toArray();
-                    
                     // Expiry is calculated from when the deposit was paid (updated_at)
                     $depositPaidAt = $booking->updated_at;
                     $expiryDate = $depositPaidAt->copy()->addDays($holdDurationDays);
                     
+                    // If the database status is deposit_paid and checkout_url is null,
+                    // automatically create the Shopify draft order for the remaining balance.
+                    if ($booking->status === 'deposit_paid' && empty($booking->checkout_url)) {
+                        Log::info("getCustomerBookings: Generating remaining balance draft order on the fly for booking ID {$booking->id}");
+                        $booking->createRemainingBalanceDraftOrder();
+                    }
+                    
+                    $bookingArray = $booking->toArray();
                     $bookingArray['expires_at'] = $expiryDate->toIso8601String();
                     
                     // If the database status is deposit_paid, check if it has expired in time
