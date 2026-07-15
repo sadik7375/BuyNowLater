@@ -2310,7 +2310,12 @@
     <div class="details-modal-content">
         <div class="details-modal-header">
             <h3>Booking & Reservation Details</h3>
-            <button type="button" class="details-modal-close" onclick="closeBookingDetailsModal()">✕</button>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <button type="button" class="btn-action-primary" onclick="printBookingDetails()" style="padding: 4px 8px; font-size: 11.5px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
+                    🖨️ Print PDF
+                </button>
+                <button type="button" class="details-modal-close" onclick="closeBookingDetailsModal()">✕</button>
+            </div>
         </div>
         <div class="details-modal-body">
             <div class="details-grid">
@@ -2459,6 +2464,52 @@ function closeBookingDetailsModalOnOutsideClick(event) {
     if (event.target === modal) {
         closeBookingDetailsModal();
     }
+}
+
+function printBookingDetails() {
+    const modalContent = document.querySelector('#booking-details-modal .details-modal-content').cloneNode(true);
+    
+    // Remove the header actions wrapper containing close/print buttons
+    const headerActions = modalContent.querySelector('.details-modal-header div');
+    if (headerActions) headerActions.remove();
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write('<html><head><title>Reservation Details</title>');
+    
+    // Add print styles
+    printWindow.document.write(`
+        <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; color: #0f172a; }
+            .details-modal-header { border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 24px; }
+            .details-modal-header h3 { margin: 0; font-size: 20px; font-weight: 700; }
+            .details-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+            .details-section-title { grid-column: span 2; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-top: 16px; }
+            .details-item { display: flex; flex-direction: column; gap: 4px; }
+            .details-item.full-width { grid-column: span 2; }
+            .details-item label { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; }
+            .details-item span { font-weight: 500; font-size: 14px; }
+            .status-pill { display: inline-block; padding: 4px 10px; border-radius: 9999px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+            .status-pill.deposit_paid { background: #fef3c7; color: #92400e; }
+            .status-pill.completed { background: #d1fae5; color: #065f46; }
+            .status-pill.pending { background: #fef3c7; color: #92400e; }
+            .status-pill.expired { background: #fee2e2; color: #991b1b; }
+            .shopify-link { color: #008060; text-decoration: none; font-weight: 600; }
+            @media print {
+                body { padding: 0; }
+            }
+        </style>
+    `);
+    
+    printWindow.document.write('</head><body>');
+    printWindow.document.write(modalContent.innerHTML);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    
+    setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+    }, 250);
 }
 
 // Product Targeting Selector
