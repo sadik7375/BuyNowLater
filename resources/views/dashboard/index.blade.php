@@ -1447,7 +1447,27 @@
         background: #b45309;
         border-color: #b45309;
     }
+
+    /* Hide custom sidebar to use Shopify's native sidebar instead */
+    .sidebar {
+        display: none !important;
+    }
+    .main-content {
+        margin-left: 0 !important;
+        padding: 24px;
+    }
 </style>
+
+<s-app-nav>
+    <s-link href="/" rel="home">Overview</s-link>
+    <s-link href="/bookings">Bookings & Deposits</s-link>
+    <s-link href="/reminders">Reminders</s-link>
+    <s-link href="/price-alerts">Price Alerts</s-link>
+    <s-link href="/settings">Settings</s-link>
+    <s-link href="/how-it-works">How It Works</s-link>
+    <s-link href="/benefits">Benefits</s-link>
+    <s-link href="/price-plan">Price Plan</s-link>
+</s-app-nav>
 
 <div class="app-layout">
 
@@ -1460,34 +1480,34 @@
 
     <nav class="sidebar-nav">
         <div class="sidebar-section-label">Main</div>
-        <button class="sidebar-btn active" onclick="switchTab(event, 'tab-overview')">
+        <button class="sidebar-btn {{ $activeTab === 'tab-overview' ? 'active' : '' }}" onclick="switchTab(event, 'tab-overview')">
             <span class="icon">📈</span> Overview
         </button>
-        <button class="sidebar-btn" onclick="switchTab(event, 'tab-bookings-list')">
+        <button class="sidebar-btn {{ $activeTab === 'tab-bookings-list' ? 'active' : '' }}" onclick="switchTab(event, 'tab-bookings-list')">
             <span class="icon">💰</span> Bookings &amp; Deposits
         </button>
-        <button class="sidebar-btn" onclick="switchTab(event, 'tab-reminders-list')">
+        <button class="sidebar-btn {{ $activeTab === 'tab-reminders-list' ? 'active' : '' }}" onclick="switchTab(event, 'tab-reminders-list')">
             <span class="icon">⏰</span> Reminders
         </button>
-        <button class="sidebar-btn" onclick="switchTab(event, 'tab-subscribers-list')">
+        <button class="sidebar-btn {{ $activeTab === 'tab-subscribers-list' ? 'active' : '' }}" onclick="switchTab(event, 'tab-subscribers-list')">
             <span class="icon">🔔</span> Price Alerts
         </button>
 
         <hr class="sidebar-divider">
         <div class="sidebar-section-label">App</div>
-        <button class="sidebar-btn" onclick="switchTab(event, 'tab-settings')">
+        <button class="sidebar-btn {{ $activeTab === 'tab-settings' ? 'active' : '' }}" onclick="switchTab(event, 'tab-settings')">
             <span class="icon">⚙️</span> Settings
         </button>
 
         <hr class="sidebar-divider">
         <div class="sidebar-section-label">Guide</div>
-        <button class="sidebar-btn" onclick="switchTab(event, 'tab-how-it-works')">
+        <button class="sidebar-btn {{ $activeTab === 'tab-how-it-works' ? 'active' : '' }}" onclick="switchTab(event, 'tab-how-it-works')">
             <span class="icon">📖</span> How It Works
         </button>
-        <button class="sidebar-btn" onclick="switchTab(event, 'tab-benefits')">
+        <button class="sidebar-btn {{ $activeTab === 'tab-benefits' ? 'active' : '' }}" onclick="switchTab(event, 'tab-benefits')">
             <span class="icon">✨</span> Benefits
         </button>
-        <button class="sidebar-btn" onclick="switchTab(event, 'tab-pricing')">
+        <button class="sidebar-btn {{ $activeTab === 'tab-pricing' ? 'active' : '' }}" onclick="switchTab(event, 'tab-pricing')">
             <span class="icon">💳</span> Price Plan
         </button>
     </nav>
@@ -1672,7 +1692,7 @@
     </div>
 
     <!-- Tab 1: Overview Dashboard -->
-    <div id="tab-overview" class="tab-content" style="display: block;">
+    <div id="tab-overview" class="tab-content" style="display: {{ $activeTab === 'tab-overview' ? 'block' : 'none' }};">
         <div class="dashboard-main-grid">
             <!-- Recent Bookings -->
             <div class="panel-card">
@@ -1910,7 +1930,7 @@
     </div>
 
     <!-- Tab 2: Bookings List (Required fields & actions) -->
-    <div id="tab-bookings-list" class="tab-content" style="display: none;">
+    <div id="tab-bookings-list" class="tab-content" style="display: {{ $activeTab === 'tab-bookings-list' ? 'block' : 'none' }};">
         <div class="panel-card-table">
             <h3>Bookings & Deposit Holds</h3>
             @if($bookings->isEmpty())
@@ -2036,7 +2056,7 @@
     </div>
 
     <!-- Tab 3: Reminders List -->
-    <div id="tab-reminders-list" class="tab-content" style="display: none;">
+    <div id="tab-reminders-list" class="tab-content" style="display: {{ $activeTab === 'tab-reminders-list' ? 'block' : 'none' }};">
         <div class="panel-card-table">
             <h3>Scheduled Reminders</h3>
             @if($reminders->isEmpty())
@@ -2095,7 +2115,7 @@
     </div>
 
     <!-- Tab 4: Price Alerts -->
-    <div id="tab-subscribers-list" class="tab-content" style="display: none;">
+    <div id="tab-subscribers-list" class="tab-content" style="display: {{ $activeTab === 'tab-subscribers-list' ? 'block' : 'none' }};">
         <div class="panel-card-table">
             <h3>Price Drop Subscribers</h3>
             @if($subscribers->isEmpty())
@@ -2153,7 +2173,7 @@
     </div>
 
     <!-- Tab 5: Settings -->
-    <div id="tab-settings" class="tab-content" style="display: none;">
+    <div id="tab-settings" class="tab-content" style="display: {{ $activeTab === 'tab-settings' ? 'block' : 'none' }};">
         <form action="{{ route('settings.save', request()->query()) }}" method="POST">
             @csrf
             <input type="hidden" name="token" class="session-token" value="">
@@ -2365,7 +2385,7 @@
     </div>
 
     <!-- Tab 6: How It Works -->
-    <div id="tab-how-it-works" class="tab-content" style="display: none;">
+    <div id="tab-how-it-works" class="tab-content" style="display: {{ $activeTab === 'tab-how-it-works' ? 'block' : 'none' }};">
         <div class="guide-header">
             <h2>How It Works</h2>
             <p>Understand the core features, options flow, and customer journey of the Buy Later app.</p>
@@ -2456,7 +2476,7 @@
     </div>
 
     <!-- Tab 7: Benefits -->
-    <div id="tab-benefits" class="tab-content" style="display: none;">
+    <div id="tab-benefits" class="tab-content" style="display: {{ $activeTab === 'tab-benefits' ? 'block' : 'none' }};">
         <div class="guide-header">
             <h2>Merchant &amp; Customer Benefits</h2>
             <p>Discover how the Buy Later suite increases conversions, prevents cart abandonment, and drives customer loyalty.</p>
@@ -2508,7 +2528,7 @@
     </div>
 
     <!-- Tab: Price Plan -->
-    <div id="tab-pricing" class="tab-content" style="display: none;">
+    <div id="tab-pricing" class="tab-content" style="display: {{ $activeTab === 'tab-pricing' ? 'block' : 'none' }};">
         <div class="guide-header">
             <h2>Select Price Plan</h2>
             <p>Upgrade to unlock unlimited reservations, reminders, and price drop notifications.</p>
