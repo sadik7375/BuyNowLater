@@ -1488,7 +1488,7 @@
             <span class="icon">✨</span> Benefits
         </button>
         <button class="sidebar-btn" onclick="switchTab(event, 'tab-pricing')">
-            <span class="icon">💳</span> Pricing Plans
+            <span class="icon">💳</span> Price Plan
         </button>
     </nav>
 </aside>
@@ -1666,7 +1666,7 @@
         <button class="tab-button" onclick="switchTab(event, 'tab-settings')">Settings</button>
         <button class="tab-button" onclick="switchTab(event, 'tab-how-it-works')">How It Works</button>
         <button class="tab-button" onclick="switchTab(event, 'tab-benefits')">Benefits</button>
-        <button class="tab-button" onclick="switchTab(event, 'tab-pricing')">Pricing Plans</button>
+        <button class="tab-button" onclick="switchTab(event, 'tab-pricing')">Price Plan</button>
     </div>
 
     <!-- Tab 1: Overview Dashboard -->
@@ -2505,10 +2505,10 @@
         </div>
     </div>
 
-    <!-- Tab: Pricing Plans -->
+    <!-- Tab: Price Plan -->
     <div id="tab-pricing" class="tab-content" style="display: none;">
         <div class="guide-header">
-            <h2>Select App Plan</h2>
+            <h2>Select Price Plan</h2>
             <p>Upgrade to unlock unlimited reservations, reminders, and price drop notifications.</p>
         </div>
 
