@@ -1526,6 +1526,8 @@
         <div class="alert error">
             {{ session('error') }}
         </div>
+    @endif
+
     @php
         $usageStats = \App\Models\Booking::getUsageStats($shop->id);
         $usageCount = $usageStats['total'];
