@@ -146,6 +146,135 @@ Route::group(['prefix' => 'deploy'], function() {
         }
     });
 
+    Route::get('/backfill-history', function() {
+        try {
+            $shop = \App\Models\User::where('name', 'canny-apps.myshopify.com')->first();
+            if (!$shop) {
+                $shop = \App\Models\User::first();
+            }
+            if (!$shop) {
+                return 'No shop user found in DB.';
+            }
+
+            $bookings = \App\Models\Booking::all();
+            $updatedCount = 0;
+            $results = [];
+
+            foreach ($bookings as $booking) {
+                $updated = false;
+
+                // 1. Sync Deposit Order & Deposit Paid Date
+                if ($booking->draft_order_id) {
+                    try {
+                        $response = $shop->api()->rest(
+                            'GET',
+                            '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/' . $booking->draft_order_id . '.json'
+                        );
+                        if (!$response['errors'] && isset($response['body']['draft_order'])) {
+                            $do = $response['body']['draft_order'];
+                            if (is_object($do) && method_exists($do, 'toArray')) {
+                                $do = $do->toArray();
+                            } else {
+                                $do = json_decode(json_encode($do), true);
+                            }
+
+                            if (($do['status'] ?? '') === 'completed') {
+                                if (empty($booking->deposit_paid_at)) {
+                                    $booking->deposit_paid_at = $do['completed_at'] ?? $booking->updated_at;
+                                    $updated = true;
+                                }
+                                if (empty($booking->order_id) && !empty($do['order_id'])) {
+                                    $booking->order_id = $do['order_id'];
+                                    $updated = true;
+                                }
+                            }
+                        }
+                    } catch (\Exception $ex) {
+                        // ignore and continue
+                    }
+                }
+
+                // If deposit_paid_at is still empty but status is deposit_paid or completed, fallback to created_at/updated_at
+                if (in_array($booking->status, ['deposit_paid', 'completed']) && empty($booking->deposit_paid_at)) {
+                    $booking->deposit_paid_at = $booking->created_at;
+                    $updated = true;
+                }
+
+                // 2. Sync Balance Order & Completed Date
+                if ($booking->status === 'completed') {
+                    if (empty($booking->completed_at)) {
+                        $booking->completed_at = $booking->updated_at;
+                        $updated = true;
+                    }
+
+                    // Try to find the remaining balance draft order from Shopify to get the balance_order_id
+                    if (empty($booking->balance_order_id)) {
+                        try {
+                            $response = $shop->api()->rest(
+                                'GET',
+                                '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json',
+                                ['status' => 'completed', 'limit' => 50]
+                            );
+                            if (!$response['errors'] && isset($response['body']['draft_orders'])) {
+                                $draftOrders = $response['body']['draft_orders'];
+                                if (is_object($draftOrders) && method_exists($draftOrders, 'toArray')) {
+                                    $draftOrders = $draftOrders->toArray();
+                                } else {
+                                    $draftOrders = json_decode(json_encode($draftOrders), true);
+                                }
+
+                                foreach ($draftOrders as $do) {
+                                    $note = $do['note'] ?? '';
+                                    $noteAttrs = $do['note_attributes'] ?? [];
+                                    $hasToken = false;
+
+                                    // Match token in note or note_attributes
+                                    if (stripos($note, $booking->token) !== false) {
+                                        $hasToken = true;
+                                    } else {
+                                        foreach ($noteAttrs as $attr) {
+                                            $val = $attr['value'] ?? '';
+                                            if (strtolower($val) === strtolower($booking->token)) {
+                                                $hasToken = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    // Match by customer email and product title if token is not explicit but it's a balance invoice
+                                    if (!$hasToken && ($do['customer']['email'] ?? '') === $booking->email) {
+                                        if (stripos($note, 'Remaining balance') !== false) {
+                                            $hasToken = true; // High probability match
+                                        }
+                                    }
+
+                                    if ($hasToken && !empty($do['order_id'])) {
+                                        $booking->balance_order_id = $do['order_id'];
+                                        $booking->completed_at = $do['completed_at'] ?? $booking->updated_at;
+                                        $updated = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        } catch (\Exception $ex) {
+                            // ignore and continue
+                        }
+                    }
+                }
+
+                if ($updated) {
+                    $booking->save();
+                    $updatedCount++;
+                    $results[] = "Booking ID {$booking->id} backfilled successfully.";
+                }
+            }
+
+            return 'Backfill completed. Updated bookings count: ' . $updatedCount . '<br><pre>' . implode("\n", $results) . '</pre>';
+        } catch (\Exception $e) {
+            return 'Backfill failed: ' . $e->getMessage();
+        }
+    });
+
     Route::get('/clear', function() {
         try {
             \Illuminate\Support\Facades\Artisan::call('config:clear');
