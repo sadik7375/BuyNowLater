@@ -29,7 +29,7 @@ Route::group(['middleware' => ['verify.shopify']], function () {
     Route::get('/bookings', [DashboardController::class, 'index'])->name('admin.bookings');
     Route::get('/reminders', [DashboardController::class, 'index'])->name('admin.reminders');
     Route::get('/price-alerts', [DashboardController::class, 'index'])->name('admin.price-alerts');
-    Route::get('/settings', [DashboardController::class, 'index'])->name('admin.settings');
+    Route::get('/app-settings', [DashboardController::class, 'index'])->name('admin.settings');
     Route::get('/how-it-works', [DashboardController::class, 'index'])->name('admin.how-it-works');
     Route::get('/benefits', [DashboardController::class, 'index'])->name('admin.benefits');
     Route::get('/price-plan', [DashboardController::class, 'index'])->name('admin.price-plan');

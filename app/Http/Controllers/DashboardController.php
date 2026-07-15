@@ -22,7 +22,7 @@ class DashboardController extends Controller
             $activeTab = 'tab-reminders-list';
         } elseif ($request->is('price-alerts')) {
             $activeTab = 'tab-subscribers-list';
-        } elseif ($request->is('settings')) {
+        } elseif ($request->is('app-settings')) {
             $activeTab = 'tab-settings';
         } elseif ($request->is('how-it-works')) {
             $activeTab = 'tab-how-it-works';

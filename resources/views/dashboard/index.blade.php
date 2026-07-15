@@ -1463,7 +1463,7 @@
     <s-link href="/bookings">Bookings & Deposits</s-link>
     <s-link href="/reminders">Reminders</s-link>
     <s-link href="/price-alerts">Price Alerts</s-link>
-    <s-link href="/settings">Settings</s-link>
+    <s-link href="/app-settings">Settings</s-link>
     <s-link href="/how-it-works">How It Works</s-link>
     <s-link href="/benefits">Benefits</s-link>
     <s-link href="/price-plan">Price Plan</s-link>
