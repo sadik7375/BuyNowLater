@@ -50,63 +50,68 @@ class DashboardController extends Controller
         );
 
         // ---------- Self-Healing: Sync Status of Active Bookings ----------
-        $activeBookingsWithDraft = Booking::where('shop_id', $shop->id)
-            ->whereIn('status', ['pending', 'deposit_paid'])
-            ->whereNotNull('draft_order_id')
-            ->get();
+        $syncCacheKey = "shop_{$shop->id}_sync_lock";
+        if (!\Illuminate\Support\Facades\Cache::has($syncCacheKey)) {
+            $activeBookingsWithDraft = Booking::where('shop_id', $shop->id)
+                ->whereIn('status', ['pending', 'deposit_paid'])
+                ->whereNotNull('draft_order_id')
+                ->get();
 
-        if ($activeBookingsWithDraft->isNotEmpty()) {
-            $draftOrderIds = $activeBookingsWithDraft->pluck('draft_order_id')->filter()->toArray();
-            if (!empty($draftOrderIds)) {
-                try {
-                    $response = $shop->api()->rest(
-                        'GET',
-                        '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json',
-                        ['ids' => implode(',', $draftOrderIds)]
-                    );
-                    if (!$response['errors']) {
-                        $draftOrders = $response['body']['draft_orders'] ?? [];
-                        $draftOrdersMap = [];
-                        foreach ($draftOrders as $do) {
-                            $doArray = $this->normalizeDraftOrder($do);
-                            if ($doArray && isset($doArray['id'])) {
-                                $draftOrdersMap[$doArray['id']] = $doArray;
+            if ($activeBookingsWithDraft->isNotEmpty()) {
+                $draftOrderIds = $activeBookingsWithDraft->pluck('draft_order_id')->filter()->toArray();
+                if (!empty($draftOrderIds)) {
+                    try {
+                        $response = $shop->api()->rest(
+                            'GET',
+                            '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json',
+                            ['ids' => implode(',', $draftOrderIds)]
+                        );
+                        if (!$response['errors']) {
+                            $draftOrders = $response['body']['draft_orders'] ?? [];
+                            $draftOrdersMap = [];
+                            foreach ($draftOrders as $do) {
+                                $doArray = $this->normalizeDraftOrder($do);
+                                if ($doArray && isset($doArray['id'])) {
+                                    $draftOrdersMap[$doArray['id']] = $doArray;
+                                }
                             }
-                        }
 
-                        foreach ($activeBookingsWithDraft as $booking) {
-                            if (isset($draftOrdersMap[$booking->draft_order_id])) {
-                                $draftOrder = $draftOrdersMap[$booking->draft_order_id];
-                                $shopifyStatus = $draftOrder['status'] ?? '';
-                                
-                                if ($shopifyStatus === 'completed') {
-                                    $isRemaining = $this->isRemainingBalanceDraftOrder($draftOrder);
-                                    if ($booking->status === 'pending' && !$isRemaining) {
-                                        $holdDurationDays = $settings->hold_duration_days ?? 14;
-                                        $booking->update([
-                                            'status' => 'deposit_paid',
-                                            'expires_at' => now()->addDays($holdDurationDays),
-                                            'deposit_paid_at' => now(),
-                                            'draft_order_id' => null,
-                                            'checkout_url' => null,
-                                        ]);
-                                        \Illuminate\Support\Facades\Log::info("Sync index: Booking ID {$booking->id} deposit paid on Shopify. Status updated to deposit_paid.");
-                                    } elseif ($booking->status === 'deposit_paid' && $isRemaining) {
-                                        $booking->update([
-                                            'status' => 'completed',
-                                            'completed_at' => now(),
-                                            'balance_order_id' => $draftOrder['order_id'] ?? null,
-                                        ]);
-                                        \Illuminate\Support\Facades\Log::info("Sync index: Booking ID {$booking->id} balance paid on Shopify. Status updated to completed.");
+                            foreach ($activeBookingsWithDraft as $booking) {
+                                if (isset($draftOrdersMap[$booking->draft_order_id])) {
+                                    $draftOrder = $draftOrdersMap[$booking->draft_order_id];
+                                    $shopifyStatus = $draftOrder['status'] ?? '';
+                                    
+                                    if ($shopifyStatus === 'completed') {
+                                        $isRemaining = $this->isRemainingBalanceDraftOrder($draftOrder);
+                                        if ($booking->status === 'pending' && !$isRemaining) {
+                                            $holdDurationDays = $settings->hold_duration_days ?? 14;
+                                            $booking->update([
+                                                'status' => 'deposit_paid',
+                                                'expires_at' => now()->addDays($holdDurationDays),
+                                                'deposit_paid_at' => now(),
+                                                'draft_order_id' => null,
+                                                'checkout_url' => null,
+                                            ]);
+                                            \Illuminate\Support\Facades\Log::info("Sync index: Booking ID {$booking->id} deposit paid on Shopify. Status updated to deposit_paid.");
+                                        } elseif ($booking->status === 'deposit_paid' && $isRemaining) {
+                                            $booking->update([
+                                                'status' => 'completed',
+                                                'completed_at' => now(),
+                                                'balance_order_id' => $draftOrder['order_id'] ?? null,
+                                            ]);
+                                            \Illuminate\Support\Facades\Log::info("Sync index: Booking ID {$booking->id} balance paid on Shopify. Status updated to completed.");
+                                        }
                                     }
                                 }
                             }
                         }
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error("Failed to sync Shopify draft orders in index(): " . $e->getMessage());
                     }
-                } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("Failed to sync Shopify draft orders in index(): " . $e->getMessage());
                 }
             }
+            // Put a lock for 5 minutes (300 seconds) to avoid redundant heavy API requests
+            \Illuminate\Support\Facades\Cache::put($syncCacheKey, true, now()->addMinutes(5));
         }
 
         // ---------- Date Filter Handling ----------
@@ -235,28 +240,33 @@ class DashboardController extends Controller
 
         $targetedProducts = [];
         if (($settings->product_targeting_type ?? 'all') === 'specific' && !empty($settings->targeted_product_ids)) {
-            try {
-                $ids = array_filter(explode(',', $settings->targeted_product_ids));
-                if (!empty($ids)) {
-                    $response = $shop->api()->rest('GET', '/admin/api/' . config('shopify-app.api_version') . '/products.json', [
-                        'ids' => implode(',', $ids),
-                        'fields' => 'id,title,handle,image'
-                    ]);
-                    if (!$response['errors']) {
-                        $shopifyProducts = $response['body']['products'] ?? [];
-                        foreach ($shopifyProducts as $sp) {
-                            $targetedProducts[] = [
-                                'id' => (string) $sp['id'],
-                                'title' => $sp['title'],
-                                'handle' => $sp['handle'],
-                                'image' => $sp['image']['src'] ?? null,
-                            ];
+            $productCacheKey = "shop_{$shop->id}_targeted_products_" . md5($settings->targeted_product_ids);
+            $targetedProducts = \Illuminate\Support\Facades\Cache::remember($productCacheKey, now()->addMinutes(10), function() use ($shop, $settings) {
+                $productsList = [];
+                try {
+                    $ids = array_filter(explode(',', $settings->targeted_product_ids));
+                    if (!empty($ids)) {
+                        $response = $shop->api()->rest('GET', '/admin/api/' . config('shopify-app.api_version') . '/products.json', [
+                            'ids' => implode(',', $ids),
+                            'fields' => 'id,title,handle,image'
+                        ]);
+                        if (!$response['errors']) {
+                            $shopifyProducts = $response['body']['products'] ?? [];
+                            foreach ($shopifyProducts as $sp) {
+                                $productsList[] = [
+                                    'id' => (string) $sp['id'],
+                                    'title' => $sp['title'],
+                                    'handle' => $sp['handle'],
+                                    'image' => $sp['image']['src'] ?? null,
+                                ];
+                            }
                         }
                     }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to fetch targeted products in index(): " . $e->getMessage());
                 }
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error("Failed to fetch targeted products in index(): " . $e->getMessage());
-            }
+                return $productsList;
+            });
         }
 
         return view('dashboard.index', compact(
