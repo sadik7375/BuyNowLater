@@ -24,9 +24,12 @@ class SendGridService
             Log::info("SendGridService: Missing SendGrid credentials. Falling back to Laravel Mail (configured SMTP/Brevo)...");
             
             try {
-                Mail::html($htmlContent, function ($message) use ($toEmail, $subject) {
+                Mail::html($htmlContent, function ($message) use ($toEmail, $subject, $fromEmail) {
                     $message->to($toEmail)
                             ->subject($subject);
+                    if (!empty($fromEmail)) {
+                        $message->from($fromEmail, 'Buy Later');
+                    }
                 });
                 Log::info("SendGridService Fallback: Email sent successfully via Laravel Mail to {$toEmail}");
                 return true;
@@ -73,9 +76,12 @@ class SendGridService
         // Fallback if API fails
         Log::info("SendGridService: Retrying fallback to Laravel Mail...");
         try {
-            Mail::html($htmlContent, function ($message) use ($toEmail, $subject) {
+            Mail::html($htmlContent, function ($message) use ($toEmail, $subject, $fromEmail) {
                 $message->to($toEmail)
                         ->subject($subject);
+                if (!empty($fromEmail)) {
+                    $message->from($fromEmail, 'Buy Later');
+                }
             });
             return true;
         } catch (\Exception $e) {
