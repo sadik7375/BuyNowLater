@@ -549,6 +549,13 @@ class DashboardController extends Controller
                     if ($draftOrder) {
                         $draftOrder = $this->normalizeDraftOrder($draftOrder);
                         $draftOrderId = $draftOrder['id'] ?? null;
+                        // Fix 32-bit PHP integer overflow: extract ID from GraphQL string
+                        $gqlId = $draftOrder['admin_graphql_api_id'] ?? null;
+                        if ($gqlId && preg_match('/DraftOrder\/(\d+)/', $gqlId, $matches)) {
+                            $draftOrderId = $matches[1];
+                        } elseif ($draftOrderId !== null) {
+                            $draftOrderId = (string) $draftOrderId;
+                        }
                         $checkoutUrl = $draftOrder['invoice_url'] ?? null;
 
                         $booking->update([
@@ -649,6 +656,13 @@ class DashboardController extends Controller
                         }
 
                         $draftOrderId = $draftOrderArray['id'] ?? null;
+                        // Fix 32-bit PHP integer overflow: extract ID from GraphQL string
+                        $gqlId = $draftOrderArray['admin_graphql_api_id'] ?? null;
+                        if ($gqlId && preg_match('/DraftOrder\/(\d+)/', $gqlId, $matches)) {
+                            $draftOrderId = $matches[1];
+                        } elseif ($draftOrderId !== null) {
+                            $draftOrderId = (string) $draftOrderId;
+                        }
                         $checkoutUrl  = $draftOrderArray['invoice_url'] ?? null;
 
                         // If invoice_url is missing, try to generate it by sending invoice
@@ -853,6 +867,13 @@ class DashboardController extends Controller
                 if ($draftOrder) {
                     $draftOrder = $this->normalizeDraftOrder($draftOrder);
                     $draftOrderId = $draftOrder['id'] ?? null;
+                    // Fix 32-bit PHP integer overflow: extract ID from GraphQL string
+                    $gqlId = $draftOrder['admin_graphql_api_id'] ?? null;
+                    if ($gqlId && preg_match('/DraftOrder\/(\d+)/', $gqlId, $matches)) {
+                        $draftOrderId = $matches[1];
+                    } elseif ($draftOrderId !== null) {
+                        $draftOrderId = (string) $draftOrderId;
+                    }
                     $checkoutUrl = $draftOrder['invoice_url'] ?? null;
 
                     $booking->update([

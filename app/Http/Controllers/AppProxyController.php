@@ -488,7 +488,16 @@ class AppProxyController extends Controller
                     'status' => $draftOrderArray['status'] ?? null,
                 ]);
 
+                // Extract draft order ID safely as string to avoid 32-bit PHP integer overflow
+                // Shopify IDs are 13+ digits which overflow PHP's 32-bit integer max (2147483647)
+                // admin_graphql_api_id is always a string like "gid://shopify/DraftOrder/1045613997241"
                 $draftOrderId = $draftOrderArray['id'] ?? null;
+                $gqlId = $draftOrderArray['admin_graphql_api_id'] ?? null;
+                if ($gqlId && preg_match('/DraftOrder\/(\d+)/', $gqlId, $matches)) {
+                    $draftOrderId = $matches[1]; // Always correct, never truncated
+                } elseif ($draftOrderId !== null) {
+                    $draftOrderId = (string) $draftOrderId; // Fallback: cast to string
+                }
                 $checkoutUrl  = $draftOrderArray['invoice_url'] ?? null;
 
                 // If invoice_url is missing, try to get it by sending an invoice
