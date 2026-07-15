@@ -2319,6 +2319,13 @@
         </div>
         <div class="details-modal-body">
             <div class="details-grid">
+                <!-- Store Info -->
+                <div class="details-section-title">Store Information</div>
+                <div class="details-item full-width">
+                    <label>Store Name</label>
+                    <span id="detail-store-name">-</span>
+                </div>
+
                 <!-- Customer Info -->
                 <div class="details-section-title">Customer Information</div>
                 <div class="details-item">
@@ -2393,6 +2400,9 @@
 </div>
 
 <script>
+const CURRENT_SHOP_DOMAIN = "{{ auth()->user()->name }}";
+const CURRENT_SHOP_NAME = "{{ ucwords(str_replace(['-', '_'], ' ', str_replace('.myshopify.com', '', auth()->user()->name))) }}";
+
 // Booking Details Modal Handlers
 function openBookingDetails(booking) {
     // Helper to format currency
@@ -2408,6 +2418,7 @@ function openBookingDetails(booking) {
     };
 
     // Populate Fields
+    document.getElementById('detail-store-name').innerText = CURRENT_SHOP_NAME + ' (' + CURRENT_SHOP_DOMAIN + ')';
     document.getElementById('detail-customer-name').innerText = booking.customer_name || 'N/A';
     document.getElementById('detail-customer-email').innerText = booking.email || '-';
     document.getElementById('detail-product-title').innerText = booking.product_title || '-';
