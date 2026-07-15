@@ -3,6 +3,7 @@
 @section('content')
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.shopify.com/shopifycloud/polaris.js"></script>
 <style>
     :root {
         --bg-main: #f6f6f7;
@@ -1455,6 +1456,12 @@
     .main-content {
         margin-left: 0 !important;
         padding: 24px;
+    }
+    /* s-button layout overrides to ensure proper spacing and prevent line wrapping */
+    s-button {
+        display: inline-flex !important;
+        margin: 0;
+        vertical-align: middle;
     }
 </style>
 
