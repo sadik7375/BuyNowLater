@@ -1540,9 +1540,9 @@
             <div class="warning-content">
                 <h4>Plan Limit Reached</h4>
                 <p>You have used all <strong>{{ $usageCount }} of your 10 free combined reservations, reminders, and price drop alerts</strong>. Customers can no longer place holds or set reminders on your store. Please upgrade your plan to unlock unlimited usage.</p>
-                <a href="#" onclick="switchTab(event, 'tab-pricing')" class="warning-action-btn">
+                <button type="button" onclick="switchTab(event, 'tab-pricing')" class="warning-action-btn">
                     Upgrade Plan
-                </a>
+                </button>
             </div>
         </div>
     @elseif(!$hasPlan && $usageCount >= 8)
@@ -1551,9 +1551,9 @@
             <div class="warning-content">
                 <h4>Approaching Plan Limit</h4>
                 <p>You have used <strong>{{ $usageCount }} of your 10 free combined reservations, reminders, and price drop alerts</strong>. Upgrade now to ensure uninterrupted service for your customers.</p>
-                <a href="#" onclick="switchTab(event, 'tab-pricing')" class="warning-action-btn" style="background: #f59e0b; border-color: #f59e0b;">
+                <button type="button" onclick="switchTab(event, 'tab-pricing')" class="warning-action-btn" style="background: #f59e0b; border-color: #f59e0b;">
                     Upgrade Plan
-                </a>
+                </button>
             </div>
         </div>
     @endif
@@ -2584,7 +2584,7 @@
                     @if($hasPlan)
                         <button type="button" class="pricing-button disabled" style="margin: 0;">Current Plan</button>
                     @else
-                        <a href="{{ route('billing', ['plan' => 1]) }}" class="pricing-button primary" target="_top" style="margin: 0;">Upgrade to Premium</a>
+                        <a href="{{ route('billing', array_merge(['plan' => 1], request()->query())) }}" class="pricing-button primary" target="_top" style="margin: 0;">Upgrade to Premium</a>
                     @endif
                 </div>
             </div>
