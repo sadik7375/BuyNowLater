@@ -260,4 +260,64 @@ class OrdersPaidJobTest extends TestCase
         $booking->refresh();
         $this->assertEquals('completed', $booking->status);
     }
+
+    public function test_orders_paid_job_detects_deposit_without_tags_or_deposit_titles_when_token_is_in_properties()
+    {
+        $user = User::factory()->create([
+            'name' => 'test-shop.myshopify.com'
+        ]);
+
+        Setting::create([
+            'shop_id' => $user->id,
+            'sender_display_name' => 'Test Store',
+            'deposit_percentage' => 10,
+            'hold_duration_days' => 14,
+            'button_text' => 'Buy Later',
+            'reminder_email_subject' => 'Remind',
+            'discount_email_subject' => 'Discount',
+        ]);
+
+        $booking = Booking::create([
+            'shop_id' => $user->id,
+            'email' => 'customer@example.com',
+            'product_id' => '123456',
+            'product_title' => 'Real Variant Product',
+            'product_handle' => 'real-variant-product',
+            'product_price' => 100.00,
+            'deposit_amount' => 10.00,
+            'remaining_balance' => 90.00,
+            'status' => 'pending',
+            'token' => 'realvarianttoken123',
+        ]);
+
+        // Webhook data from Shopify checkout payment of the Draft Order.
+        // It has NO buylater-deposit tags, and the line item title is the real product title.
+        $webhookData = (object)[
+            'id' => 99999,
+            'tags' => '', // NO TAGS
+            'customer' => (object)[
+                'first_name' => 'Jane',
+                'last_name' => 'Doe'
+            ],
+            'line_items' => [
+                (object)[
+                    'title' => 'Real Variant Product', // Real product name, no "Deposit"
+                    'sku' => 'REAL-SKU', // Real variant SKU
+                    'price' => '10.00',
+                    'properties' => [
+                        (object)[
+                            'name' => '_token',
+                            'value' => 'realvarianttoken123'
+                        ]
+                    ]
+                ]
+            ],
+            'note_attributes' => []
+        ];
+
+        OrdersPaidJob::dispatch('test-shop.myshopify.com', $webhookData);
+
+        $booking->refresh();
+        $this->assertEquals('deposit_paid', $booking->status);
+    }
 }

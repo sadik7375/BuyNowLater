@@ -63,50 +63,56 @@ class OrdersPaidJob implements ShouldQueue
         $tags = $this->data->tags ?? '';
         $noteAttributes = $this->data->note_attributes ?? [];
 
-        // Try extracting token from note_attributes first (typical for Draft Order balance payments)
         $token = null;
-        foreach ($noteAttributes as $attr) {
-            $name = is_object($attr) ? ($attr->name ?? '') : ($attr['name'] ?? '');
-            $value = is_object($attr) ? ($attr->value ?? '') : ($attr['value'] ?? '');
-            if (strtolower($name) === 'buylater_token') {
-                $token = strtolower($value);
-                break;
-            }
-        }
+        $tokenFromProperties = false;
+        $tokenFromSku = false;
 
-        // Fallback 1: extract token from line item properties (typical for Draft Order initial deposits)
-        if (!$token) {
-            $lineItems = $this->data->line_items ?? [];
-            foreach ($lineItems as $item) {
-                $properties = is_object($item) ? ($item->properties ?? []) : ($item['properties'] ?? []);
-                foreach ($properties as $prop) {
-                    $name = is_object($prop) ? ($prop->name ?? '') : ($prop['name'] ?? '');
-                    $value = is_object($prop) ? ($prop->value ?? '') : ($prop['value'] ?? '');
-                    if ($name === '_token' || $name === 'buylater_token') {
-                        $token = strtolower($value);
-                        break 2;
-                    }
+        // Check line item properties first (typical for Draft Order initial deposits)
+        $lineItems = $this->data->line_items ?? [];
+        foreach ($lineItems as $item) {
+            $properties = is_object($item) ? ($item->properties ?? []) : ($item['properties'] ?? []);
+            foreach ($properties as $prop) {
+                $name = is_object($prop) ? ($prop->name ?? '') : ($prop['name'] ?? '');
+                $value = is_object($prop) ? ($prop->value ?? '') : ($prop['value'] ?? '');
+                if ($name === '_token' || $name === 'buylater_token') {
+                    $token = strtolower($value);
+                    $tokenFromProperties = true;
+                    break 2;
                 }
             }
         }
 
-        // Fallback 2: extract token from SKU (typical for initial store deposit checkout of temporary products)
+        // Check note_attributes if not found in properties (typical for Draft Order balance payments)
         if (!$token) {
-            $lineItems = $this->data->line_items ?? [];
-            foreach ($lineItems as $item) {
-                $sku = is_object($item) ? ($item->sku ?? '') : ($item['sku'] ?? '');
-                if (str_starts_with($sku, 'BUYLATER-DEP-')) {
-                    $token = strtolower(substr($sku, strlen('BUYLATER-DEP-')));
+            foreach ($noteAttributes as $attr) {
+                $name = is_object($attr) ? ($attr->name ?? '') : ($attr['name'] ?? '');
+                $value = is_object($attr) ? ($attr->value ?? '') : ($attr['value'] ?? '');
+                if (strtolower($name) === 'buylater_token') {
+                    $token = strtolower($value);
                     break;
                 }
             }
         }
 
+        // Check SKU if not found yet (typical for initial store deposit checkout of temporary products)
+        if (!$token) {
+            foreach ($lineItems as $item) {
+                $sku = is_object($item) ? ($item->sku ?? '') : ($item['sku'] ?? '');
+                if (str_starts_with($sku, 'BUYLATER-DEP-')) {
+                    $token = strtolower(substr($sku, strlen('BUYLATER-DEP-')));
+                    $tokenFromSku = true;
+                    break;
+                }
+            }
+        }
+
+        // Determine if this is the initial deposit order
         $isDeposit = false;
-        if (stripos($tags, 'buylater-deposit') !== false) {
+        if ($tokenFromProperties || $tokenFromSku) {
+            $isDeposit = true;
+        } elseif (stripos($tags, 'buylater-deposit') !== false) {
             $isDeposit = true;
         } else {
-            $lineItems = $this->data->line_items ?? [];
             foreach ($lineItems as $item) {
                 $title = is_object($item) ? ($item->title ?? '') : ($item['title'] ?? '');
                 $sku = is_object($item) ? ($item->sku ?? '') : ($item['sku'] ?? '');
