@@ -93,7 +93,29 @@ Route::get('/status-settings-db', function() {
         });
         return response()->json($settings);
     } catch (\Exception $e) {
-        return 'Failed: ' . $e->getMessage();
+        return response()->json(['error' => $e->getMessage()]);
+    }
+});
+
+Route::get('/status-bookings-db', function() {
+    try {
+        $bookings = \App\Models\Booking::orderBy('created_at', 'desc')->get()->map(function($b) {
+            return [
+                'id' => $b->id,
+                'email' => $b->email,
+                'product_title' => $b->product_title,
+                'product_price' => $b->product_price,
+                'deposit_amount' => $b->deposit_amount,
+                'remaining_balance' => $b->remaining_balance,
+                'status' => $b->status,
+                'token' => $b->token,
+                'draft_order_id' => $b->draft_order_id,
+                'created_at' => $b->created_at ? $b->created_at->toDateTimeString() : 'N/A',
+            ];
+        });
+        return response()->json($bookings);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()]);
     }
 });
 
