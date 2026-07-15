@@ -131,6 +131,21 @@ Route::group(['prefix' => 'deploy'], function() {
         }
     });
 
+    Route::get('/logs', function() {
+        try {
+            $logPath = storage_path('logs/laravel.log');
+            if (!file_exists($logPath)) {
+                return 'No log file found.';
+            }
+            $lines = 150;
+            $data = file($logPath);
+            $slice = array_slice($data, -$lines);
+            return '<pre>' . implode("", $slice) . '</pre>';
+        } catch (\Exception $e) {
+            return 'Error reading logs: ' . $e->getMessage();
+        }
+    });
+
     Route::get('/clear', function() {
         try {
             \Illuminate\Support\Facades\Artisan::call('config:clear');
