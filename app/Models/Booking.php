@@ -20,6 +20,7 @@ class Booking extends Model
         'product_price',
         'deposit_amount',
         'remaining_balance',
+        'currency',
         'draft_order_id',
         'order_id',
         'checkout_url',
@@ -79,7 +80,8 @@ class Booking extends Model
                         'last_name' => 'Customer'
                     ],
                     'use_customer_default_address' => true,
-                    'note' => 'Remaining balance payment. Original Deposit Paid: $' . number_format((float) $this->deposit_amount, 2),
+                    'currency' => $this->currency ?: 'USD',
+                    'note' => 'Remaining balance payment. Original Deposit Paid: ' . number_format((float) $this->deposit_amount, 2) . ' ' . ($this->currency ?: 'USD'),
                     'note_attributes' => [
                         [
                             'name' => 'buylater_token',
@@ -87,7 +89,7 @@ class Booking extends Model
                         ],
                         [
                             'name' => 'Original Deposit Paid',
-                            'value' => '$' . number_format((float) $this->deposit_amount, 2)
+                            'value' => number_format((float) $this->deposit_amount, 2) . ' ' . ($this->currency ?: 'USD')
                         ]
                     ]
                 ]

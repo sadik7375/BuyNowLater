@@ -257,7 +257,8 @@ document.addEventListener('DOMContentLoaded', function() {
       product_handle: triggerBtn.getAttribute('data-product-handle'),
       product_price: triggerBtn.getAttribute('data-product-price'),
       product_image: triggerBtn.getAttribute('data-product-image'),
-      shop: window.buylaterShopDomain
+      shop: window.buylaterShopDomain,
+      currency: window.buylaterCurrencyCode || 'USD'
     };
   }
 

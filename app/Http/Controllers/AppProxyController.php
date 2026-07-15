@@ -388,6 +388,7 @@ class AppProxyController extends Controller
         }
 
         $productPrice = (float) $request->input('product_price');
+        $currency = $request->input('currency', 'USD');
         $settings = Setting::where('shop_id', $shop->id)->first();
         $depositPercentage = $settings ? (int) $settings->deposit_percentage : 10;
         $depositAmount = round($productPrice * ($depositPercentage / 100), 2);
@@ -421,8 +422,8 @@ class AppProxyController extends Controller
             'requires_shipping' => false,
             'properties'        => [
                 ['name' => '_token', 'value' => $token],
-                ['name' => 'Original Price', 'value' => '$' . number_format($productPrice, 2)],
-                ['name' => 'Remaining Balance', 'value' => '$' . number_format($remainingBalance, 2)],
+                ['name' => 'Original Price', 'value' => number_format($productPrice, 2) . ' ' . $currency],
+                ['name' => 'Remaining Balance', 'value' => number_format($remainingBalance, 2) . ' ' . $currency],
             ]
         ]];
 
@@ -436,6 +437,7 @@ class AppProxyController extends Controller
                     'line_items' => $lineItems,
                     'note'  => 'BuyLater deposit — do not fulfill',
                     'tags'  => 'buylater-deposit',
+                    'currency' => $currency,
                 ]
             ];
 
@@ -550,6 +552,7 @@ class AppProxyController extends Controller
             'product_price' => $productPrice,
             'deposit_amount' => $depositAmount,
             'remaining_balance' => $remainingBalance,
+            'currency' => $currency,
             'draft_order_id' => $draftOrderId,
             'checkout_url' => $checkoutUrl,
             'status' => 'pending',

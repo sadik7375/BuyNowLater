@@ -1764,9 +1764,9 @@
                                     </td>
                                     <td>
                                         <div style="font-size: 13.5px;">
-                                            Deposit paid: <span style="font-weight:600; color:var(--secondary-color);">${{ number_format($booking->deposit_amount, 2) }}</span><br>
-                                            Remaining balance: <span style="font-weight:600; color:var(--accent-blue);">${{ number_format($booking->remaining_balance, 2) }}</span><br>
-                                            <span style="font-size:11.5px; color: var(--text-muted);">Total: ${{ number_format($booking->product_price, 2) }}</span>
+                                            Deposit paid: <span style="font-weight:600; color:var(--secondary-color);">${{ number_format($booking->deposit_amount, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
+                                            Remaining balance: <span style="font-weight:600; color:var(--accent-blue);">${{ number_format($booking->remaining_balance, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
+                                            <span style="font-size:11.5px; color: var(--text-muted);">Total: ${{ number_format($booking->product_price, 2) }} {{ $booking->currency ?: 'USD' }}</span>
                                         </div>
                                     </td>
                                     <td>
@@ -2407,7 +2407,12 @@ const CURRENT_SHOP_NAME = "{{ ucwords(str_replace(['-', '_'], ' ', str_replace('
 function openBookingDetails(booking) {
     // Helper to format currency
     const formatCurrency = (val) => {
-        return '$' + parseFloat(val || 0).toFixed(2);
+        const cur = booking.currency || 'USD';
+        try {
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: cur }).format(val);
+        } catch (e) {
+            return parseFloat(val || 0).toFixed(2) + ' ' + cur;
+        }
     };
 
     // Helper to format date
