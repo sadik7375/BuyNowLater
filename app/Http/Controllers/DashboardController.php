@@ -504,7 +504,7 @@ class DashboardController extends Controller
                         $discountAmount = max(0, $actualVariantPrice - (float) $booking->deposit_amount);
                         $lineItems = [
                             [
-                                'variant_id' => (int) $booking->variant_id,
+                                'variant_id' => (float) $booking->variant_id,
                                 'quantity' => 1,
                                 'requires_shipping' => true,
                                 'applied_discount' => [
@@ -621,7 +621,7 @@ class DashboardController extends Controller
                         } catch (\Exception $e) { /* fallback to product_price */ }
                         $discountAmount = max(0, $actualVariantPrice - $depositAmount);
                         $lineItems = [[
-                            'variant_id'        => (int) $booking->variant_id,
+                            'variant_id'        => (float) $booking->variant_id,
                             'quantity'          => 1,
                             'requires_shipping' => false,
                             'applied_discount'  => [
@@ -843,7 +843,7 @@ class DashboardController extends Controller
                     $discountAmount = max(0, $actualVariantPrice - (float) $booking->deposit_amount);
                     $lineItems = [
                         [
-                            'variant_id' => (int) $booking->variant_id,
+                            'variant_id' => (float) $booking->variant_id,
                             'quantity' => 1,
                             'requires_shipping' => true,
                             'applied_discount' => [

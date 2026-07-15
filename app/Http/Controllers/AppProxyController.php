@@ -451,7 +451,7 @@ class AppProxyController extends Controller
             }
 
             $lineItems = [[
-                'variant_id'        => (int) $variantId,
+                'variant_id'        => (float) $variantId,
                 'quantity'          => 1,
                 'requires_shipping' => false,
                 'applied_discount'  => [
