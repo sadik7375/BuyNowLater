@@ -1158,6 +1158,123 @@
         color: var(--text-muted);
         line-height: 1.45;
     }
+
+    /* --- Details Modal --- */
+    .details-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.4);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        backdrop-filter: blur(4px);
+        transition: opacity 0.2s ease;
+    }
+    .details-modal.show {
+        display: flex;
+    }
+    .details-modal-content {
+        background-color: #ffffff;
+        border-radius: 12px;
+        width: 100%;
+        max-width: 550px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        border: 1px solid var(--border-color, #e2e8f0);
+        overflow: hidden;
+        animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalFadeIn {
+        from { transform: scale(0.95); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+    .details-modal-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-color, #e2e8f0);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #f8fafc;
+    }
+    .details-modal-header h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-main, #0f172a);
+    }
+    .details-modal-close {
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        color: var(--text-muted, #64748b);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px;
+        border-radius: 4px;
+        transition: background 0.15s;
+    }
+    .details-modal-close:hover {
+        background: rgba(0, 0, 0, 0.05);
+    }
+    .details-modal-body {
+        padding: 20px;
+        font-size: 13.5px;
+        color: var(--text-main, #0f172a);
+        max-height: 450px;
+        overflow-y: auto;
+    }
+    .details-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+    .details-section-title {
+        grid-column: span 2;
+        font-weight: 700;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted, #64748b);
+        border-bottom: 1px solid var(--border-color, #e2e8f0);
+        padding-bottom: 6px;
+        margin-top: 10px;
+    }
+    .details-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .details-item.full-width {
+        grid-column: span 2;
+    }
+    .details-item label {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--text-muted, #64748b);
+    }
+    .details-item span {
+        font-weight: 500;
+    }
+    .details-badge-wrapper {
+        display: inline-flex;
+    }
+    .shopify-link {
+        color: var(--primary-color, #008060);
+        text-decoration: none;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .shopify-link:hover {
+        text-decoration: underline;
+    }
 </style>
 
 <div class="app-layout">
@@ -1681,7 +1798,11 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <div class="actions-cell">
+                                        <div class="actions-cell" style="display: flex; gap: 8px;">
+                                            <button type="button" class="btn-action-secondary" onclick="openBookingDetails({{ json_encode($booking) }})">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                                Details
+                                            </button>
 
                                             @if($booking->status !== 'completed' && $booking->status !== 'expired')
                                                 <form action="{{ route('bookings.send_reminder', array_merge(['id' => $booking->id], request()->query())) }}" method="POST" style="margin:0;">
@@ -2184,7 +2305,162 @@
 </div><!-- /.main-content -->
 </div><!-- /.app-layout -->
 
+<!-- Details Modal -->
+<div id="booking-details-modal" class="details-modal" onclick="closeBookingDetailsModalOnOutsideClick(event)">
+    <div class="details-modal-content">
+        <div class="details-modal-header">
+            <h3>Booking & Reservation Details</h3>
+            <button type="button" class="details-modal-close" onclick="closeBookingDetailsModal()">✕</button>
+        </div>
+        <div class="details-modal-body">
+            <div class="details-grid">
+                <!-- Customer Info -->
+                <div class="details-section-title">Customer Information</div>
+                <div class="details-item">
+                    <label>Customer Name</label>
+                    <span id="detail-customer-name">-</span>
+                </div>
+                <div class="details-item">
+                    <label>Email Address</label>
+                    <span id="detail-customer-email">-</span>
+                </div>
+
+                <!-- Product Info -->
+                <div class="details-section-title">Product & Reservation Info</div>
+                <div class="details-item full-width">
+                    <label>Product Title</label>
+                    <span id="detail-product-title">-</span>
+                </div>
+                <div class="details-item">
+                    <label>Original Price</label>
+                    <span id="detail-product-price">-</span>
+                </div>
+                <div class="details-item">
+                    <label>Booking Status</label>
+                    <div class="details-badge-wrapper" id="detail-status-badge">
+                        <span class="status-pill">-</span>
+                    </div>
+                </div>
+
+                <!-- Financial Breakdown -->
+                <div class="details-section-title">Payment Breakdown</div>
+                <div class="details-item">
+                    <label>Deposit Paid</label>
+                    <span id="detail-deposit-amount" style="color: var(--secondary-color); font-weight: 600;">-</span>
+                </div>
+                <div class="details-item">
+                    <label>Remaining Balance</label>
+                    <span id="detail-remaining-balance" style="color: var(--accent-blue); font-weight: 600;">-</span>
+                </div>
+
+                <!-- Timeline / Dates -->
+                <div class="details-section-title">Timeline & Dates</div>
+                <div class="details-item">
+                    <label>Booking Created At</label>
+                    <span id="detail-created-at">-</span>
+                </div>
+                <div class="details-item">
+                    <label>Hold Expiry Date</label>
+                    <span id="detail-expiry-date">-</span>
+                </div>
+                <div class="details-item">
+                    <label>Deposit Paid Date</label>
+                    <span id="detail-deposit-paid-at" style="color: var(--secondary-color);">-</span>
+                </div>
+                <div class="details-item">
+                    <label>Full Paid Date</label>
+                    <span id="detail-completed-at" style="color: var(--primary-color);">-</span>
+                </div>
+
+                <!-- Shopify Orders -->
+                <div class="details-section-title">Shopify Orders</div>
+                <div class="details-item">
+                    <label>Initial Deposit Order</label>
+                    <span id="detail-deposit-order-link">-</span>
+                </div>
+                <div class="details-item">
+                    <label>Remaining Balance Order</label>
+                    <span id="detail-balance-order-link">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+// Booking Details Modal Handlers
+function openBookingDetails(booking) {
+    // Helper to format currency
+    const formatCurrency = (val) => {
+        return '$' + parseFloat(val || 0).toFixed(2);
+    };
+
+    // Helper to format date
+    const formatDate = (dateStr) => {
+        if (!dateStr) return 'Not Yet / Pending';
+        const date = new Date(dateStr);
+        return date.toLocaleString();
+    };
+
+    // Populate Fields
+    document.getElementById('detail-customer-name').innerText = booking.customer_name || 'N/A';
+    document.getElementById('detail-customer-email').innerText = booking.email || '-';
+    document.getElementById('detail-product-title').innerText = booking.product_title || '-';
+    document.getElementById('detail-product-price').innerText = formatCurrency(booking.product_price);
+    document.getElementById('detail-deposit-amount').innerText = formatCurrency(booking.deposit_amount);
+    document.getElementById('detail-remaining-balance').innerText = formatCurrency(booking.remaining_balance);
+    
+    document.getElementById('detail-created-at').innerText = formatDate(booking.created_at);
+    document.getElementById('detail-expiry-date').innerText = formatDate(booking.expires_at);
+    document.getElementById('detail-deposit-paid-at').innerText = formatDate(booking.deposit_paid_at);
+    document.getElementById('detail-completed-at').innerText = formatDate(booking.completed_at);
+
+    // Render Status Badge
+    const badgeWrapper = document.getElementById('detail-status-badge');
+    let statusText = booking.status;
+    if (booking.status === 'deposit_paid') statusText = 'Partial Paid';
+    if (booking.status === 'completed') statusText = 'Full Paid';
+    badgeWrapper.innerHTML = `<span class="status-pill ${booking.status}">${statusText.toUpperCase()}</span>`;
+
+    // Render Shopify Order Links
+    const depositLinkContainer = document.getElementById('detail-deposit-order-link');
+    const balanceLinkContainer = document.getElementById('detail-balance-order-link');
+
+    // Initial Deposit Order Link
+    if (booking.order_id) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const shopDomain = urlParams.get('shop') || 'canny-apps.myshopify.com';
+        const adminUrl = `https://admin.shopify.com/store/${shopDomain.replace('.myshopify.com', '')}/orders/${booking.order_id}`;
+        depositLinkContainer.innerHTML = `<a href="${adminUrl}" class="shopify-link" target="_blank">Order #${booking.order_id} ↗</a>`;
+    } else {
+        depositLinkContainer.innerHTML = `<span style="color: var(--text-muted);">Not created yet</span>`;
+    }
+
+    // Remaining Balance Order Link
+    if (booking.balance_order_id) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const shopDomain = urlParams.get('shop') || 'canny-apps.myshopify.com';
+        const adminUrl = `https://admin.shopify.com/store/${shopDomain.replace('.myshopify.com', '')}/orders/${booking.balance_order_id}`;
+        balanceLinkContainer.innerHTML = `<a href="${adminUrl}" class="shopify-link" target="_blank">Order #${booking.balance_order_id} ↗</a>`;
+    } else {
+        balanceLinkContainer.innerHTML = `<span style="color: var(--text-muted);">-</span>`;
+    }
+
+    // Show Modal
+    document.getElementById('booking-details-modal').classList.add('show');
+}
+
+function closeBookingDetailsModal() {
+    document.getElementById('booking-details-modal').classList.remove('show');
+}
+
+function closeBookingDetailsModalOnOutsideClick(event) {
+    const modal = document.getElementById('booking-details-modal');
+    if (event.target === modal) {
+        closeBookingDetailsModal();
+    }
+}
+
 // Product Targeting Selector
 let selectedProducts = @json($targetedProducts) || [];
 

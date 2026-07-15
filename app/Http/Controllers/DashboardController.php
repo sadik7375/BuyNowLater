@@ -69,13 +69,16 @@ class DashboardController extends Controller
                                         $booking->update([
                                             'status' => 'deposit_paid',
                                             'expires_at' => now()->addDays($holdDurationDays),
+                                            'deposit_paid_at' => now(),
                                             'draft_order_id' => null,
                                             'checkout_url' => null,
                                         ]);
                                         \Illuminate\Support\Facades\Log::info("Sync index: Booking ID {$booking->id} deposit paid on Shopify. Status updated to deposit_paid.");
                                     } elseif ($booking->status === 'deposit_paid' && $isRemaining) {
                                         $booking->update([
-                                            'status' => 'completed'
+                                            'status' => 'completed',
+                                            'completed_at' => now(),
+                                            'balance_order_id' => $draftOrder['order_id'] ?? null,
                                         ]);
                                         \Illuminate\Support\Facades\Log::info("Sync index: Booking ID {$booking->id} balance paid on Shopify. Status updated to completed.");
                                     }
@@ -422,6 +425,7 @@ class DashboardController extends Controller
                                 $booking->update([
                                     'status' => 'deposit_paid',
                                     'expires_at' => now()->addDays($holdDurationDays),
+                                    'deposit_paid_at' => now(),
                                     'draft_order_id' => null,
                                     'checkout_url' => null,
                                 ]);
@@ -429,7 +433,9 @@ class DashboardController extends Controller
                                 \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} deposit paid on Shopify. Status updated to deposit_paid.");
                             } elseif ($booking->status === 'deposit_paid' && $isRemaining) {
                                 $booking->update([
-                                    'status' => 'completed'
+                                    'status' => 'completed',
+                                    'completed_at' => now(),
+                                    'balance_order_id' => $draftOrder['order_id'] ?? null,
                                 ]);
                                 $booking->status = 'completed';
                                 \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} balance paid on Shopify. Status updated to completed.");

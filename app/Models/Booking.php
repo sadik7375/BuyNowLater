@@ -26,10 +26,15 @@ class Booking extends Model
         'token',
         'customer_name',
         'expires_at',
+        'deposit_paid_at',
+        'completed_at',
+        'balance_order_id',
     ];
 
     protected $casts = [
         'expires_at' => 'datetime',
+        'deposit_paid_at' => 'datetime',
+        'completed_at' => 'datetime',
     ];
 
     /**

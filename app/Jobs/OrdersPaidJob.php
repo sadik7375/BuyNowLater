@@ -161,6 +161,7 @@ class OrdersPaidJob implements ShouldQueue
                             'order_id'      => $orderId,
                             'customer_name' => $customerName,
                             'expires_at'    => now()->addDays($holdDurationDays),
+                            'deposit_paid_at' => now(),
                             'draft_order_id'=> null,
                             'checkout_url'  => null,
                         ]);
@@ -172,7 +173,9 @@ class OrdersPaidJob implements ShouldQueue
                     // This is the remaining balance order being paid!
                     if ($booking->status === 'deposit_paid') {
                         $booking->update([
-                            'status' => 'completed'
+                            'status' => 'completed',
+                            'completed_at' => now(),
+                            'balance_order_id' => $orderId,
                         ]);
                         Log::info('OrdersPaidJob: Booking marked completed (balance paid)', ['booking_id' => $booking->id]);
                         // No need to hold fulfillment for the final balance order
