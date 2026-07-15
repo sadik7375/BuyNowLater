@@ -2025,18 +2025,12 @@
                                     </td>
                                     <td>
                                         <div class="actions-cell" style="display: flex; gap: 8px;">
-                                            <button type="button" class="btn-action-secondary" onclick="openBookingDetails({{ json_encode($booking) }})">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                                                Details
-                                            </button>
+                                            <s-button variant="secondary" onclick="openBookingDetails({{ json_encode($booking) }})">Details</s-button>
 
                                             @if($booking->status !== 'completed' && $booking->status !== 'expired')
                                                 <form action="{{ route('bookings.send_reminder', array_merge(['id' => $booking->id], request()->query())) }}" method="POST" style="margin:0;">
                                                     @csrf
-                                                    <button type="submit" class="btn-action-secondary">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                                                        Send Reminder
-                                                    </button>
+                                                    <s-button submit="true" variant="secondary">Send Reminder</s-button>
                                                 </form>
                                             @endif
                                         </div>
@@ -2563,9 +2557,9 @@
                 </div>
                 <div>
                     @if(!$hasPlan)
-                        <button type="button" class="pricing-button disabled" style="margin: 0;">Current Plan</button>
+                        <s-button disabled="true" style="margin: 0; width: 100%;">Current Plan</s-button>
                     @else
-                        <button type="button" class="pricing-button disabled" style="margin: 0;">Free Tier</button>
+                        <s-button disabled="true" style="margin: 0; width: 100%;">Free Tier</s-button>
                     @endif
                 </div>
             </div>
@@ -2602,9 +2596,9 @@
                 </div>
                 <div>
                     @if($hasPlan)
-                        <button type="button" class="pricing-button disabled" style="margin: 0;">Current Plan</button>
+                        <s-button disabled="true" style="margin: 0; width: 100%;">Current Plan</s-button>
                     @else
-                        <a href="{{ route('billing', array_merge(['plan' => 1], request()->query())) }}" class="pricing-button primary" target="_top" style="margin: 0;">Upgrade to Premium</a>
+                        <s-button href="{{ route('billing', array_merge(['plan' => 1], request()->query())) }}" variant="primary" target="_top" style="margin: 0; width: 100%;">Upgrade to Premium</s-button>
                     @endif
                 </div>
             </div>
