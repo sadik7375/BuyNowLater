@@ -16,4 +16,19 @@ class TrimStrings extends Middleware
         'password',
         'password_confirmation',
     ];
+
+    public function handle($request, \Closure $next)
+    {
+        if (str_contains($request->getRequestUri(), 'webhook')) {
+            \Illuminate\Support\Facades\Log::info('Webhook incoming request details:', [
+                'uri' => $request->getRequestUri(),
+                'method' => $request->getMethod(),
+                'headers' => $request->headers->all(),
+                'ip' => $request->ip(),
+                'content' => $request->getContent()
+            ]);
+        }
+
+        return parent::handle($request, $next);
+    }
 }
