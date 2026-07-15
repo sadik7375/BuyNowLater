@@ -137,4 +137,20 @@ class Booking extends Model
 
         return null;
     }
+
+    /**
+     * Get usage statistics for the shop (Total holds, reminders, and alerts).
+     */
+    public static function getUsageStats($shopId)
+    {
+        $holds = \App\Models\Booking::where('shop_id', $shopId)->count();
+        $reminders = \App\Models\Reminder::where('shop_id', $shopId)->count();
+        $alerts = \App\Models\Subscriber::where('shop_id', $shopId)->count();
+        return [
+            'holds' => $holds,
+            'reminders' => $reminders,
+            'alerts' => $alerts,
+            'total' => $holds + $reminders + $alerts,
+        ];
+    }
 }

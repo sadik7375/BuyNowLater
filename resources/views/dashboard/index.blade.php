@@ -1275,6 +1275,178 @@
     .shopify-link:hover {
         text-decoration: underline;
     }
+
+    /* --- Pricing Plan Layout --- */
+    .pricing-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+        margin-top: 20px;
+    }
+    .pricing-card {
+        background: #ffffff;
+        border: 1px solid var(--border-color, #e2e8f0);
+        border-radius: 12px;
+        padding: 30px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        transition: all 0.2s ease;
+    }
+    .pricing-card.popular {
+        border-color: var(--primary-color, #008060);
+        box-shadow: 0 10px 15px -3px rgba(0, 128, 96, 0.1), 0 4px 6px -2px rgba(0, 128, 96, 0.05);
+    }
+    .pricing-card.popular::before {
+        content: 'RECOMMENDED';
+        position: absolute;
+        top: -12px;
+        right: 20px;
+        background: var(--primary-color, #008060);
+        color: #ffffff;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        padding: 4px 10px;
+        border-radius: 9999px;
+    }
+    .pricing-card-header h3 {
+        margin: 0 0 10px 0;
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-main, #0f172a);
+    }
+    .pricing-card-header p {
+        margin: 0;
+        font-size: 13.5px;
+        color: var(--text-muted, #64748b);
+        line-height: 1.5;
+    }
+    .pricing-price {
+        margin: 24px 0;
+        display: flex;
+        align-items: baseline;
+    }
+    .pricing-price .amount {
+        font-size: 36px;
+        font-weight: 800;
+        color: var(--text-main, #0f172a);
+    }
+    .pricing-price .period {
+        margin-left: 4px;
+        font-size: 14px;
+        color: var(--text-muted, #64748b);
+    }
+    .pricing-features {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 30px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .pricing-features li {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13.5px;
+        color: var(--text-main, #0f172a);
+    }
+    .pricing-features li svg {
+        color: var(--primary-color, #008060);
+        flex-shrink: 0;
+    }
+    .pricing-features li.disabled {
+        color: var(--text-muted, #94a3b8);
+        text-decoration: line-through;
+    }
+    .pricing-features li.disabled svg {
+        color: var(--text-muted, #94a3b8);
+    }
+    .pricing-button {
+        width: 100%;
+        padding: 12px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border: 1px solid var(--border-color, #e2e8f0);
+        background: #ffffff;
+        color: var(--text-main, #0f172a);
+    }
+    .pricing-button.primary {
+        background: var(--primary-color, #008060);
+        border-color: var(--primary-color, #008060);
+        color: #ffffff;
+        text-decoration: none;
+        display: block;
+        box-sizing: border-box;
+    }
+    .pricing-button.primary:hover {
+        background: var(--primary-hover, #006e52);
+        border-color: var(--primary-hover, #006e52);
+    }
+    .pricing-button.disabled {
+        background: #f1f5f9;
+        border-color: #e2e8f0;
+        color: var(--text-muted, #94a3b8);
+        cursor: default;
+        pointer-events: none;
+        display: block;
+        box-sizing: border-box;
+    }
+    /* Warning Alert Banner */
+    .limit-warning-banner {
+        background-color: #fffbeb;
+        border: 1px solid #fef3c7;
+        border-left: 4px solid #d97706;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .limit-warning-banner .warning-icon {
+        font-size: 20px;
+        line-height: 1;
+    }
+    .limit-warning-banner .warning-content h4 {
+        margin: 0 0 4px 0;
+        font-size: 14px;
+        font-weight: 700;
+        color: #92400e;
+    }
+    .limit-warning-banner .warning-content p {
+        margin: 0 0 12px 0;
+        font-size: 13px;
+        color: #b45309;
+        line-height: 1.5;
+    }
+    .limit-warning-banner .warning-action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: #d97706;
+        border: 1px solid #d97706;
+        color: #ffffff;
+        font-weight: 600;
+        font-size: 12.5px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.15s;
+        text-decoration: none;
+    }
+    .limit-warning-banner .warning-action-btn:hover {
+        background: #b45309;
+        border-color: #b45309;
+    }
 </style>
 
 <div class="app-layout">
@@ -1315,6 +1487,9 @@
         <button class="sidebar-btn" onclick="switchTab(event, 'tab-benefits')">
             <span class="icon">✨</span> Benefits
         </button>
+        <button class="sidebar-btn" onclick="switchTab(event, 'tab-pricing')">
+            <span class="icon">💳</span> Pricing Plans
+        </button>
     </nav>
 </aside>
 
@@ -1350,6 +1525,34 @@
     @if(session('error'))
         <div class="alert error">
             {{ session('error') }}
+        </div>
+    @php
+        $usageStats = \App\Models\Booking::getUsageStats($shop->id);
+        $usageCount = $usageStats['total'];
+        $hasPlan = (bool) $shop->plan_id;
+    @endphp
+
+    @if(!$hasPlan && $usageCount >= 10)
+        <div class="limit-warning-banner">
+            <span class="warning-icon">⚠️</span>
+            <div class="warning-content">
+                <h4>Plan Limit Reached</h4>
+                <p>You have used all <strong>{{ $usageCount }} of your 10 free combined reservations, reminders, and price drop alerts</strong>. Customers can no longer place holds or set reminders on your store. Please upgrade your plan to unlock unlimited usage.</p>
+                <a href="#" onclick="switchTab(event, 'tab-pricing')" class="warning-action-btn">
+                    Upgrade Plan
+                </a>
+            </div>
+        </div>
+    @elseif(!$hasPlan && $usageCount >= 8)
+        <div class="limit-warning-banner" style="border-left-color: #f59e0b;">
+            <span class="warning-icon">⚠️</span>
+            <div class="warning-content">
+                <h4>Approaching Plan Limit</h4>
+                <p>You have used <strong>{{ $usageCount }} of your 10 free combined reservations, reminders, and price drop alerts</strong>. Upgrade now to ensure uninterrupted service for your customers.</p>
+                <a href="#" onclick="switchTab(event, 'tab-pricing')" class="warning-action-btn" style="background: #f59e0b; border-color: #f59e0b;">
+                    Upgrade Plan
+                </a>
+            </div>
         </div>
     @endif
 
@@ -1463,6 +1666,7 @@
         <button class="tab-button" onclick="switchTab(event, 'tab-settings')">Settings</button>
         <button class="tab-button" onclick="switchTab(event, 'tab-how-it-works')">How It Works</button>
         <button class="tab-button" onclick="switchTab(event, 'tab-benefits')">Benefits</button>
+        <button class="tab-button" onclick="switchTab(event, 'tab-pricing')">Pricing Plans</button>
     </div>
 
     <!-- Tab 1: Overview Dashboard -->
@@ -2296,6 +2500,90 @@
                 <div style="background: rgba(0,128,96,0.03); padding: 16px; border-radius: 8px;">
                     <h5 style="margin:0 0 6px 0; font-size:13.5px; font-weight:600; color:var(--primary-color);">Self-serve portal</h5>
                     <p style="margin:0; font-size:12.5px; color:var(--text-muted);">Storefront proxy lets customers check their balance and complete orders anytime.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: Pricing Plans -->
+    <div id="tab-pricing" class="tab-content" style="display: none;">
+        <div class="guide-header">
+            <h2>Select App Plan</h2>
+            <p>Upgrade to unlock unlimited reservations, reminders, and price drop notifications.</p>
+        </div>
+
+        <div class="pricing-grid">
+            <!-- Free Plan -->
+            <div class="pricing-card">
+                <div>
+                    <div class="pricing-card-header">
+                        <h3>Free Plan</h3>
+                        <p>Perfect for testing and getting started with holds & alerts.</p>
+                    </div>
+                    <div class="pricing-price">
+                        <span class="amount">$0</span>
+                        <span class="period">/ month</span>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Up to 10 combined items (Holds, Reminders, Alerts)
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Standard Email support
+                        </li>
+                        <li class="disabled">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            Unlimited customer reservations
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    @if(!$hasPlan)
+                        <button type="button" class="pricing-button disabled" style="margin: 0;">Current Plan</button>
+                    @else
+                        <button type="button" class="pricing-button disabled" style="margin: 0;">Free Tier</button>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Premium Plan -->
+            <div class="pricing-card popular">
+                <div>
+                    <div class="pricing-card-header">
+                        <h3>Premium Plan</h3>
+                        <p>Unlimited reservations, holds, reminders, and drop alerts.</p>
+                    </div>
+                    <div class="pricing-price">
+                        <span class="amount">$5</span>
+                        <span class="period">/ month</span>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <strong>Unlimited</strong> reservations & holds
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <strong>Unlimited</strong> email reminders
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <strong>Unlimited</strong> price drop alerts
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Priority support (Email & Live Chat)
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    @if($hasPlan)
+                        <button type="button" class="pricing-button disabled" style="margin: 0;">Current Plan</button>
+                    @else
+                        <a href="{{ route('billing', ['plan' => 1]) }}" class="pricing-button primary" target="_top" style="margin: 0;">Upgrade to Premium</a>
+                    @endif
                 </div>
             </div>
         </div>

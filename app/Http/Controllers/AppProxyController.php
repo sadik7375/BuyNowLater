@@ -46,24 +46,12 @@ class AppProxyController extends Controller
             return response()->json(['message' => 'Unauthorized shop.'], 401);
         }
 
-        $isFreePlan = false; // App is fully free, bypass restrictions
-        if ($isFreePlan) {
-            $startOfMonth = Carbon::now()->startOfMonth();
-            $endOfMonth = Carbon::now()->endOfMonth();
-            
-            $remindersCount = Reminder::where('shop_id', $shop->id)
-                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-                ->count();
-            
-            $subscribersCount = Subscriber::where('shop_id', $shop->id)
-                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-                ->count();
-            
-            if (($remindersCount + $subscribersCount) >= 20) {
-                return response()->json([
-                    'message' => 'Monthly limit of 20 events reached on the Free plan. Please upgrade to Pro for unlimited usage.'
-                ], 403);
-            }
+        // Pricing limit check: If on Free Plan (no plan_id), limit to 10 combined items
+        $usage = Booking::getUsageStats($shop->id);
+        if (!$shop->plan_id && $usage['total'] >= 10) {
+            return response()->json([
+                'message' => 'The store has reached its free reservation limit. Please contact the store owner to upgrade.'
+            ], 403);
         }
 
         // Parse scheduled date
@@ -145,24 +133,12 @@ class AppProxyController extends Controller
             return response()->json(['message' => 'Unauthorized shop.'], 401);
         }
 
-        $isFreePlan = false; // App is fully free, bypass restrictions
-        if ($isFreePlan) {
-            $startOfMonth = Carbon::now()->startOfMonth();
-            $endOfMonth = Carbon::now()->endOfMonth();
-            
-            $remindersCount = Reminder::where('shop_id', $shop->id)
-                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-                ->count();
-            
-            $subscribersCount = Subscriber::where('shop_id', $shop->id)
-                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
-                ->count();
-            
-            if (($remindersCount + $subscribersCount) >= 20) {
-                return response()->json([
-                    'message' => 'Monthly limit of 20 events reached on the Free plan. Please upgrade to Pro for unlimited usage.'
-                ], 403);
-            }
+        // Pricing limit check: If on Free Plan (no plan_id), limit to 10 combined items
+        $usage = Booking::getUsageStats($shop->id);
+        if (!$shop->plan_id && $usage['total'] >= 10) {
+            return response()->json([
+                'message' => 'The store has reached its free reservation limit. Please contact the store owner to upgrade.'
+            ], 403);
         }
 
         // Fetch product's base currency price from Shopify Admin API to resolve currency mismatches
@@ -356,10 +332,11 @@ class AppProxyController extends Controller
             return response()->json(['message' => 'Shop not found.'], 404);
         }
 
-        $isFreePlan = false; // App is fully free, bypass restrictions
-        if ($isFreePlan) {
+        // Pricing limit check: If on Free Plan (no plan_id), limit to 10 combined items
+        $usage = Booking::getUsageStats($shop->id);
+        if (!$shop->plan_id && $usage['total'] >= 10) {
             return response()->json([
-                'message' => 'Deposit bookings require the Pro Plan. Please upgrade to Pro.'
+                'message' => 'The store has reached its free reservation limit. Please contact the store owner to upgrade.'
             ], 403);
         }
 
