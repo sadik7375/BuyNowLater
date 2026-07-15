@@ -319,6 +319,72 @@ Route::group(['prefix' => 'deploy'], function() {
             return 'Sync failed: ' . $e->getMessage();
         }
     });
+
+    Route::get('/sync/{id}', function($id) {
+        try {
+            $booking = \App\Models\Booking::findOrFail($id);
+            $shop = $booking->shop;
+            if (!$shop) {
+                return "Shop not found for booking.";
+            }
+            if (!$booking->draft_order_id) {
+                return "No draft order ID for booking.";
+            }
+
+            $response = $shop->api()->rest(
+                'GET',
+                '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/' . $booking->draft_order_id . '.json'
+            );
+
+            if ($response['errors']) {
+                return 'Shopify API Error: ' . json_encode($response['body']);
+            }
+
+            $draftOrder = $response['body']['draft_order'] ?? null;
+            if (!$draftOrder) {
+                return "Draft order not found on Shopify.";
+            }
+
+            // Convert to array
+            if (is_object($draftOrder) && method_exists($draftOrder, 'toArray')) {
+                $doArray = $draftOrder->toArray();
+            } else {
+                $doArray = json_decode(json_encode($draftOrder), true);
+            }
+
+            $status = $doArray['status'] ?? '';
+            $results = [
+                'booking_id' => $booking->id,
+                'draft_order_id' => $booking->draft_order_id,
+                'shopify_status' => $status,
+                'shopify_draft_order' => $doArray,
+            ];
+
+            if ($status === 'completed') {
+                $settings = \App\Models\Setting::where('shop_id', $shop->id)->first();
+                $holdDurationDays = $settings ? (int) ($settings->hold_duration_days ?? 14) : 14;
+                
+                $customer = $doArray['customer'] ?? null;
+                $customerName = null;
+                if ($customer) {
+                    $customerName = trim(($customer['first_name'] ?? '') . ' ' . ($customer['last_name'] ?? ''));
+                }
+
+                $booking->update([
+                    'status' => 'deposit_paid',
+                    'customer_name' => $customerName,
+                    'expires_at' => now()->addDays($holdDurationDays)
+                ]);
+                $results['sync_action'] = 'Updated booking status to deposit_paid!';
+            } else {
+                $results['sync_action'] = 'No action taken (status is ' . $status . ')';
+            }
+
+            return 'Sync results: <br><pre>' . json_encode($results, JSON_PRETTY_PRINT) . '</pre>';
+        } catch (\Exception $e) {
+            return 'Sync failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString();
+        }
+    });
 });
 
 
