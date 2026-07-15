@@ -252,6 +252,73 @@ Route::group(['prefix' => 'deploy'], function() {
             return 'Debug failed: ' . $e->getMessage();
         }
     });
+
+    Route::get('/debug-sync-bookings', function() {
+        try {
+            $shops = \App\Models\User::all();
+            $results = [];
+            
+            foreach ($shops as $shop) {
+                $pendingBookings = \App\Models\Booking::where('shop_id', $shop->id)
+                    ->where('status', 'pending')
+                    ->whereNotNull('draft_order_id')
+                    ->get();
+                    
+                if ($pendingBookings->isEmpty()) {
+                    continue;
+                }
+                
+                $draftOrderIds = $pendingBookings->pluck('draft_order_id')->toArray();
+                
+                $response = $shop->api()->rest(
+                    'GET',
+                    '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json',
+                    ['ids' => implode(',', $draftOrderIds)]
+                );
+                
+                if ($response['errors']) {
+                    $results[$shop->name] = 'API Error: ' . json_encode($response['body']);
+                    continue;
+                }
+                
+                $draftOrders = $response['body']['draft_orders'] ?? [];
+                $syncCount = 0;
+                
+                foreach ($draftOrders as $do) {
+                    $draftOrderId = $do['id'];
+                    $shopifyStatus = $do['status'] ?? '';
+                    
+                    if ($shopifyStatus === 'completed') {
+                        $booking = \App\Models\Booking::where('draft_order_id', $draftOrderId)
+                            ->where('status', 'pending')
+                            ->first();
+                            
+                        if ($booking) {
+                            $settings = \App\Models\Setting::where('shop_id', $shop->id)->first();
+                            $holdDurationDays = $settings ? (int) ($settings->hold_duration_days ?? 14) : 14;
+                            
+                            $customer = $do['customer'] ?? null;
+                            $customerName = null;
+                            if ($customer) {
+                                $customerName = trim(($customer['first_name'] ?? '') . ' ' . ($customer['last_name'] ?? ''));
+                            }
+                            
+                            $booking->update([
+                                'status' => 'deposit_paid',
+                                'customer_name' => $customerName,
+                                'expires_at' => now()->addDays($holdDurationDays)
+                            ]);
+                            $syncCount++;
+                        }
+                    }
+                }
+                $results[$shop->name] = "Synced {$syncCount} bookings";
+            }
+            return 'Sync results: <br><pre>' . json_encode($results, JSON_PRETTY_PRINT) . '</pre>';
+        } catch (\Exception $e) {
+            return 'Sync failed: ' . $e->getMessage();
+        }
+    });
 });
 
 
