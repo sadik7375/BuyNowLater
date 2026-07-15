@@ -385,6 +385,41 @@ Route::group(['prefix' => 'deploy'], function() {
             return 'Sync failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString();
         }
     });
+
+    Route::get('/db-check', function() {
+        try {
+            $tableName = 'bookings';
+            $columns = \DB::select("SHOW COLUMNS FROM {$tableName}");
+            
+            $out = "Database columns for '{$tableName}':<br><pre>";
+            foreach ($columns as $column) {
+                $out .= "Field: {$column->Field} | Type: {$column->Type} | Null: {$column->Null} | Key: {$column->Key}<br>";
+            }
+            $out .= "</pre><br>";
+            
+            // Check if draft_order_id is int or bigint and needs modification
+            $draftOrderIdCol = collect($columns)->firstWhere('Field', 'draft_order_id');
+            if ($draftOrderIdCol && (str_contains(strtolower($draftOrderIdCol->Type), 'int') && !str_contains(strtolower($draftOrderIdCol->Type), 'varchar'))) {
+                $out .= "Warning: draft_order_id column is currently type: {$draftOrderIdCol->Type}. This will truncate 64-bit Shopify IDs!<br>";
+                $out .= "Attempting to ALTER TABLE to modify draft_order_id to VARCHAR(255)...<br>";
+                
+                \DB::statement("ALTER TABLE bookings MODIFY draft_order_id VARCHAR(255) NULL");
+                
+                $out .= "Success! Column type altered. Re-checking columns:<br><pre>";
+                $columnsUpdated = \DB::select("SHOW COLUMNS FROM {$tableName}");
+                foreach ($columnsUpdated as $column) {
+                    $out .= "Field: {$column->Field} | Type: {$column->Type}<br>";
+                }
+                $out .= "</pre>";
+            } else {
+                $out .= "draft_order_id column type looks correct ({$draftOrderIdCol->Type}). No modification needed.";
+            }
+            
+            return $out;
+        } catch (\Exception $e) {
+            return 'DB Check failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString();
+        }
+    });
 });
 
 
