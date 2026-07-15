@@ -607,48 +607,20 @@ class DashboardController extends Controller
                     $remainingBalance = (float) $booking->remaining_balance;
                     $token = $booking->token;
 
-                    if ($booking->variant_id) {
-                        // Fetch actual variant price to calculate correct fixed-amount discount
-                        $actualVariantPrice = $productPrice;
-                        try {
-                            $variantRes = $shop->api()->rest('GET', '/admin/api/' . config('shopify-app.api_version') . '/variants/' . $booking->variant_id . '.json');
-                            if ($variantRes['errors'] === false && isset($variantRes['body']['variant'])) {
-                                $vData = $variantRes['body']['variant'];
-                                if (is_object($vData) && method_exists($vData, 'toArray')) { $vData = $vData->toArray(); }
-                                elseif (is_object($vData)) { $vData = json_decode(json_encode($vData), true); }
-                                $actualVariantPrice = (float) ($vData['price'] ?? $productPrice);
-                            }
-                        } catch (\Exception $e) { /* fallback to product_price */ }
-                        $discountAmount = max(0, $actualVariantPrice - $depositAmount);
-                        $lineItems = [[
-                            'variant_id'        => (float) $booking->variant_id,
-                            'quantity'          => 1,
-                            'requires_shipping' => false,
-                            'applied_discount'  => [
-                                'title'       => 'Deposit Payment Adjustment',
-                                'description' => 'Buy Now Later deposit discount',
-                                'value'       => number_format($discountAmount, 2, '.', ''),
-                                'value_type'  => 'fixed_amount',
-                            ],
-                            'properties'        => [
-                                ['name' => '_token', 'value' => $token],
-                                ['name' => 'Original Price', 'value' => '$' . number_format($productPrice, 2)],
-                                ['name' => 'Remaining Balance', 'value' => '$' . number_format($remainingBalance, 2)],
-                            ]
-                        ]];
-                    } else {
-                        $lineItems = [[
-                            'title'             => 'Deposit — ' . $booking->product_title,
-                            'price'             => number_format($depositAmount, 2, '.', ''),
-                            'quantity'          => 1,
-                            'requires_shipping' => false,
-                            'properties'        => [
-                                ['name' => '_token', 'value' => $token],
-                                ['name' => 'Original Price', 'value' => '$' . number_format($productPrice, 2)],
-                                ['name' => 'Remaining Balance', 'value' => '$' . number_format($remainingBalance, 2)],
-                            ]
-                        ]];
-                    }
+                    // We always use a custom line item representing the deposit amount directly.
+                    // This avoids currency localization/conversion issues and prevents confusing
+                    // "Deposit Payment Adjustment" discounts from displaying on the checkout page.
+                    $lineItems = [[
+                        'title'             => 'Deposit — ' . $booking->product_title,
+                        'price'             => number_format($depositAmount, 2, '.', ''),
+                        'quantity'          => 1,
+                        'requires_shipping' => false,
+                        'properties'        => [
+                            ['name' => '_token', 'value' => $token],
+                            ['name' => 'Original Price', 'value' => '$' . number_format($productPrice, 2)],
+                            ['name' => 'Remaining Balance', 'value' => '$' . number_format($remainingBalance, 2)],
+                        ]
+                    ]];
 
                     $draftOrderData = [
                         'draft_order' => [
