@@ -2993,6 +2993,70 @@ document.addEventListener('click', function(e) {
 // Initialize targeting UI on load
 document.addEventListener('DOMContentLoaded', function() {
     renderSelectedProducts();
+    
+    // Intercept clicks on s-link inside s-app-nav to perform instant SPA tab switching
+    const links = document.querySelectorAll('s-app-nav s-link');
+    links.forEach(link => {
+        link.addEventListener('click', function(e) {
+            const href = link.getAttribute('href');
+            
+            // Map paths to tab IDs
+            let tabId = 'tab-overview';
+            if (href === '/bookings') {
+                tabId = 'tab-bookings-list';
+            } else if (href === '/reminders') {
+                tabId = 'tab-reminders-list';
+            } else if (href === '/price-alerts') {
+                tabId = 'tab-subscribers-list';
+            } else if (href === '/app-settings') {
+                tabId = 'tab-settings';
+            } else if (href === '/how-it-works') {
+                tabId = 'tab-how-it-works';
+            } else if (href === '/benefits') {
+                tabId = 'tab-benefits';
+            } else if (href === '/price-plan') {
+                tabId = 'tab-pricing';
+            }
+            
+            // Check if tab exists
+            const targetEl = document.getElementById(tabId);
+            if (targetEl) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Update history path while preserving shop/host parameters
+                const currentSearch = window.location.search;
+                const newUrl = href + currentSearch;
+                history.pushState({ tabId: tabId }, '', newUrl);
+                
+                // Switch tab instantly
+                switchTab(null, tabId);
+            }
+        });
+    });
+
+    // Handle back/forward buttons
+    window.addEventListener('popstate', function(event) {
+        const path = window.location.pathname;
+        let tabId = 'tab-overview';
+        if (path === '/bookings') {
+            tabId = 'tab-bookings-list';
+        } else if (path === '/reminders') {
+            tabId = 'tab-reminders-list';
+        } else if (path === '/price-alerts') {
+            tabId = 'tab-subscribers-list';
+        } else if (path === '/app-settings') {
+            tabId = 'tab-settings';
+        } else if (path === '/how-it-works') {
+            tabId = 'tab-how-it-works';
+        } else if (path === '/benefits') {
+            tabId = 'tab-benefits';
+        } else if (path === '/price-plan') {
+            tabId = 'tab-pricing';
+        }
+        
+        switchTab(null, tabId);
+    });
 });
 
     function switchTab(event, tabId) {
@@ -3026,6 +3090,21 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         if (matchingTabBtn) {
             matchingTabBtn.classList.add('active');
+        }
+
+        // Push URL state if triggered inside the page via UI events
+        if (event) {
+            let path = '/';
+            if (tabId === 'tab-bookings-list') path = '/bookings';
+            else if (tabId === 'tab-reminders-list') path = '/reminders';
+            else if (tabId === 'tab-subscribers-list') path = '/price-alerts';
+            else if (tabId === 'tab-settings') path = '/app-settings';
+            else if (tabId === 'tab-how-it-works') path = '/how-it-works';
+            else if (tabId === 'tab-benefits') path = '/benefits';
+            else if (tabId === 'tab-pricing') path = '/price-plan';
+
+            const currentSearch = window.location.search;
+            history.pushState({ tabId: tabId }, '', path + currentSearch);
         }
     }
 
