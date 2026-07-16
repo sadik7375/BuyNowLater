@@ -761,7 +761,7 @@
     .filter-toolbar-container {
         background-color: var(--bg-card);
         border: 1px solid var(--border-color);
-        border-radius: 12px;
+        border-radius: 8px;
         padding: 12px 20px;
         margin-bottom: 24px;
         display: flex;
@@ -1556,12 +1556,15 @@
             <button class="filter-btn {{ $dateFilter == 'today' ? 'active' : '' }}" onclick="applyDateFilter('today')">Today</button>
             <button class="filter-btn {{ $dateFilter == 'week' ? 'active' : '' }}" onclick="applyDateFilter('week')">This Week</button>
         </div>
-        <form class="custom-date-picker" onsubmit="event.preventDefault(); applyDateFilter('custom', document.getElementById('start_date_picker').value, document.getElementById('end_date_picker').value);">
-            <input type="date" id="start_date_picker" name="start_date" value="{{ $start ? $start->toDateString() : '' }}" />
-            <span>to</span>
-            <input type="date" id="end_date_picker" name="end_date" value="{{ $end ? $end->toDateString() : '' }}" />
-            <button type="submit">Apply</button>
-        </form>
+        <div style="flex-shrink: 0;">
+            <s-date-picker
+                id="shopify_date_picker"
+                type="range"
+                name="date-range"
+                value="{{ $start && $end ? $start->toDateString().'--'.$end->toDateString() : '' }}"
+                view="{{ $start ? $start->format('Y-m') : now()->format('Y-m') }}"
+            ></s-date-picker>
+        </div>
     </div>
 
     @if(session('success'))
@@ -3049,6 +3052,20 @@ document.addEventListener('click', function(e) {
 // Initialize targeting UI on load
 document.addEventListener('DOMContentLoaded', function() {
     renderSelectedProducts();
+    
+    // Handle Shopify Native Date Picker changes
+    const shopifyDatePicker = document.getElementById('shopify_date_picker');
+    if (shopifyDatePicker) {
+        shopifyDatePicker.addEventListener('change', function(e) {
+            const val = e.currentTarget.value; // Format: "YYYY-MM-DD--YYYY-MM-DD"
+            if (val && val.includes('--')) {
+                const parts = val.split('--');
+                const startDate = parts[0];
+                const endDate = parts[1];
+                applyDateFilter('custom', startDate, endDate);
+            }
+        });
+    }
     
     // Intercept clicks on s-link inside s-app-nav to perform instant SPA tab switching
     const links = document.querySelectorAll('s-app-nav s-link');
