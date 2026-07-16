@@ -218,7 +218,7 @@
         margin-bottom: 4px;
     }
 
-    /* Quick stats cards */
+    /* Quick stats cards (Shopify Polaris style) */
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -227,37 +227,58 @@
     }
 
     .stat-card {
-        background-color: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.01);
+        background-color: #ffffff;
+        border: 1px solid #e1e3e5;
+        border-radius: 8px;
+        padding: 16px;
+        box-shadow: 0px 1px 0px rgba(0, 0, 0, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+    }
+
+    .stat-info {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
     }
 
     .stat-label {
         font-size: 13px;
-        color: var(--text-muted);
+        color: #202223;
         margin-bottom: 8px;
-        font-weight: 500;
+        font-weight: 450;
+        display: inline-block;
+        border-bottom: 1px dashed #e1e3e5;
+        cursor: help;
+        width: fit-content;
     }
 
     .stat-value {
-        font-size: 26px;
-        font-weight: 700;
-        color: var(--text-main);
+        font-size: 20px;
+        font-weight: 600;
+        color: #202223;
         margin-bottom: 4px;
+        line-height: 1.2;
     }
 
     .stat-change {
-        font-size: 12px;
-        font-weight: 600;
+        font-size: 11.5px;
+        font-weight: 400;
+        color: #6d7175;
         display: flex;
         align-items: center;
         gap: 4px;
     }
 
-    .change-up { color: var(--secondary-color); }
-    .change-down { color: var(--danger-color); }
+    .change-up { color: var(--secondary-color); font-weight: 500; }
+    .change-down { color: var(--danger-color); font-weight: 500; }
+
+    .stat-visual {
+        flex-shrink: 0;
+        margin-left: 12px;
+        margin-bottom: 4px;
+    }
 
     /* Tabs navigation — kept for JS compatibility, hidden visually */
     .dashboard-tabs { display: none; }
@@ -271,13 +292,13 @@
         margin-bottom: 24px;
     }
 
-    /* Card Panels */
+    /* Card Panels (Shopify Polaris style) */
     .panel-card {
-        background-color: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 24px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        background-color: #ffffff;
+        border: 1px solid #e1e3e5;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0px 1px 0px rgba(0, 0, 0, 0.05);
     }
 
     .panel-card h3 {
@@ -1627,61 +1648,89 @@
     <!-- 4 Stats Cards Grid (Updated Card 3 with Scheduled Reminders Count) -->
     <div class="stats-grid">
         <div class="stat-card">
-            <div class="stat-label">Revenue Recovered</div>
-            <div class="stat-value">${{ number_format($revenueRecovered, 2) }}</div>
-            <div class="stat-change" style="color: var(--text-muted); font-size: 11.5px;">
-                <span>
-                    @if($dateFilter === 'today')
-                        Today's recovered revenue
-                    @elseif($dateFilter === 'week')
-                        Recovered this week
-                    @elseif($dateFilter === 'custom')
-                        Recovered in custom range
-                    @else
-                        All-time recovered revenue
-                    @endif
-                </span>
+            <div class="stat-info">
+                <div class="stat-label" title="Total revenue generated from fully completed and paid orders">Revenue Recovered</div>
+                <div class="stat-value">${{ number_format($revenueRecovered, 2) }}</div>
+                <div class="stat-change">
+                    <span>
+                        @if($dateFilter === 'today')
+                            Today's recovered revenue
+                        @elseif($dateFilter === 'week')
+                            Recovered this week
+                        @elseif($dateFilter === 'custom')
+                            Recovered in custom range
+                        @else
+                            All-time recovered revenue
+                        @endif
+                    </span>
+                </div>
+            </div>
+            <div class="stat-visual">
+                <svg width="64" height="28" viewBox="0 0 64 28" fill="none" stroke="#298dff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 24 Q16 26 28 14 T60 4" />
+                </svg>
             </div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Active Bookings</div>
-            <div class="stat-value">{{ $activeBookings }}</div>
-            <div class="stat-change" style="color: var(--text-muted); font-size: 11.5px;">
-                <span>
-                    @if($dateFilter === 'today')
-                        Active bookings created today
-                    @elseif($dateFilter === 'week')
-                        Active bookings created this week
-                    @elseif($dateFilter === 'custom')
-                        Active bookings in custom range
-                    @else
-                        Current total active bookings
-                    @endif
-                </span>
+            <div class="stat-info">
+                <div class="stat-label" title="Active reservations currently on hold awaiting balance payment">Active Bookings</div>
+                <div class="stat-value">{{ $activeBookings }}</div>
+                <div class="stat-change">
+                    <span>
+                        @if($dateFilter === 'today')
+                            Active bookings created today
+                        @elseif($dateFilter === 'week')
+                            Active bookings created this week
+                        @elseif($dateFilter === 'custom')
+                            Active bookings in custom range
+                        @else
+                            Current total active bookings
+                        @endif
+                    </span>
+                </div>
+            </div>
+            <div class="stat-visual">
+                <svg width="64" height="28" viewBox="0 0 64 28" fill="none" stroke="#298dff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 24 Q16 18 28 20 T60 8" />
+                </svg>
             </div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Today's Scheduled Reminders</div>
-            <div class="stat-value">{{ $todayRemindersCount }}</div>
-            <div class="stat-change @if($todayRemindersCount > 0) change-up @else change-down @endif">
-                <span>{{ $todayRemindersCount > 0 ? 'Pending send today' : 'No alerts scheduled today' }}</span>
+            <div class="stat-info">
+                <div class="stat-label" title="Automatic reminders scheduled to be sent to customers today">Scheduled Reminders</div>
+                <div class="stat-value">{{ $todayRemindersCount }}</div>
+                <div class="stat-change @if($todayRemindersCount > 0) change-up @else change-down @endif">
+                    <span>{{ $todayRemindersCount > 0 ? 'Pending send today' : 'No alerts scheduled today' }}</span>
+                </div>
+            </div>
+            <div class="stat-visual">
+                <svg width="64" height="28" viewBox="0 0 64 28" fill="none" stroke="#6d7175" stroke-dasharray="3 3" stroke-width="1.5" stroke-linecap="round">
+                    <path d="M4 14 H60" />
+                </svg>
             </div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Alert Subscribers</div>
-            <div class="stat-value">{{ number_format($alertSubscribersCount) }}</div>
-            <div class="stat-change" style="color: var(--text-muted); font-size: 11.5px;">
-                <span>
-                    @if($dateFilter === 'today')
-                        Subscribers joined today
-                    @elseif($dateFilter === 'week')
-                        Subscribers joined this week
-                    @elseif($dateFilter === 'custom')
-                        Subscribers joined in custom range
-                    @else
-                        Total alert subscribers
-                    @endif
-                </span>
+            <div class="stat-info">
+                <div class="stat-label" title="Customers signed up to receive alerts when prices drop">Alert Subscribers</div>
+                <div class="stat-value">{{ number_format($alertSubscribersCount) }}</div>
+                <div class="stat-change">
+                    <span>
+                        @if($dateFilter === 'today')
+                            Subscribers joined today
+                        @elseif($dateFilter === 'week')
+                            Subscribers joined this week
+                        @elseif($dateFilter === 'custom')
+                            Subscribers in custom range
+                        @else
+                            Total alert subscribers
+                        @endif
+                    </span>
+                </div>
+            </div>
+            <div class="stat-visual">
+                <svg width="64" height="28" viewBox="0 0 64 28" fill="none" stroke="#298dff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 24 L20 18 L40 10 L60 4" />
+                </svg>
             </div>
         </div>
     </div>
