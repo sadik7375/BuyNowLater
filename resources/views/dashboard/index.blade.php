@@ -2095,54 +2095,52 @@
                     </button>
                 </div>
                 <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Customer Info</th>
-                                <th>Product Details</th>
-                                <th>Financials (Deposit + Remaining)</th>
-                                <th>Status</th>
-                                <th>Expiry Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                    <s-table>
+                        <s-table-header-row>
+                            <s-table-header listSlot="primary">Customer Info</s-table-header>
+                            <s-table-header>Product Details</s-table-header>
+                            <s-table-header>Financials (Deposit + Remaining)</s-table-header>
+                            <s-table-header>Status</s-table-header>
+                            <s-table-header>Expiry Date</s-table-header>
+                            <s-table-header>Actions</s-table-header>
+                        </s-table-header-row>
+                        <s-table-body>
                             @foreach($bookings as $booking)
                                 @php
                                     $searchText = strtolower(($booking->customer_name ?? '') . ' ' . $booking->email . ' ' . $booking->product_title);
                                     $createdAtTimestamp = $booking->created_at ? $booking->created_at->timestamp : 0;
                                 @endphp
-                                <tr data-search-text="{{ $searchText }}" data-status="{{ $booking->status }}" data-created-at="{{ $createdAtTimestamp }}" data-balance="{{ $booking->remaining_balance }}">
-                                    <td>
+                                <s-table-row data-search-text="{{ $searchText }}" data-status="{{ $booking->status }}" data-created-at="{{ $createdAtTimestamp }}" data-balance="{{ $booking->remaining_balance }}">
+                                    <s-table-cell>
                                         @if($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null' && strtolower($booking->customer_name) !== strtolower($booking->email))
                                             <strong>{{ $booking->customer_name }}</strong><br>
                                             <span style="font-size: 12px; color: var(--text-muted);">{{ $booking->email }}</span>
                                         @else
                                             <span style="font-size: 13.5px; font-weight: 500;">{{ $booking->email }}</span>
                                         @endif
-                                    </td>
-                                    <td>
+                                    </s-table-cell>
+                                    <s-table-cell>
                                         <strong>{{ $booking->product_title }}</strong>
-                                    </td>
-                                    <td>
+                                    </s-table-cell>
+                                    <s-table-cell>
                                         <div style="font-size: 13.5px;">
                                             Deposit paid: <span style="font-weight:600; color:var(--secondary-color);">${{ number_format($booking->deposit_amount, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
                                             Remaining balance: <span style="font-weight:600; color:var(--accent-blue);">${{ number_format($booking->remaining_balance, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
                                             <span style="font-size:11.5px; color: var(--text-muted);">Total: ${{ number_format($booking->product_price, 2) }} {{ $booking->currency ?: 'USD' }}</span>
                                         </div>
-                                    </td>
-                                    <td>
-                                        <span class="status-pill {{ $booking->status }}">
-                                            @if($booking->status === 'completed')
-                                                Full Paid
-                                            @elseif($booking->status === 'deposit_paid')
-                                                Partial Paid
-                                            @else
-                                                {{ str_replace('_', ' ', $booking->status) }}
-                                            @endif
-                                        </span>
-                                    </td>
-                                    <td>
+                                    </s-table-cell>
+                                    <s-table-cell>
+                                        @if($booking->status === 'completed')
+                                            <s-badge tone="success">Full Paid</s-badge>
+                                        @elseif($booking->status === 'deposit_paid')
+                                            <s-badge tone="info">Partial Paid</s-badge>
+                                        @elseif($booking->status === 'expired')
+                                            <s-badge tone="critical">Expired</s-badge>
+                                        @else
+                                            <s-badge>{{ str_replace('_', ' ', $booking->status) }}</s-badge>
+                                        @endif
+                                    </s-table-cell>
+                                    <s-table-cell>
                                         @if($booking->expires_at)
                                             @php
                                                 $expiresAt = \Carbon\Carbon::parse($booking->expires_at);
@@ -2158,8 +2156,8 @@
                                         @else
                                             <span style="color: var(--text-muted);">No expiry</span>
                                         @endif
-                                    </td>
-                                    <td>
+                                    </s-table-cell>
+                                    <s-table-cell>
                                         <div class="actions-cell" style="display: flex; gap: 8px;">
                                             <s-button variant="secondary" onclick="openBookingDetails({{ json_encode($booking) }})">Details</s-button>
 
@@ -2170,16 +2168,16 @@
                                                 </form>
                                             @endif
                                         </div>
-                                    </td>
-                                </tr>
+                                    </s-table-cell>
+                                </s-table-row>
                             @endforeach
-                            <tr id="bookings-no-results" style="display: none;">
-                                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
+                            <s-table-row id="bookings-no-results" style="display: none;">
+                                <s-table-cell colspan="6" style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
                                     No bookings match your search/filter criteria.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                </s-table-cell>
+                            </s-table-row>
+                        </s-table-body>
+                    </s-table>
                 @endif
             </div>
         </div>
@@ -2209,36 +2207,44 @@
                     </button>
                 </div>
                 <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th>Customer Email</th>
-                                <th>Scheduled At</th>
-                                <th>Status</th>
-                                <th>Sent At</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                    <s-table>
+                        <s-table-header-row>
+                            <s-table-header listSlot="primary">Product</s-table-header>
+                            <s-table-header>Customer Email</s-table-header>
+                            <s-table-header>Scheduled At</s-table-header>
+                            <s-table-header>Status</s-table-header>
+                            <s-table-header>Sent At</s-table-header>
+                        </s-table-header-row>
+                        <s-table-body>
                             @foreach($reminders as $reminder)
                                 @php
                                     $searchText = strtolower($reminder->email . ' ' . $reminder->product_title);
                                 @endphp
-                                <tr data-search-text="{{ $searchText }}" data-status="{{ $reminder->status }}">
-                                    <td>{{ $reminder->product_title }}</td>
-                                    <td>{{ $reminder->email }}</td>
-                                    <td class="local-datetime" data-utc="{{ $reminder->scheduled_at->toIso8601String() }}">{{ $reminder->scheduled_at->format('M j, Y g:i a') }}</td>
-                                    <td><span class="status-pill {{ $reminder->status }}">{{ $reminder->status }}</span></td>
-                                    <td class="local-datetime" data-utc="{{ $reminder->sent_at ? $reminder->sent_at->toIso8601String() : '' }}">{{ $reminder->sent_at ? $reminder->sent_at->format('M j, Y g:i a') : '-' }}</td>
-                                </tr>
+                                <s-table-row data-search-text="{{ $searchText }}" data-status="{{ $reminder->status }}">
+                                    <s-table-cell>{{ $reminder->product_title }}</s-table-cell>
+                                    <s-table-cell>{{ $reminder->email }}</s-table-cell>
+                                    <s-table-cell class="local-datetime" data-utc="{{ $reminder->scheduled_at->toIso8601String() }}">{{ $reminder->scheduled_at->format('M j, Y g:i a') }}</s-table-cell>
+                                    <s-table-cell>
+                                        @if($reminder->status === 'sent')
+                                            <s-badge tone="success">Sent</s-badge>
+                                        @elseif($reminder->status === 'pending')
+                                            <s-badge tone="attention">Pending</s-badge>
+                                        @elseif($reminder->status === 'cancelled')
+                                            <s-badge tone="critical">Cancelled</s-badge>
+                                        @else
+                                            <s-badge>{{ $reminder->status }}</s-badge>
+                                        @endif
+                                    </s-table-cell>
+                                    <s-table-cell class="local-datetime" data-utc="{{ $reminder->sent_at ? $reminder->sent_at->toIso8601String() : '' }}">{{ $reminder->sent_at ? $reminder->sent_at->format('M j, Y g:i a') : '-' }}</s-table-cell>
+                                </s-table-row>
                             @endforeach
-                            <tr id="reminders-no-results" style="display: none;">
-                                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
+                            <s-table-row id="reminders-no-results" style="display: none;">
+                                <s-table-cell colspan="5" style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
                                     No reminders match your search/filter criteria.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                </s-table-cell>
+                            </s-table-row>
+                        </s-table-body>
+                    </s-table>
                 </div>
             @endif
         </div>
@@ -2267,36 +2273,42 @@
                     </button>
                 </div>
                 <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th>Email</th>
-                                <th>Original Price</th>
-                                <th>Status</th>
-                                <th>Subscribed Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                    <s-table>
+                        <s-table-header-row>
+                            <s-table-header listSlot="primary">Product</s-table-header>
+                            <s-table-header>Email</s-table-header>
+                            <s-table-header>Original Price</s-table-header>
+                            <s-table-header>Status</s-table-header>
+                            <s-table-header>Subscribed Date</s-table-header>
+                        </s-table-header-row>
+                        <s-table-body>
                             @foreach($subscribers as $subscriber)
                                 @php
                                     $searchText = strtolower($subscriber->email . ' ' . $subscriber->product_title);
                                 @endphp
-                                <tr data-search-text="{{ $searchText }}" data-status="{{ $subscriber->status }}">
-                                    <td>{{ $subscriber->product_title }}</td>
-                                    <td>{{ $subscriber->email }}</td>
-                                    <td>${{ number_format((float)$subscriber->product_price, 2) }}</td>
-                                    <td><span class="status-pill {{ $subscriber->status }}">{{ $subscriber->status }}</span></td>
-                                    <td>{{ $subscriber->created_at->format('M j, Y') }}</td>
-                                </tr>
+                                <s-table-row data-search-text="{{ $searchText }}" data-status="{{ $subscriber->status }}">
+                                    <s-table-cell>{{ $subscriber->product_title }}</s-table-cell>
+                                    <s-table-cell>{{ $subscriber->email }}</s-table-cell>
+                                    <s-table-cell>${{ number_format((float)$subscriber->product_price, 2) }}</s-table-cell>
+                                    <s-table-cell>
+                                        @if($subscriber->status === 'active')
+                                            <s-badge tone="success">Active</s-badge>
+                                        @elseif($subscriber->status === 'sent')
+                                            <s-badge tone="info">Notified</s-badge>
+                                        @else
+                                            <s-badge>{{ $subscriber->status }}</s-badge>
+                                        @endif
+                                    </s-table-cell>
+                                    <s-table-cell>{{ $subscriber->created_at->format('M j, Y') }}</s-table-cell>
+                                </s-table-row>
                             @endforeach
-                            <tr id="subscribers-no-results" style="display: none;">
-                                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
+                            <s-table-row id="subscribers-no-results" style="display: none;">
+                                <s-table-cell colspan="5" style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
                                     No subscribers match your search/filter criteria.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                </s-table-cell>
+                            </s-table-row>
+                        </s-table-body>
+                    </s-table>
                 </div>
             @endif
         </div>
@@ -3306,8 +3318,8 @@ function filterBookings() {
     const searchVal = document.getElementById('search-bookings').value.toLowerCase().trim();
     const statusVal = document.getElementById('filter-bookings-status').value;
     const sortVal = document.getElementById('sort-bookings').value;
-    const tbody = document.querySelector('#tab-bookings-list tbody');
-    const rows = Array.from(tbody.querySelectorAll('tr:not(#bookings-no-results)'));
+    const tbody = document.querySelector('#tab-bookings-list s-table-body');
+    const rows = Array.from(tbody.querySelectorAll('s-table-row:not(#bookings-no-results)'));
     const noResultsRow = document.getElementById('bookings-no-results');
 
     let visibleCount = 0;
@@ -3355,8 +3367,8 @@ function filterBookings() {
 function filterReminders() {
     const searchVal = document.getElementById('search-reminders').value.toLowerCase().trim();
     const statusVal = document.getElementById('filter-reminders-status').value;
-    const tbody = document.querySelector('#tab-reminders-list tbody');
-    const rows = Array.from(tbody.querySelectorAll('tr:not(#reminders-no-results)'));
+    const tbody = document.querySelector('#tab-reminders-list s-table-body');
+    const rows = Array.from(tbody.querySelectorAll('s-table-row:not(#reminders-no-results)'));
     const noResultsRow = document.getElementById('reminders-no-results');
 
     let visibleCount = 0;
@@ -3386,8 +3398,8 @@ function filterReminders() {
 function filterSubscribers() {
     const searchVal = document.getElementById('search-subscribers').value.toLowerCase().trim();
     const statusVal = document.getElementById('filter-subscribers-status').value;
-    const tbody = document.querySelector('#tab-subscribers-list tbody');
-    const rows = Array.from(tbody.querySelectorAll('tr:not(#subscribers-no-results)'));
+    const tbody = document.querySelector('#tab-subscribers-list s-table-body');
+    const rows = Array.from(tbody.querySelectorAll('s-table-row:not(#subscribers-no-results)'));
     const noResultsRow = document.getElementById('subscribers-no-results');
 
     let visibleCount = 0;
