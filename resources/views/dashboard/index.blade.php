@@ -2120,7 +2120,13 @@
                                         @endif
                                     </s-table-cell>
                                     <s-table-cell>
-                                        <strong>{{ $booking->product_title }}</strong>
+                                        @php
+                                            $parts = explode('/', $booking->product_id);
+                                            $bookingProdId = end($parts);
+                                        @endphp
+                                        <a href="https://{{ $shop->name }}/admin/products/{{ $bookingProdId }}" target="_top" style="color: #005c9e; text-decoration: none; font-weight: 600; transition: text-decoration 0.15s ease;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+                                            {{ $booking->product_title }}
+                                        </a>
                                     </s-table-cell>
                                     <s-table-cell>
                                         <div style="font-size: 13.5px;">
@@ -2221,7 +2227,15 @@
                                     $searchText = strtolower($reminder->email . ' ' . $reminder->product_title);
                                 @endphp
                                 <s-table-row data-search-text="{{ $searchText }}" data-status="{{ $reminder->status }}">
-                                    <s-table-cell>{{ $reminder->product_title }}</s-table-cell>
+                                    <s-table-cell>
+                                        @php
+                                            $parts = explode('/', $reminder->product_id);
+                                            $reminderProdId = end($parts);
+                                        @endphp
+                                        <a href="https://{{ $shop->name }}/admin/products/{{ $reminderProdId }}" target="_top" style="color: #005c9e; text-decoration: none; font-weight: 500; transition: text-decoration 0.15s ease;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+                                            {{ $reminder->product_title }}
+                                        </a>
+                                    </s-table-cell>
                                     <s-table-cell>{{ $reminder->email }}</s-table-cell>
                                     <s-table-cell class="local-datetime" data-utc="{{ $reminder->scheduled_at->toIso8601String() }}">{{ $reminder->scheduled_at->format('M j, Y g:i a') }}</s-table-cell>
                                     <s-table-cell>
@@ -2287,7 +2301,15 @@
                                     $searchText = strtolower($subscriber->email . ' ' . $subscriber->product_title);
                                 @endphp
                                 <s-table-row data-search-text="{{ $searchText }}" data-status="{{ $subscriber->status }}">
-                                    <s-table-cell>{{ $subscriber->product_title }}</s-table-cell>
+                                    <s-table-cell>
+                                        @php
+                                            $parts = explode('/', $subscriber->product_id);
+                                            $subscriberProdId = end($parts);
+                                        @endphp
+                                        <a href="https://{{ $shop->name }}/admin/products/{{ $subscriberProdId }}" target="_top" style="color: #005c9e; text-decoration: none; font-weight: 500; transition: text-decoration 0.15s ease;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+                                            {{ $subscriber->product_title }}
+                                        </a>
+                                    </s-table-cell>
                                     <s-table-cell>{{ $subscriber->email }}</s-table-cell>
                                     <s-table-cell>${{ number_format((float)$subscriber->product_price, 2) }}</s-table-cell>
                                     <s-table-cell>
