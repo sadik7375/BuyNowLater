@@ -802,48 +802,98 @@
         box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
 
-    .custom-date-picker {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+    /* Date Picker Popover styling (Shopify Polaris style) */
+    .date-picker-wrapper {
+        position: relative;
+        display: inline-block;
     }
 
-    .custom-date-picker input[type="date"] {
-        padding: 6px 12px;
+    .date-picker-activator {
+        background: #ffffff;
         border: 1px solid var(--border-color);
         border-radius: 8px;
+        padding: 8px 14px;
         font-size: 13px;
-        font-family: inherit;
-        color: var(--text-main);
-        background-color: #ffffff;
-        transition: border-color 0.2s ease;
-    }
-
-    .custom-date-picker input[type="date"]:focus {
-        border-color: var(--primary-color);
-        outline: none;
-    }
-
-    .custom-date-picker span {
-        font-size: 13px;
-        color: var(--text-muted);
         font-weight: 500;
-    }
-
-    .custom-date-picker button {
-        background-color: var(--primary-color);
-        color: #ffffff;
-        border: none;
-        padding: 7px 16px;
-        font-size: 13px;
-        font-weight: 600;
-        border-radius: 8px;
+        color: var(--text-main);
         cursor: pointer;
-        transition: background-color 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.15s ease;
+        box-shadow: 0px 1px 0px rgba(0, 0, 0, 0.05);
     }
 
-    .custom-date-picker button:hover {
-        background-color: var(--primary-hover);
+    .date-picker-activator:hover {
+        background: #f6f6f7;
+        border-color: #c9cccf;
+    }
+
+    .date-picker-popover {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 6px);
+        background: #ffffff;
+        border: 1px solid #e1e3e5;
+        border-radius: 8px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+        z-index: 1100;
+        display: none; /* Controlled by JS: flex/none */
+        flex-direction: column;
+        width: auto;
+        min-width: 320px;
+    }
+
+    .popover-content {
+        padding: 12px;
+        overflow: hidden;
+    }
+
+    .popover-content s-date-picker {
+        width: 100%;
+        display: block;
+    }
+
+    .popover-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 12px 16px;
+        border-top: 1px solid #e1e3e5;
+        background: #ffffff;
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
+
+    .popover-btn-cancel {
+        background: #ffffff;
+        border: 1px solid #e1e3e5;
+        color: var(--text-main);
+        padding: 6px 12px;
+        font-size: 12.5px;
+        font-weight: 500;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s ease;
+    }
+
+    .popover-btn-cancel:hover {
+        background: #f6f6f7;
+    }
+
+    .popover-btn-apply {
+        background: var(--primary-color);
+        border: 1px solid var(--primary-color);
+        color: #ffffff;
+        padding: 6px 12px;
+        font-size: 12.5px;
+        font-weight: 500;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: opacity 0.15s ease;
+    }
+
+    .popover-btn-apply:hover {
+        opacity: 0.95;
     }
 
     /* Expiring Soon styling */
@@ -1556,14 +1606,41 @@
             <button class="filter-btn {{ $dateFilter == 'today' ? 'active' : '' }}" onclick="applyDateFilter('today')">Today</button>
             <button class="filter-btn {{ $dateFilter == 'week' ? 'active' : '' }}" onclick="applyDateFilter('week')">This Week</button>
         </div>
-        <div style="flex-shrink: 0;">
-            <s-date-picker
-                id="shopify_date_picker"
-                type="range"
-                name="date-range"
-                value="{{ $start && $end ? $start->toDateString().'--'.$end->toDateString() : '' }}"
-                view="{{ $start ? $start->format('Y-m') : now()->format('Y-m') }}"
-            ></s-date-picker>
+        <div class="date-picker-wrapper">
+            <button type="button" class="date-picker-activator" id="date_picker_activator_btn">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; color: #6d7175;">
+                    <rect x="3" y="4" width="14" height="14" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="17" y2="10"></line>
+                </svg>
+                <span>
+                    @if($dateFilter === 'custom' && $start && $end)
+                        {{ $start->format('M d, Y') }} – {{ $end->format('M d, Y') }}
+                    @else
+                        Select Date
+                    @endif
+                </span>
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 8px; color: #6d7175;">
+                    <polyline points="6 9 10 13 14 9"></polyline>
+                </svg>
+            </button>
+            
+            <div class="date-picker-popover" id="date_picker_popover">
+                <div class="popover-content">
+                    <s-date-picker
+                        id="shopify_date_picker"
+                        type="range"
+                        name="date-range"
+                        value="{{ $start && $end ? $start->toDateString().'--'.$end->toDateString() : '' }}"
+                        view="{{ $start ? $start->format('Y-m') : now()->format('Y-m') }}"
+                    ></s-date-picker>
+                </div>
+                <div class="popover-actions">
+                    <button type="button" class="popover-btn-cancel" id="popover_cancel_btn">Cancel</button>
+                    <button type="button" class="popover-btn-apply" id="popover_apply_btn">Apply</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -3053,16 +3130,45 @@ document.addEventListener('click', function(e) {
 document.addEventListener('DOMContentLoaded', function() {
     renderSelectedProducts();
     
-    // Handle Shopify Native Date Picker changes
+    // Toggle popover and handle native date-picker filter action
+    const datePickerActivator = document.getElementById('date_picker_activator_btn');
+    const datePickerPopover = document.getElementById('date_picker_popover');
     const shopifyDatePicker = document.getElementById('shopify_date_picker');
-    if (shopifyDatePicker) {
-        shopifyDatePicker.addEventListener('change', function(e) {
-            const val = e.currentTarget.value; // Format: "YYYY-MM-DD--YYYY-MM-DD"
+    const popoverCancelBtn = document.getElementById('popover_cancel_btn');
+    const popoverApplyBtn = document.getElementById('popover_apply_btn');
+
+    if (datePickerActivator && datePickerPopover) {
+        datePickerActivator.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isVisible = datePickerPopover.style.display === 'flex';
+            datePickerPopover.style.display = isVisible ? 'none' : 'flex';
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!datePickerPopover.contains(e.target) && e.target !== datePickerActivator && !datePickerActivator.contains(e.target)) {
+                datePickerPopover.style.display = 'none';
+            }
+        });
+    }
+
+    if (popoverCancelBtn && datePickerPopover) {
+        popoverCancelBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            datePickerPopover.style.display = 'none';
+        });
+    }
+
+    if (popoverApplyBtn && shopifyDatePicker) {
+        popoverApplyBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const val = shopifyDatePicker.value; // Format: "YYYY-MM-DD--YYYY-MM-DD"
             if (val && val.includes('--')) {
                 const parts = val.split('--');
                 const startDate = parts[0];
                 const endDate = parts[1];
                 applyDateFilter('custom', startDate, endDate);
+            } else {
+                datePickerPopover.style.display = 'none';
             }
         });
     }
