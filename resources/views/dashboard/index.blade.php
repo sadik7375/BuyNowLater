@@ -11,8 +11,8 @@
         --text-main: #202223;
         --text-muted: #6d7175;
         --border-color: #e1e3e5;
-        --primary-color: #008060; /* Shopify Green */
-        --primary-hover: #006e52;
+        --primary-color: #1a1a1a; /* Shopify Primary Dark Grey */
+        --primary-hover: #2f3337;
         --secondary-color: #108043;
         --accent-blue: #005ea2;
         --danger-color: #d82c0d;
@@ -1018,7 +1018,7 @@
     }
 
     .btn-upgrade {
-        background: linear-gradient(135deg, #008060 0%, #006e52 100%);
+        background: linear-gradient(135deg, #303030 0%, #1a1a1a 100%);
         color: #ffffff;
         border: none;
         padding: 10px 20px;
@@ -2820,7 +2820,7 @@ function printBookingDetails() {
             .status-pill.completed { background: #d1fae5; color: #065f46; }
             .status-pill.pending { background: #fef3c7; color: #92400e; }
             .status-pill.expired { background: #fee2e2; color: #991b1b; }
-            .shopify-link { color: #008060; text-decoration: none; font-weight: 600; }
+            .shopify-link { color: #1a1a1a; text-decoration: none; font-weight: 600; }
             @media print {
                 body { padding: 0; }
             }
