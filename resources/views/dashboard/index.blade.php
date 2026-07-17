@@ -1565,12 +1565,12 @@
     <a href="/price-alerts">Price Alerts</a>
     <a href="/app-settings">Settings</a>
     @if(in_array($activeTab, ['tab-support', 'tab-how-it-works', 'tab-benefits', 'tab-pricing']))
-        <a href="/support">View more</a>
-        <a href="/how-it-works">↳ Support</a>
+        <a href="/how-it-works">View more</a>
+        <a href="/support">↳ Support</a>
         <a href="/benefits">↳ Benefits</a>
         <a href="/price-plan">↳ Price Plan</a>
     @else
-        <a href="/support">View more</a>
+        <a href="/how-it-works">View more</a>
     @endif
 </ui-nav-menu>
 
@@ -3337,8 +3337,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 <a href="/reminders">Reminders</a>
                 <a href="/price-alerts">Price Alerts</a>
                 <a href="/app-settings">Settings</a>
-                <a href="/support">View more</a>
-                <a href="/how-it-works">↳ Support</a>
+                <a href="/how-it-works">View more</a>
+                <a href="/support">↳ Support</a>
                 <a href="/benefits">↳ Benefits</a>
                 <a href="/price-plan">↳ Price Plan</a>
             `;
@@ -3349,7 +3349,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <a href="/reminders">Reminders</a>
                 <a href="/price-alerts">Price Alerts</a>
                 <a href="/app-settings">Settings</a>
-                <a href="/support">View more</a>
+                <a href="/how-it-works">View more</a>
             `;
         }
     }
