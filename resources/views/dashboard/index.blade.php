@@ -1564,12 +1564,8 @@
     <a href="/reminders">Reminders</a>
     <a href="/price-alerts">Price Alerts</a>
     <a href="/app-settings">Settings</a>
-    <a href="/support">View more</a>
-    @if($activeTab === 'tab-support')
-        <a href="/how-it-works">↳ Support</a>
-        <a href="/benefits">↳ Benefits</a>
-        <a href="/price-plan">↳ Price Plan</a>
-    @endif
+    <a href="/how-it-works">Support</a>
+    <a href="/price-plan">Price Plan</a>
 </ui-nav-menu>
 
 <div class="app-layout">
@@ -2576,12 +2572,8 @@
     <!-- Tab 6: Support (Consolidated View More) -->
     <div id="tab-support" class="tab-content" style="display: {{ $activeTab === 'tab-support' ? 'block' : 'none' }};">
         
-        <!-- Sub Tabs Navigation Bar -->
-        <div class="sub-tab-bar" style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 24px;">
-            <button class="sub-tab-btn {{ $subTab === 'support' ? 'active' : '' }}" data-sub-tab="sub-tab-how-it-works" onclick="switchSubTab('sub-tab-how-it-works')">Support</button>
-            <button class="sub-tab-btn {{ $subTab === 'benefits' ? 'active' : '' }}" data-sub-tab="sub-tab-benefits" onclick="switchSubTab('sub-tab-benefits')">Benefits</button>
-            <button class="sub-tab-btn {{ $subTab === 'pricing' ? 'active' : '' }}" data-sub-tab="sub-tab-pricing" onclick="switchSubTab('sub-tab-pricing')">Price Plan</button>
-        </div>
+        <!-- Sub Tabs Navigation Bar Hidden since links are direct now -->
+        <div class="sub-tab-bar" style="display: none;">
 
         <!-- Sub Tab 1: Support (previously How It Works) -->
         <div id="sub-tab-how-it-works" class="sub-tab-content" style="display: {{ $subTab === 'support' ? 'block' : 'none' }};">
@@ -3269,8 +3261,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (pushState) {
             let path = '/how-it-works';
-            if (subTabId === 'sub-tab-benefits') path = '/benefits';
-            else if (subTabId === 'sub-tab-pricing') path = '/price-plan';
+            if (subTabId === 'sub-tab-pricing') path = '/price-plan';
             
             const urlParams = new URLSearchParams(window.location.search);
             const newUrl = path + '?' + urlParams.toString();
@@ -3287,9 +3278,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (tabId === 'tab-how-it-works') {
             actualTabId = 'tab-support';
             subTabId = 'sub-tab-how-it-works';
-        } else if (tabId === 'tab-benefits') {
-            actualTabId = 'tab-support';
-            subTabId = 'sub-tab-benefits';
         }
 
         const tabContents = document.querySelectorAll('.tab-content');
@@ -3337,8 +3325,7 @@ document.addEventListener('DOMContentLoaded', function() {
             else if (actualTabId === 'tab-settings') path = '/app-settings';
             else if (actualTabId === 'tab-support') {
                 path = '/how-it-works';
-                if (subTabId === 'sub-tab-benefits') path = '/benefits';
-                else if (subTabId === 'sub-tab-pricing') path = '/price-plan';
+                if (subTabId === 'sub-tab-pricing') path = '/price-plan';
             }
 
             const currentSearch = window.location.search;

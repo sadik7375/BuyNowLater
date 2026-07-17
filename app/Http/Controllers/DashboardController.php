@@ -25,17 +25,9 @@ class DashboardController extends Controller
             $activeTab = 'tab-subscribers-list';
         } elseif ($request->is('app-settings')) {
             $activeTab = 'tab-settings';
-        } elseif ($request->is('how-it-works') || $request->is('support')) {
+        } elseif ($request->is('how-it-works') || $request->is('support') || $request->is('benefits')) {
             $activeTab = 'tab-support';
             $subTab = 'support';
-            if ($request->get('tab') === 'benefits') {
-                $subTab = 'benefits';
-            } elseif ($request->get('tab') === 'pricing') {
-                $subTab = 'pricing';
-            }
-        } elseif ($request->is('benefits')) {
-            $activeTab = 'tab-support';
-            $subTab = 'benefits';
         } elseif ($request->is('price-plan')) {
             $activeTab = 'tab-support';
             $subTab = 'pricing';
