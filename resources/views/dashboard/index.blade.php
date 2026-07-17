@@ -1565,12 +1565,12 @@
     <s-link href="/price-alerts">Price Alerts</s-link>
     <s-link href="/app-settings">Settings</s-link>
     @if(in_array($activeTab, ['tab-support', 'tab-how-it-works', 'tab-benefits', 'tab-pricing']))
-        <s-link href="/support">View More ▾</s-link>
-        <s-link href="/support">↳ Support</s-link>
+        <s-link href="/support">View more</s-link>
+        <s-link href="/how-it-works">↳ Support</s-link>
         <s-link href="/benefits">↳ Benefits</s-link>
         <s-link href="/price-plan">↳ Price Plan</s-link>
     @else
-        <s-link href="/support">View More</s-link>
+        <s-link href="/support">View more</s-link>
     @endif
 </s-app-nav>
 
@@ -3337,8 +3337,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 <s-link href="/reminders">Reminders</s-link>
                 <s-link href="/price-alerts">Price Alerts</s-link>
                 <s-link href="/app-settings">Settings</s-link>
-                <s-link href="/support">View More ▾</s-link>
-                <s-link href="/support">↳ Support</s-link>
+                <s-link href="/support">View more</s-link>
+                <s-link href="/how-it-works">↳ Support</s-link>
                 <s-link href="/benefits">↳ Benefits</s-link>
                 <s-link href="/price-plan">↳ Price Plan</s-link>
             `;
@@ -3349,7 +3349,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <s-link href="/reminders">Reminders</s-link>
                 <s-link href="/price-alerts">Price Alerts</s-link>
                 <s-link href="/app-settings">Settings</s-link>
-                <s-link href="/support">View More</s-link>
+                <s-link href="/support">View more</s-link>
             `;
         }
     }
