@@ -695,6 +695,109 @@
         margin-bottom: 20px;
     }
 
+    /* ── EMAIL EDITOR & LIVE PREVIEW ── */
+    .email-editor-container {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-top: 10px;
+        background: #ffffff;
+    }
+    
+    .editor-tabs {
+        display: flex;
+        background: #fafbfb;
+        border-bottom: 1px solid var(--border-color);
+        padding: 4px 8px 0;
+    }
+    
+    .editor-tab {
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-muted);
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border-radius: 0;
+    }
+    
+    .editor-tab:hover {
+        color: var(--text-main);
+    }
+    
+    .editor-tab.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
+        font-weight: 600;
+    }
+    
+    .editor-body {
+        padding: 16px;
+    }
+    
+    .visual-pane {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 20px;
+    }
+    
+    @media (max-width: 900px) {
+        .visual-pane {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .editor-form {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .form-group-sub {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .form-group-sub label {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+        text-transform: none;
+        letter-spacing: normal;
+    }
+    
+    .form-group-sub input[type="text"],
+    .form-group-sub textarea {
+        width: 100%;
+        padding: 8px 10px;
+        font-size: 13px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        background: #ffffff;
+    }
+    
+    .form-group-sub-row label {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+    }
+
+    .helper-text {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 4px;
+    }
+    
+    .editor-preview-panel {
+        display: flex;
+        flex-direction: column;
+    }
+
     label {
         display: block;
         font-size: 14px;
@@ -2426,110 +2529,133 @@
                     <label for="reminder_email_subject">Reminder Email Subject</label>
                     <input type="text" id="reminder_email_subject" name="reminder_email_subject" value="{{ $settings->reminder_email_subject }}" required>
                 </div>
+
+                {{-- ── REMINDER EMAIL BUILDER ── --}}
                 <div class="form-group">
-                    <label for="reminder_email_template">Reminder Email HTMLTemplate</label>
-                    <textarea id="reminder_email_template" name="reminder_email_template" rows="8">{{ $settings->reminder_email_template ?? '<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f6f6f6; margin: 0; padding: 0; color: #333; }
-    .email-container { max-width: 600px; margin: 20px auto; background: #fff; border-radius: 8px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-    .header { font-size: 24px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; letter-spacing: -0.02em; }
-    .product-details { display: flex; align-items: center; border: 1px solid #f0f0f0; border-radius: 8px; padding: 15px; margin-bottom: 25px; background-color: #fafafa; }
-    .product-img { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; margin-right: 20px; }
-    .product-info h3 { margin: 0 0 5px 0; font-size: 16px; font-weight: 600; }
-    .product-info p { margin: 0; color: #666; font-size: 14px; }
-    .actions { margin-bottom: 25px; }
-    .btn { display: inline-block; padding: 12px 24px; background: #000; color: #fff !important; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
-    .footer { font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 20px; text-align: center; }
-  </style>
-</head>
-<body>
-  <div class="email-container">
-    <div class="header">BuyLater</div>
-    <p>Hi there,</p>
-    <p>You asked us to remind you about the following product on our store. We wanted to let you know it is still waiting for you!</p>
-    
-    <div class="product-details">
-      {product_image_tag}
-      <div class="product-info">
-        <h3>{product_title}</h3>
-        <p>Price: {product_price}</p>
-      </div>
-    </div>
-    
-    <div class="actions">
-      <a href="{product_link}" class="btn">View Product & Buy Now</a>
-    </div>
-    
-    <p style="font-size:13px; color:#666; margin-top: 30px;">Need more time or changed your mind? Use the links below to update your reminder:</p>
-    <div style="margin-bottom:25px;">
-      <a href="{reschedule_link}" style="color:#0066cc; text-decoration:underline; font-size:13px; margin-right:15px;">Reschedule Reminder</a>
-      <a href="{cancel_link}" style="color:#cc0000; text-decoration:underline; font-size:13px;">Cancel Reminder</a>
-    </div>
-    
-    <div class="footer">
-      This reminder was sent to you at your request.
-    </div>
-  </div>
-</body>
-</html>' }}</textarea>
+                    <label style="margin-bottom:8px;">Reminder Email Template</label>
+                    <div class="email-editor-container" id="reminder_editor_container">
+                        <div class="editor-tabs">
+                            <button type="button" class="editor-tab active" onclick="switchEmailTab('reminder','visual',this)">🎨 Visual Editor</button>
+                            <button type="button" class="editor-tab" onclick="switchEmailTab('reminder','html',this)">💻 HTML Code</button>
+                        </div>
+                        <div class="editor-body">
+                            {{-- VISUAL TAB --}}
+                            <div id="reminder_visual_tab" class="visual-pane">
+                                <div class="editor-form">
+                                    <div class="form-group-sub">
+                                        <label>Brand / Store Name (appears at top of email)</label>
+                                        <input type="text" id="r_header_title" value="{{ $settings->reminder_email_header_title ?? 'BuyLater' }}" oninput="rebuildReminderTemplate()">
+                                    </div>
+                                    <div class="form-group-sub">
+                                        <label>Greeting Message</label>
+                                        <input type="text" id="r_greeting" value="{{ $settings->reminder_email_greeting ?? 'Hi there,' }}" oninput="rebuildReminderTemplate()">
+                                    </div>
+                                    <div class="form-group-sub">
+                                        <label>Email Body Text</label>
+                                        <textarea id="r_body_text" rows="3" oninput="rebuildReminderTemplate()">{{ $settings->reminder_email_body ?? 'You asked us to remind you about the following product on our store. We wanted to let you know it is still waiting for you!' }}</textarea>
+                                    </div>
+                                    <div class="form-group-sub">
+                                        <label>Button Text</label>
+                                        <input type="text" id="r_btn_text" value="{{ $settings->reminder_email_btn_text ?? 'View Product & Buy Now' }}" oninput="rebuildReminderTemplate()">
+                                    </div>
+                                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                                        <div class="form-group-sub" style="flex:1; min-width:120px;">
+                                            <label>Button Color</label>
+                                            <input type="color" id="r_btn_color" value="{{ $settings->reminder_email_btn_color ?? '#000000' }}" style="height:40px; border-radius:6px; border:1px solid var(--border-color); width:100%; cursor:pointer; padding:2px 4px;" oninput="rebuildReminderTemplate()">
+                                        </div>
+                                        <div class="form-group-sub" style="flex:1; min-width:120px;">
+                                            <label>Email Background Color</label>
+                                            <input type="color" id="r_bg_color" value="{{ $settings->reminder_email_bg_color ?? '#f6f6f6' }}" style="height:40px; border-radius:6px; border:1px solid var(--border-color); width:100%; cursor:pointer; padding:2px 4px;" oninput="rebuildReminderTemplate()">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-sub">
+                                        <label>Footer Text</label>
+                                        <input type="text" id="r_footer" value="{{ $settings->reminder_email_footer ?? 'This reminder was sent to you at your request.' }}" oninput="rebuildReminderTemplate()">
+                                    </div>
+                                    <p class="helper-text">📌 Available placeholders: <code>{product_title}</code> <code>{product_price}</code> <code>{product_link}</code> <code>{product_image_tag}</code> <code>{reschedule_link}</code> <code>{cancel_link}</code></p>
+                                </div>
+                                <div class="editor-preview-panel">
+                                    <p style="font-size:12px; color:var(--text-muted); margin:0 0 8px 0; font-weight:500;">📧 LIVE PREVIEW</p>
+                                    <iframe id="reminder_preview_frame" style="width:100%; height:520px; border:1px solid var(--border-color); border-radius:8px; background:#f6f6f6;" frameborder="0"></iframe>
+                                </div>
+                            </div>
+
+                            {{-- HTML CODE TAB --}}
+                            <div id="reminder_html_tab" style="display:none;">
+                                <p class="helper-text" style="margin-bottom:10px;">⚠️ Advanced: Edit raw HTML. Changes here will override the Visual Editor settings when saved.</p>
+                                <textarea id="reminder_email_template_raw" rows="18" style="width:100%; font-family: monospace; font-size:12px; padding:12px; border:1px solid var(--border-color); border-radius:6px; resize:vertical;" oninput="syncReminderHtmlToHidden()">{{ $settings->reminder_email_template }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    {{-- Hidden field that actually gets submitted --}}
+                    <textarea id="reminder_email_template" name="reminder_email_template" style="display:none;">{{ $settings->reminder_email_template }}</textarea>
                 </div>
+
                 <hr style="border: none; border-top: 1px solid var(--border-color); margin: 24px 0;">
                 <div class="form-group">
                     <label for="discount_email_subject">Price Drop Email Subject</label>
                     <input type="text" id="discount_email_subject" name="discount_email_subject" value="{{ $settings->discount_email_subject }}" required>
                 </div>
+
+                {{-- ── PRICE DROP EMAIL BUILDER ── --}}
                 <div class="form-group">
-                    <label for="discount_email_template">Price Drop Email HTML Template</label>
-                    <textarea id="discount_email_template" name="discount_email_template" rows="8">{{ $settings->discount_email_template ?? '<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f6f6f6; margin: 0; padding: 0; color: #333; }
-    .email-container { max-width: 600px; margin: 20px auto; background: #fff; border-radius: 8px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-    .header { font-size: 24px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; letter-spacing: -0.02em; color: #000; }
-    .product-details { display: flex; align-items: center; border: 1px solid #f0f0f0; border-radius: 8px; padding: 15px; margin-bottom: 25px; background-color: #fafafa; }
-    .product-img { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; margin-right: 20px; }
-    .product-info h3 { margin: 0 0 5px 0; font-size: 16px; font-weight: 600; }
-    .product-info p { margin: 0; color: #666; font-size: 14px; }
-    .price-box { margin-top: 5px; font-size: 14px; }
-    .old-price { text-decoration: line-through; color: #888; margin-right: 10px; }
-    .new-price { color: #d9534f; font-weight: bold; font-size: 16px; }
-    .actions { margin-bottom: 25px; }
-    .btn { display: inline-block; padding: 12px 24px; background: #d9534f; color: #fff !important; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
-    .footer { font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 20px; text-align: center; }
-  </style>
-</head>
-<body>
-  <div class="email-container">
-    <div class="header">Price Drop Alert!</div>
-    <p>Hi there,</p>
-    <p>Good news! A product you saved for later is now on sale. Check out the price drop below!</p>
-    
-    <div class="product-details">
-      {product_image_tag}
-      <div class="product-info">
-        <h3>{product_title}</h3>
-        <div class="price-box">
-          <span class="old-price">{old_price}</span>
-          <span class="new-price">{new_price}</span>
-        </div>
-      </div>
-    </div>
-    
-    <div class="actions">
-      <a href="{product_link}" class="btn">Get Discount Now</a>
-    </div>
-    
-    <div class="footer">
-      You are receiving this because you subscribed to price drop alerts for this product.
-    </div>
-  </div>
-</body>
-</html>' }}</textarea>
+                    <label style="margin-bottom:8px;">Price Drop Email Template</label>
+                    <div class="email-editor-container" id="discount_editor_container">
+                        <div class="editor-tabs">
+                            <button type="button" class="editor-tab active" onclick="switchEmailTab('discount','visual',this)">🎨 Visual Editor</button>
+                            <button type="button" class="editor-tab" onclick="switchEmailTab('discount','html',this)">💻 HTML Code</button>
+                        </div>
+                        <div class="editor-body">
+                            {{-- VISUAL TAB --}}
+                            <div id="discount_visual_tab" class="visual-pane">
+                                <div class="editor-form">
+                                    <div class="form-group-sub">
+                                        <label>Brand / Store Name (appears at top of email)</label>
+                                        <input type="text" id="d_header_title" value="{{ $settings->discount_email_header_title ?? 'Price Drop Alert!' }}" oninput="rebuildDiscountTemplate()">
+                                    </div>
+                                    <div class="form-group-sub">
+                                        <label>Greeting Message</label>
+                                        <input type="text" id="d_greeting" value="{{ $settings->discount_email_greeting ?? 'Hi there,' }}" oninput="rebuildDiscountTemplate()">
+                                    </div>
+                                    <div class="form-group-sub">
+                                        <label>Email Body Text</label>
+                                        <textarea id="d_body_text" rows="3" oninput="rebuildDiscountTemplate()">{{ $settings->discount_email_body ?? 'Good news! A product you saved for later is now on sale. Check out the price drop below!' }}</textarea>
+                                    </div>
+                                    <div class="form-group-sub">
+                                        <label>Button Text</label>
+                                        <input type="text" id="d_btn_text" value="{{ $settings->discount_email_btn_text ?? 'Get Discount Now' }}" oninput="rebuildDiscountTemplate()">
+                                    </div>
+                                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                                        <div class="form-group-sub" style="flex:1; min-width:120px;">
+                                            <label>Button Color</label>
+                                            <input type="color" id="d_btn_color" value="{{ $settings->discount_email_btn_color ?? '#d9534f' }}" style="height:40px; border-radius:6px; border:1px solid var(--border-color); width:100%; cursor:pointer; padding:2px 4px;" oninput="rebuildDiscountTemplate()">
+                                        </div>
+                                        <div class="form-group-sub" style="flex:1; min-width:120px;">
+                                            <label>Email Background Color</label>
+                                            <input type="color" id="d_bg_color" value="{{ $settings->discount_email_bg_color ?? '#f6f6f6' }}" style="height:40px; border-radius:6px; border:1px solid var(--border-color); width:100%; cursor:pointer; padding:2px 4px;" oninput="rebuildDiscountTemplate()">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-sub">
+                                        <label>Footer Text</label>
+                                        <input type="text" id="d_footer" value="{{ $settings->discount_email_footer ?? 'You are receiving this because you subscribed to price drop alerts for this product.' }}" oninput="rebuildDiscountTemplate()">
+                                    </div>
+                                    <p class="helper-text">📌 Available placeholders: <code>{product_title}</code> <code>{old_price}</code> <code>{new_price}</code> <code>{product_link}</code> <code>{product_image_tag}</code></p>
+                                </div>
+                                <div class="editor-preview-panel">
+                                    <p style="font-size:12px; color:var(--text-muted); margin:0 0 8px 0; font-weight:500;">📧 LIVE PREVIEW</p>
+                                    <iframe id="discount_preview_frame" style="width:100%; height:520px; border:1px solid var(--border-color); border-radius:8px; background:#f6f6f6;" frameborder="0"></iframe>
+                                </div>
+                            </div>
+
+                            {{-- HTML CODE TAB --}}
+                            <div id="discount_html_tab" style="display:none;">
+                                <p class="helper-text" style="margin-bottom:10px;">⚠️ Advanced: Edit raw HTML. Changes here will override the Visual Editor settings when saved.</p>
+                                <textarea id="discount_email_template_raw" rows="18" style="width:100%; font-family: monospace; font-size:12px; padding:12px; border:1px solid var(--border-color); border-radius:6px; resize:vertical;" oninput="syncDiscountHtmlToHidden()">{{ $settings->discount_email_template }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    {{-- Hidden field that actually gets submitted --}}
+                    <textarea id="discount_email_template" name="discount_email_template" style="display:none;">{{ $settings->discount_email_template }}</textarea>
                 </div>
 
                 <div style="text-align: right; margin-top: 20px;">
@@ -3905,6 +4031,292 @@ function filterSubscribers() {
         
         downloadCSV("subscribers_export.csv", headers, rows);
     }
+
+    // ── EMAIL BUILDER FUNCTIONS ──
+    function switchEmailTab(type, tab, btn) {
+        const container = document.getElementById(type + '_editor_container');
+        if (!container) return;
+        
+        container.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
+        btn.classList.add('active');
+        
+        const visualTab = document.getElementById(type + '_visual_tab');
+        const htmlTab = document.getElementById(type + '_html_tab');
+        
+        if (tab === 'visual') {
+            visualTab.style.display = 'grid';
+            htmlTab.style.display = 'none';
+            if (type === 'reminder') {
+                rebuildReminderTemplate();
+            } else {
+                rebuildDiscountTemplate();
+            }
+        } else {
+            visualTab.style.display = 'none';
+            htmlTab.style.display = 'block';
+            const hiddenVal = document.getElementById(type + '_email_template').value;
+            document.getElementById(type + '_email_template_raw').value = hiddenVal;
+        }
+    }
+
+    function syncReminderHtmlToHidden() {
+        const rawVal = document.getElementById('reminder_email_template_raw').value;
+        document.getElementById('reminder_email_template').value = rawVal;
+        updatePreviewFrame('reminder_preview_frame', rawVal);
+    }
+
+    function syncDiscountHtmlToHidden() {
+        const rawVal = document.getElementById('discount_email_template_raw').value;
+        document.getElementById('discount_email_template').value = rawVal;
+        updatePreviewFrame('discount_preview_frame', rawVal);
+    }
+
+    function rebuildReminderTemplate() {
+        const headerTitle = document.getElementById('r_header_title').value;
+        const greeting = document.getElementById('r_greeting').value;
+        const bodyText = document.getElementById('r_body_text').value;
+        const btnText = document.getElementById('r_btn_text').value;
+        const btnColor = document.getElementById('r_btn_color').value;
+        const bgColor = document.getElementById('r_bg_color').value;
+        const footer = document.getElementById('r_footer').value;
+
+        const template = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; margin: 0; padding: 0; color: #333; }
+    .email-container { max-width: 600px; margin: 20px auto; background: #fff; border-radius: 8px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .header { font-size: 24px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; letter-spacing: -0.02em; }
+    .product-details { display: flex; align-items: center; border: 1px solid #f0f0f0; border-radius: 8px; padding: 15px; margin-bottom: 25px; background-color: #fafafa; }
+    .product-img { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; margin-right: 20px; }
+    .product-info h3 { margin: 0 0 5px 0; font-size: 16px; font-weight: 600; }
+    .product-info p { margin: 0; color: #666; font-size: 14px; }
+    .actions { margin-bottom: 25px; }
+    .btn { display: inline-block; padding: 12px 24px; background: ${btnColor}; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .footer { font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 20px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="header">${headerTitle}</div>
+    <p>${greeting}</p>
+    <p>${bodyText}</p>
+    
+    <div class="product-details">
+      {product_image_tag}
+      <div class="product-info">
+        <h3>{product_title}</h3>
+        <p>Price: {product_price}</p>
+      </div>
+    </div>
+    
+    <div class="actions">
+      <a href="{product_link}" class="btn">${btnText}</a>
+    </div>
+    
+    <p style="font-size:13px; color:#666; margin-top: 30px;">Need more time or changed your mind? Use the links below to update your reminder:</p>
+    <div style="margin-bottom:25px;">
+      <a href="{reschedule_link}" style="color:#0066cc; text-decoration:underline; font-size:13px; margin-right:15px;">Reschedule Reminder</a>
+      <a href="{cancel_link}" style="color:#cc0000; text-decoration:underline; font-size:13px;">Cancel Reminder</a>
+    </div>
+    
+    <div class="footer">
+      ${footer}
+    </div>
+  </div>
+</body>
+</html>`;
+
+        document.getElementById('reminder_email_template').value = template;
+        updatePreviewFrame('reminder_preview_frame', template);
+    }
+
+    function rebuildDiscountTemplate() {
+        const headerTitle = document.getElementById('d_header_title').value;
+        const greeting = document.getElementById('d_greeting').value;
+        const bodyText = document.getElementById('d_body_text').value;
+        const btnText = document.getElementById('d_btn_text').value;
+        const btnColor = document.getElementById('d_btn_color').value;
+        const bgColor = document.getElementById('d_bg_color').value;
+        const footer = document.getElementById('d_footer').value;
+
+        const template = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: ${bgColor}; margin: 0; padding: 0; color: #333; }
+    .email-container { max-width: 600px; margin: 20px auto; background: #fff; border-radius: 8px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .header { font-size: 24px; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px; letter-spacing: -0.02em; color: #000; }
+    .product-details { display: flex; align-items: center; border: 1px solid #f0f0f0; border-radius: 8px; padding: 15px; margin-bottom: 25px; background-color: #fafafa; }
+    .product-img { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; margin-right: 20px; }
+    .product-info h3 { margin: 0 0 5px 0; font-size: 16px; font-weight: 600; }
+    .product-info p { margin: 0; color: #666; font-size: 14px; }
+    .price-box { margin-top: 5px; font-size: 14px; }
+    .old-price { text-decoration: line-through; color: #888; margin-right: 10px; }
+    .new-price { color: #d9534f; font-weight: bold; font-size: 16px; }
+    .actions { margin-bottom: 25px; }
+    .btn { display: inline-block; padding: 12px 24px; background: ${btnColor}; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .footer { font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 20px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="header">${headerTitle}</div>
+    <p>${greeting}</p>
+    <p>${bodyText}</p>
+    
+    <div class="product-details">
+      {product_image_tag}
+      <div class="product-info">
+        <h3>{product_title}</h3>
+        <div class="price-box">
+          <span class="old-price">{old_price}</span>
+          <span class="new-price">{new_price}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="actions">
+      <a href="{product_link}" class="btn">${btnText}</a>
+    </div>
+    
+    <div class="footer">
+      ${footer}
+    </div>
+  </div>
+</body>
+</html>`;
+
+        document.getElementById('discount_email_template').value = template;
+        updatePreviewFrame('discount_preview_frame', template);
+    }
+
+    function updatePreviewFrame(frameId, html) {
+        const frame = document.getElementById(frameId);
+        if (!frame) return;
+        
+        let previewHtml = html;
+        previewHtml = previewHtml.replace('{product_image_tag}', '<div style="width:80px; height:80px; background:#e4e5e7; border-radius:6px; margin-right:20px; display:flex; align-items:center; justify-content:center; color:#6d7175; font-size:11px; font-weight:bold;">IMAGE</div>');
+        previewHtml = previewHtml.replace('{product_title}', 'Sample Premium Product');
+        previewHtml = previewHtml.replace('{product_price}', '$99.99');
+        previewHtml = previewHtml.replace('{old_price}', '$129.99');
+        previewHtml = previewHtml.replace('{new_price}', '$99.99');
+        previewHtml = previewHtml.replace('{product_link}', '#');
+        previewHtml = previewHtml.replace('{reschedule_link}', '#');
+        previewHtml = previewHtml.replace('{cancel_link}', '#');
+        
+        try {
+            const doc = frame.contentDocument || frame.contentWindow.document;
+            doc.open();
+            doc.write(previewHtml);
+            doc.close();
+        } catch(e) {
+            console.error("Failed to write to preview iframe", e);
+        }
+    }
+
+    function initVisualEditors() {
+        const rHtml = document.getElementById('reminder_email_template').value;
+        if (rHtml && rHtml.includes('email-container')) {
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(rHtml, 'text/html');
+                
+                const headerEl = doc.querySelector('.header');
+                if (headerEl) document.getElementById('r_header_title').value = headerEl.textContent.trim();
+                
+                const pElements = doc.querySelectorAll('.email-container > p');
+                if (pElements.length > 0) {
+                    if (pElements.length >= 2) {
+                        document.getElementById('r_greeting').value = pElements[0].textContent.trim();
+                        document.getElementById('r_body_text').value = pElements[1].textContent.trim();
+                    } else {
+                        document.getElementById('r_body_text').value = pElements[0].textContent.trim();
+                    }
+                }
+                
+                const btnEl = doc.querySelector('.actions .btn');
+                if (btnEl) document.getElementById('r_btn_text').value = btnEl.textContent.trim();
+                
+                const footerEl = doc.querySelector('.footer');
+                if (footerEl) document.getElementById('r_footer').value = footerEl.textContent.trim();
+                
+                const styleEl = doc.querySelector('style');
+                if (styleEl) {
+                    const css = styleEl.textContent;
+                    const bgMatch = css.match(/body\s*\{[^}]*background-color:\s*([^;}]+)/i);
+                    if (bgMatch) document.getElementById('r_bg_color').value = parseCssColorToHex(bgMatch[1].trim());
+                    
+                    const btnBgMatch = css.match(/\.btn\s*\{[^}]*background:\s*([^;}!]+)/i);
+                    if (btnBgMatch) document.getElementById('r_btn_color').value = parseCssColorToHex(btnBgMatch[1].trim());
+                }
+            } catch(e) {
+                console.error("Failed to parse reminder template", e);
+            }
+        }
+        rebuildReminderTemplate();
+
+        const dHtml = document.getElementById('discount_email_template').value;
+        if (dHtml && dHtml.includes('email-container')) {
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(dHtml, 'text/html');
+                
+                const headerEl = doc.querySelector('.header');
+                if (headerEl) document.getElementById('d_header_title').value = headerEl.textContent.trim();
+                
+                const pElements = doc.querySelectorAll('.email-container > p');
+                if (pElements.length > 0) {
+                    if (pElements.length >= 2) {
+                        document.getElementById('d_greeting').value = pElements[0].textContent.trim();
+                        document.getElementById('d_body_text').value = pElements[1].textContent.trim();
+                    } else {
+                        document.getElementById('d_body_text').value = pElements[0].textContent.trim();
+                    }
+                }
+                
+                const btnEl = doc.querySelector('.actions .btn');
+                if (btnEl) document.getElementById('d_btn_text').value = btnEl.textContent.trim();
+                
+                const footerEl = doc.querySelector('.footer');
+                if (footerEl) document.getElementById('d_footer').value = footerEl.textContent.trim();
+                
+                const styleEl = doc.querySelector('style');
+                if (styleEl) {
+                    const css = styleEl.textContent;
+                    const bgMatch = css.match(/body\s*\{[^}]*background-color:\s*([^;}]+)/i);
+                    if (bgMatch) document.getElementById('d_bg_color').value = parseCssColorToHex(bgMatch[1].trim());
+                    
+                    const btnBgMatch = css.match(/\.btn\s*\{[^}]*background:\s*([^;}!]+)/i);
+                    if (btnBgMatch) document.getElementById('d_btn_color').value = parseCssColorToHex(btnBgMatch[1].trim());
+                }
+            } catch(e) {
+                console.error("Failed to parse discount template", e);
+            }
+        }
+        rebuildDiscountTemplate();
+    }
+
+    function parseCssColorToHex(color) {
+        if (color.startsWith('#')) return color;
+        const div = document.createElement('div');
+        div.style.color = color;
+        document.body.appendChild(div);
+        const rgb = window.getComputedStyle(div).color;
+        document.body.removeChild(div);
+        
+        const match = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+        if (match) {
+            return "#" + ("0" + parseInt(match[1]).toString(16)).slice(-2) +
+                         ("0" + parseInt(match[2]).toString(16)).slice(-2) +
+                         ("0" + parseInt(match[3]).toString(16)).slice(-2);
+        }
+        return '#000000';
+    }
+
+    document.addEventListener('DOMContentLoaded', initVisualEditors);
 
     // Convert all UTC timestamps to local browser timezone on load
     document.addEventListener('DOMContentLoaded', function() {
