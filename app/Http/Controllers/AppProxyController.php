@@ -58,9 +58,11 @@ class AppProxyController extends Controller
         $scheduledInput = $request->input('scheduled_at_utc') ?: $request->input('scheduled_at');
         $scheduledAt = Carbon::parse($scheduledInput)->setTimezone(config('app.timezone'));
 
-        // Check if reminder is in the past
+        // Check if reminder is in the past (comparing under the same timezone)
         if ($scheduledAt->isPast()) {
-            return response()->json(['message' => 'Reminder date cannot be in the past.'], 422);
+            return response()->json([
+                'message' => 'Reminder date cannot be in the past. (Scheduled: ' . $scheduledAt->toDateTimeString() . ', Server Current: ' . Carbon::now(config('app.timezone'))->toDateTimeString() . ')'
+            ], 422);
         }
 
         // Idempotency check: check if a pending reminder already exists for the same shop, email, and product
