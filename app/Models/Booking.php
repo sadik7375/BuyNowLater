@@ -71,58 +71,87 @@ class Booking extends Model
                 ]
             ];
 
-            $draftOrderData = [
-                'draft_order' => [
-                    'line_items' => $lineItems,
-                    'customer' => [
-                        'email' => $this->email,
-                        'first_name' => $this->customer_name ?? 'Valued',
-                        'last_name' => 'Customer'
-                    ],
-                    'use_customer_default_address' => true,
-                    'currency' => $this->currency ?: 'USD',
+            $gqlLineItems = [
+                [
+                    'title' => 'Remaining Balance - ' . $this->product_title,
+                    'originalUnitPrice' => (string) number_format((float) $this->remaining_balance, 2, '.', ''),
+                    'quantity' => 1,
+                ]
+            ];
+
+            $variables = [
+                'input' => [
+                    'email' => $this->email,
+                    'lineItems' => $gqlLineItems,
                     'note' => 'Remaining balance payment. Original Deposit Paid: ' . number_format((float) $this->deposit_amount, 2) . ' ' . ($this->currency ?: 'USD'),
-                    'note_attributes' => [
+                    'customAttributes' => [
                         [
-                            'name' => 'buylater_token',
-                            'value' => $this->token
+                            'key' => 'buylater_token',
+                            'value' => (string) $this->token
                         ],
                         [
-                            'name' => 'Original Deposit Paid',
+                            'key' => 'Original Deposit Paid',
                             'value' => number_format((float) $this->deposit_amount, 2) . ' ' . ($this->currency ?: 'USD')
                         ]
                     ]
                 ]
             ];
 
-            $response = $shop->api()->rest(
-                'POST',
-                '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json',
-                $draftOrderData
-            );
+            $gqlMutation = 'mutation draftOrderCreate($input: DraftOrderInput!) {
+                draftOrderCreate(input: $input) {
+                    draftOrder {
+                        id
+                        invoiceUrl
+                    }
+                    userErrors {
+                        field
+                        message
+                    }
+                }
+            }';
+
+            $response = $shop->api()->graph($gqlMutation, $variables);
 
             if ($response['errors']) {
                 \Illuminate\Support\Facades\Log::error("createRemainingBalanceDraftOrder: Shopify API Error for booking ID {$this->id}: " . json_encode($response['body']));
                 return null;
             }
 
-            $draftOrder = $response['body']['draft_order'] ?? null;
+            $draftOrder = $response['body']['data']['draftOrderCreate']['draftOrder'] ?? null;
             if ($draftOrder) {
-                if (is_object($draftOrder) && method_exists($draftOrder, 'toArray')) {
-                    $draftOrderArray = $draftOrder->toArray();
-                } else {
-                    $draftOrderArray = json_decode(json_encode($draftOrder), true);
-                }
-
-                $draftOrderId = $draftOrderArray['id'] ?? null;
-                $gqlId = $draftOrderArray['admin_graphql_api_id'] ?? null;
+                $gqlId = $draftOrder['id'] ?? null;
+                $draftOrderId = null;
                 if ($gqlId && preg_match('/DraftOrder\/(\d+)/', $gqlId, $matches)) {
                     $draftOrderId = $matches[1];
-                } elseif ($draftOrderId !== null) {
-                    $draftOrderId = (string) $draftOrderId;
                 }
                 
-                $checkoutUrl = $draftOrderArray['invoice_url'] ?? null;
+                $checkoutUrl = $draftOrder['invoiceUrl'] ?? null;
+
+                // If invoiceUrl is missing, try to generate it by sending invoice
+                if (empty($checkoutUrl) && $gqlId) {
+                    try {
+                        $sendInvoiceMutation = 'mutation draftOrderSendInvoice($id: ID!, $email: DraftOrderEmailInput) {
+                            draftOrderSendInvoice(id: $id, email: $email) {
+                                draftOrder {
+                                    id
+                                    invoiceUrl
+                                }
+                            }
+                        }';
+
+                        $invoiceRes = $shop->api()->graph($sendInvoiceMutation, [
+                            'id' => $gqlId,
+                            'email' => ['to' => $this->email]
+                        ]);
+
+                        if ($invoiceRes['errors'] === false && isset($invoiceRes['body']['data']['draftOrderSendInvoice']['draftOrder'])) {
+                            $refetchedOrder = $invoiceRes['body']['data']['draftOrderSendInvoice']['draftOrder'];
+                            $checkoutUrl = $refetchedOrder['invoiceUrl'] ?? null;
+                        }
+                    } catch (\Exception $invoiceEx) {
+                        \Illuminate\Support\Facades\Log::error('Failed to send invoice for remaining balance draft order in Booking model', ['error' => $invoiceEx->getMessage()]);
+                    }
+                }
 
                 $this->update([
                     'draft_order_id' => $draftOrderId,

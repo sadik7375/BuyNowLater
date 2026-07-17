@@ -19,6 +19,97 @@
         --warning-color: #b98900;
     }
 
+    /* Onboarding Card styling */
+    .onboarding-card {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        border-radius: 12px;
+        padding: 24px;
+        color: #f8fafc;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        border: 1px solid #334155;
+    }
+    .onboarding-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        border-bottom: 1px solid #334155;
+        padding-bottom: 12px;
+    }
+    .onboarding-card-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #f1f5f9;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .onboarding-badge {
+        background: #3b82f6;
+        color: #ffffff;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .onboarding-steps {
+        margin-bottom: 20px;
+    }
+    .onboarding-step-item {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 12px;
+        align-items: flex-start;
+    }
+    .onboarding-step-number {
+        background: #334155;
+        color: #94a3b8;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+    .onboarding-step-text {
+        font-size: 13.5px;
+        line-height: 1.5;
+        color: #cbd5e1;
+        margin: 0;
+    }
+    .onboarding-step-text strong {
+        color: #f1f5f9;
+    }
+    .onboarding-actions {
+        display: flex;
+        gap: 12px;
+    }
+    .onboarding-btn-primary {
+        background: #3b82f6;
+        color: #ffffff;
+        border: none;
+        padding: 10px 18px;
+        font-size: 13.5px;
+        font-weight: 500;
+        border-radius: 6px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        transition: background 0.2s ease;
+    }
+    .onboarding-btn-primary:hover {
+        background: #2563eb;
+    }
+
     body {
         font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         background-color: var(--bg-main);
@@ -1923,6 +2014,37 @@
 
     <!-- Tab 1: Overview Dashboard -->
     <div id="tab-overview" class="tab-content" style="display: {{ $activeTab === 'tab-overview' ? 'block' : 'none' }};">
+        <!-- Theme App Extension Onboarding Card -->
+        <div class="onboarding-card">
+            <div class="onboarding-card-header">
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #3b82f6;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    Activate Buy Now Later on Storefront
+                </h3>
+                <span class="onboarding-badge">Setup Required</span>
+            </div>
+            <div class="onboarding-steps">
+                <div class="onboarding-step-item">
+                    <div class="onboarding-step-number">1</div>
+                    <p class="onboarding-step-text">Click the <strong>Open Theme Editor</strong> button below to go to your active theme's product template page.</p>
+                </div>
+                <div class="onboarding-step-item">
+                    <div class="onboarding-step-number">2</div>
+                    <p class="onboarding-step-text">Click <strong>Add block</strong> or <strong>Add section</strong> on the left side panel under "Product information".</p>
+                </div>
+                <div class="onboarding-step-item">
+                    <div class="onboarding-step-number">3</div>
+                    <p class="onboarding-step-text">Select <strong>Buy Later Button</strong> from the list, position it under your main buy buttons, and click <strong>Save</strong> at the top right.</p>
+                </div>
+            </div>
+            <div class="onboarding-actions">
+                <a href="https://{{ $shop->name }}/admin/themes/current/editor?context=apps&template=product" target="_blank" class="onboarding-btn-primary">
+                    Open Theme Editor
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+                </a>
+            </div>
+        </div>
+
         <div class="dashboard-main-grid">
             <!-- Recent Bookings -->
             <div class="panel-card">

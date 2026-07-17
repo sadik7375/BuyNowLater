@@ -46,19 +46,19 @@ class CustomerBookingsTest extends TestCase
         // 1. Mock Shopify API rest client
         $apiMock = \Mockery::mock(\Gnikyt\BasicShopifyAPI\BasicShopifyAPI::class);
 
-        // Expect the customer fetch API call
-        $apiMock->shouldReceive('rest')
+        // Expect the customer fetch API call via GraphQL
+        $apiMock->shouldReceive('graph')
             ->once()
-            ->with('GET', '/admin/api/' . config('shopify-app.api_version') . '/customers/' . $customerId . '.json')
+            ->with(\Mockery::on(function ($gqlQuery) {
+                return str_contains($gqlQuery, 'query getCustomer');
+            }), ['id' => 'gid://shopify/Customer/' . $customerId])
             ->andReturn([
                 'errors' => false,
-                'status' => 200,
                 'body' => [
-                    'customer' => [
-                        'id' => $customerId,
-                        'email' => $customerEmail,
-                        'first_name' => 'Jane',
-                        'last_name' => 'Doe'
+                    'data' => [
+                        'customer' => [
+                            'email' => $customerEmail,
+                        ]
                     ]
                 ]
             ]);

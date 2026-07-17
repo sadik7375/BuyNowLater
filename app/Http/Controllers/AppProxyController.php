@@ -152,22 +152,27 @@ class AppProxyController extends Controller
                 $productIdClean = end($parts);
             }
 
-            $response = $shop->api()->rest(
-                'GET',
-                '/admin/api/' . config('shopify-app.api_version') . '/products/' . $productIdClean . '.json'
-            );
-
-            if ($response['errors'] === false && isset($response['body']['product'])) {
-                $productData = $response['body']['product'];
-                if (is_object($productData) && method_exists($productData, 'toArray')) {
-                    $productData = $productData->toArray();
-                } else {
-                    $productData = json_decode(json_encode($productData), true);
+            $gqlQuery = 'query getProduct($id: ID!) {
+                product(id: $id) {
+                    variants(first: 100) {
+                        edges {
+                            node {
+                                price
+                            }
+                        }
+                    }
                 }
+            }';
+            
+            $response = $shop->api()->graph($gqlQuery, [
+                'id' => 'gid://shopify/Product/' . $productIdClean
+            ]);
 
-                $variants = $productData['variants'] ?? [];
+            if ($response['errors'] === false && isset($response['body']['data']['product']['variants']['edges'])) {
+                $edges = $response['body']['data']['product']['variants']['edges'];
                 $lowestPrice = null;
-                foreach ($variants as $variant) {
+                foreach ($edges as $edge) {
+                    $variant = $edge['node'] ?? [];
                     $vPrice = isset($variant['price']) ? (float) $variant['price'] : null;
                     if ($vPrice !== null) {
                         if ($lowestPrice === null || $vPrice < $lowestPrice) {
@@ -407,88 +412,95 @@ class AppProxyController extends Controller
         ]];
 
         try {
-            $draftOrderData = [
-                'draft_order' => [
+            $gqlLineItems = [];
+            foreach ($lineItems as $item) {
+                $customAttributes = [];
+                if (isset($item['properties'])) {
+                    foreach ($item['properties'] as $prop) {
+                        $customAttributes[] = [
+                            'key' => $prop['name'],
+                            'value' => (string) $prop['value']
+                        ];
+                    }
+                }
+                $gqlLineItems[] = [
+                    'title' => $item['title'],
+                    'originalUnitPrice' => (string) $item['price'],
+                    'quantity' => (int) $item['quantity'],
+                    'customAttributes' => $customAttributes,
+                ];
+            }
+
+            $variables = [
+                'input' => [
                     'email' => $request->input('email'),
-                    'customer' => [
-                        'email' => $request->input('email'),
-                    ],
-                    'line_items' => $lineItems,
-                    'note'  => 'BuyLater deposit — do not fulfill',
-                    'tags'  => 'buylater-deposit',
-                    'currency' => $currency,
+                    'note' => 'BuyLater deposit — do not fulfill',
+                    'tags' => ['buylater-deposit'],
+                    'lineItems' => $gqlLineItems,
                 ]
             ];
 
-            Log::info('Deposit draft order: sending request to Shopify', [
+            Log::info('Deposit draft order: sending GraphQL request to Shopify', [
                 'api_version' => config('shopify-app.api_version'),
                 'shop' => $shopDomain,
             ]);
 
-            $createRes = $shop->api()->rest('POST', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json', $draftOrderData);
+            $createMutation = 'mutation draftOrderCreate($input: DraftOrderInput!) {
+                draftOrderCreate(input: $input) {
+                    draftOrder {
+                        id
+                        invoiceUrl
+                        status
+                    }
+                    userErrors {
+                        field
+                        message
+                    }
+                }
+            }';
+
+            $createRes = $shop->api()->graph($createMutation, $variables);
 
             Log::info('Deposit draft order create response', [
                 'errors' => $createRes['errors'],
-                'status' => $createRes['status'] ?? null,
-                'body_type' => is_object($createRes['body']) ? get_class($createRes['body']) : gettype($createRes['body']),
+                'body' => $createRes['body'] ?? null,
             ]);
 
-            if ($createRes['errors'] === false && isset($createRes['body']['draft_order'])) {
-                $draftOrder = $createRes['body']['draft_order'];
+            if ($createRes['errors'] === false && isset($createRes['body']['data']['draftOrderCreate']['draftOrder'])) {
+                $draftOrder = $createRes['body']['data']['draftOrderCreate']['draftOrder'];
+                $gqlId = $draftOrder['id'] ?? null;
+                $checkoutUrl = $draftOrder['invoiceUrl'] ?? null;
 
-                // ResponseAccess objects need careful handling — convert to array if needed
-                if (is_object($draftOrder) && method_exists($draftOrder, 'toArray')) {
-                    $draftOrderArray = $draftOrder->toArray();
-                } elseif ($draftOrder instanceof \ArrayAccess) {
-                    $draftOrderArray = json_decode(json_encode($draftOrder), true);
-                } else {
-                    $draftOrderArray = (array) $draftOrder;
-                }
-
-                Log::info('Draft order data extracted', [
-                    'keys' => array_keys($draftOrderArray),
-                    'id' => $draftOrderArray['id'] ?? null,
-                    'invoice_url' => $draftOrderArray['invoice_url'] ?? 'NOT_PRESENT',
-                    'status' => $draftOrderArray['status'] ?? null,
-                ]);
-
-                // Extract draft order ID safely as string to avoid 32-bit PHP integer overflow
-                // Shopify IDs are 13+ digits which overflow PHP's 32-bit integer max (2147483647)
-                // admin_graphql_api_id is always a string like "gid://shopify/DraftOrder/1045613997241"
-                $draftOrderId = $draftOrderArray['id'] ?? null;
-                $gqlId = $draftOrderArray['admin_graphql_api_id'] ?? null;
                 if ($gqlId && preg_match('/DraftOrder\/(\d+)/', $gqlId, $matches)) {
-                    $draftOrderId = $matches[1]; // Always correct, never truncated
-                } elseif ($draftOrderId !== null) {
-                    $draftOrderId = (string) $draftOrderId; // Fallback: cast to string
+                    $draftOrderId = $matches[1];
                 }
-                $checkoutUrl  = $draftOrderArray['invoice_url'] ?? null;
 
-                // If invoice_url is missing, try to get it by sending an invoice
-                if (empty($checkoutUrl) && $draftOrderId) {
-                    Log::info('invoice_url missing, attempting to send invoice to generate it');
+                // If invoiceUrl is missing, try to get it by sending an invoice
+                if (empty($checkoutUrl) && $gqlId) {
+                    Log::info('invoiceUrl missing, attempting to send invoice via GraphQL to generate it');
                     try {
-                        $invoiceRes = $shop->api()->rest(
-                            'POST',
-                            '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/' . $draftOrderId . '/send_invoice.json',
-                            ['draft_order_invoice' => ['to' => $request->input('email')]]
-                        );
-                        if ($invoiceRes['errors'] === false) {
-                            // Re-fetch the draft order to get the invoice_url
-                            $fetchRes = $shop->api()->rest(
-                                'GET',
-                                '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/' . $draftOrderId . '.json'
-                            );
-                            if ($fetchRes['errors'] === false && isset($fetchRes['body']['draft_order'])) {
-                                $refetchedOrder = $fetchRes['body']['draft_order'];
-                                if (is_object($refetchedOrder) && method_exists($refetchedOrder, 'toArray')) {
-                                    $refetchedArray = $refetchedOrder->toArray();
-                                } else {
-                                    $refetchedArray = json_decode(json_encode($refetchedOrder), true);
+                        $sendInvoiceMutation = 'mutation draftOrderSendInvoice($id: ID!, $email: DraftOrderEmailInput) {
+                            draftOrderSendInvoice(id: $id, email: $email) {
+                                draftOrder {
+                                    id
+                                    invoiceUrl
                                 }
-                                $checkoutUrl = $refetchedArray['invoice_url'] ?? null;
-                                Log::info('Re-fetched draft order invoice_url', ['checkout_url' => $checkoutUrl]);
+                                userErrors {
+                                    field
+                                    message
+                                }
                             }
+                        }';
+
+                        $invoiceRes = $shop->api()->graph($sendInvoiceMutation, [
+                            'id' => $gqlId,
+                            'email' => ['to' => $request->input('email')]
+                        ]);
+
+                        if ($invoiceRes['errors'] === false && isset($invoiceRes['body']['data']['draftOrderSendInvoice']['draftOrder'])) {
+                            $refetchedOrder = $invoiceRes['body']['data']['draftOrderSendInvoice']['draftOrder'];
+                            $checkoutUrl = $refetchedOrder['invoiceUrl'] ?? null;
+                            Log::info('Re-fetched draft order invoiceUrl via sendInvoice', ['checkout_url' => $checkoutUrl]);
                         }
                     } catch (\Exception $invoiceEx) {
                         Log::error('Failed to send invoice for draft order', ['error' => $invoiceEx->getMessage()]);
@@ -500,14 +512,10 @@ class AppProxyController extends Controller
                     'checkout_url'   => $checkoutUrl,
                 ]);
             } else {
-                // Log the full body for debugging
-                $bodyData = $createRes['body'] ?? null;
-                if (is_object($bodyData) && method_exists($bodyData, 'toArray')) {
-                    $bodyData = $bodyData->toArray();
-                }
+                $userErrors = $createRes['body']['data']['draftOrderCreate']['userErrors'] ?? [];
                 Log::error('Shopify deposit draft order creation failed', [
                     'errors' => $createRes['errors'],
-                    'body'   => $bodyData,
+                    'userErrors' => $userErrors,
                 ]);
             }
         } catch (\Exception $e) {
@@ -647,11 +655,15 @@ class AppProxyController extends Controller
         }
 
         try {
-            // Fetch customer details from Shopify Admin API to get their email securely
-            $response = $shop->api()->rest(
-                'GET',
-                '/admin/api/' . config('shopify-app.api_version') . '/customers/' . $customerId . '.json'
-            );
+            $gqlQuery = 'query getCustomer($id: ID!) {
+                customer(id: $id) {
+                    email
+                }
+            }';
+            
+            $response = $shop->api()->graph($gqlQuery, [
+                'id' => 'gid://shopify/Customer/' . $customerId
+            ]);
 
             if ($response['errors']) {
                 Log::warning('AppProxy: Failed to fetch Shopify customer details.', [
@@ -661,19 +673,12 @@ class AppProxyController extends Controller
                 return response()->json(['bookings' => []]);
             }
 
-            $customer = $response['body']['customer'] ?? null;
+            $customer = $response['body']['data']['customer'] ?? null;
             if (!$customer) {
                 return response()->json(['bookings' => []]);
             }
 
-            // Normalization
-            if (is_object($customer) && method_exists($customer, 'toArray')) {
-                $customerArray = $customer->toArray();
-            } else {
-                $customerArray = json_decode(json_encode($customer), true);
-            }
-
-            $email = $customerArray['email'] ?? null;
+            $email = $customer['email'] ?? null;
             if (!$email) {
                 return response()->json(['bookings' => []]);
             }

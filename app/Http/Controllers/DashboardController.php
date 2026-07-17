@@ -62,16 +62,42 @@ class DashboardController extends Controller
                 $draftOrderIds = $activeBookingsWithDraft->pluck('draft_order_id')->filter()->toArray();
                 if (!empty($draftOrderIds)) {
                     try {
-                        $response = $shop->api()->rest(
-                            'GET',
-                            '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json',
-                            ['ids' => implode(',', $draftOrderIds)]
-                        );
+                        $idsQuery = implode(' OR ', array_map(function($id) {
+                            return 'id:' . $id;
+                        }, $draftOrderIds));
+
+                        $gqlQuery = 'query getDraftOrders($query: String!) {
+                            draftOrders(first: 100, query: $query) {
+                                edges {
+                                    node {
+                                        id
+                                        status
+                                        invoiceUrl
+                                        order {
+                                            id
+                                        }
+                                        lineItems(first: 50) {
+                                            edges {
+                                                node {
+                                                    title
+                                                    appliedDiscount {
+                                                        description
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }';
+
+                        $response = $shop->api()->graph($gqlQuery, ['query' => $idsQuery]);
+
                         if (!$response['errors']) {
-                            $draftOrders = $response['body']['draft_orders'] ?? [];
+                            $edges = $response['body']['data']['draftOrders']['edges'] ?? [];
                             $draftOrdersMap = [];
-                            foreach ($draftOrders as $do) {
-                                $doArray = $this->normalizeDraftOrder($do);
+                            foreach ($edges as $edge) {
+                                $doArray = $this->normalizeGqlDraftOrder($edge['node'] ?? null);
                                 if ($doArray && isset($doArray['id'])) {
                                     $draftOrdersMap[$doArray['id']] = $doArray;
                                 }
@@ -241,18 +267,37 @@ class DashboardController extends Controller
                 try {
                     $ids = array_filter(explode(',', $settings->targeted_product_ids));
                     if (!empty($ids)) {
-                        $response = $shop->api()->rest('GET', '/admin/api/' . config('shopify-app.api_version') . '/products.json', [
-                            'ids' => implode(',', $ids),
-                            'fields' => 'id,title,handle,image'
-                        ]);
-                        if (!$response['errors']) {
-                            $shopifyProducts = $response['body']['products'] ?? [];
-                            foreach ($shopifyProducts as $sp) {
+                        $idsQuery = implode(' OR ', array_map(function($id) {
+                            return 'id:' . $id;
+                        }, $ids));
+
+                        $gqlQuery = 'query getProducts($query: String!) {
+                            products(first: 100, query: $query) {
+                                edges {
+                                    node {
+                                        id
+                                        title
+                                        handle
+                                        featuredImage {
+                                            url
+                                        }
+                                    }
+                                }
+                            }
+                        }';
+
+                        $response = $shop->api()->graph($gqlQuery, ['query' => $idsQuery]);
+
+                        if (!$response['errors'] && isset($response['body']['data']['products']['edges'])) {
+                            $edges = $response['body']['data']['products']['edges'];
+                            foreach ($edges as $edge) {
+                                $node = $edge['node'] ?? [];
+                                $numericId = preg_replace('/[^0-9]/', '', $node['id'] ?? '');
                                 $productsList[] = [
-                                    'id' => (string) $sp['id'],
-                                    'title' => $sp['title'],
-                                    'handle' => $sp['handle'],
-                                    'image' => $sp['image']['src'] ?? null,
+                                    'id' => (string) $numericId,
+                                    'title' => $node['title'] ?? '',
+                                    'handle' => $node['handle'] ?? '',
+                                    'image' => $node['featuredImage']['url'] ?? null,
                                 ];
                             }
                         }
@@ -344,40 +389,7 @@ class DashboardController extends Controller
             return response()->json($products);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error("Failed to search products in searchProducts() via GraphQL: " . $e->getMessage());
-
-            // Fallback to REST API if GraphQL fails
-            $params = [
-                'limit' => 20,
-                'fields' => 'id,title,handle,image',
-            ];
-            if (!empty($query)) {
-                $params['title'] = $query;
-            }
-
-            try {
-                $restResponse = $shop->api()->rest(
-                    'GET',
-                    '/admin/api/' . config('shopify-app.api_version') . '/products.json',
-                    $params
-                );
-
-                $products = [];
-                if (!$restResponse['errors']) {
-                    $shopifyProducts = $restResponse['body']['products'] ?? [];
-                    foreach ($shopifyProducts as $sp) {
-                        $products[] = [
-                            'id' => (string) $sp['id'],
-                            'title' => $sp['title'],
-                            'handle' => $sp['handle'],
-                            'image' => $sp['image']['src'] ?? null,
-                        ];
-                    }
-                }
-                return response()->json($products);
-            } catch (\Exception $restEx) {
-                \Illuminate\Support\Facades\Log::error("REST Fallback failed in searchProducts(): " . $restEx->getMessage());
-                return response()->json([]);
-            }
+            return response()->json([]);
         }
     }
 
@@ -435,11 +447,31 @@ class DashboardController extends Controller
         // --- SELF-HEALING: Sync Status from Shopify ---
         if ($booking->draft_order_id) {
             try {
-                $response = $shop->api()->rest('GET', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/' . $booking->draft_order_id . '.json');
+                $gqlQuery = 'query getDraftOrder($id: ID!) {
+                    draftOrder(id: $id) {
+                        id
+                        status
+                        invoiceUrl
+                        order {
+                            id
+                        }
+                        lineItems(first: 50) {
+                            edges {
+                                node {
+                                    title
+                                    appliedDiscount {
+                                        description
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }';
+                $response = $shop->api()->graph($gqlQuery, ['id' => 'gid://shopify/DraftOrder/' . $booking->draft_order_id]);
                 if (!$response['errors']) {
-                    $draftOrder = $response['body']['draft_order'] ?? null;
-                    if ($draftOrder) {
-                        $draftOrder = $this->normalizeDraftOrder($draftOrder);
+                    $draftOrderNode = $response['body']['data']['draftOrder'] ?? null;
+                    if ($draftOrderNode) {
+                        $draftOrder = $this->normalizeGqlDraftOrder($draftOrderNode);
                         $shopifyStatus = $draftOrder['status'] ?? '';
                         if ($shopifyStatus === 'completed') {
                             $isRemaining = $this->isRemainingBalanceDraftOrder($draftOrder);
@@ -499,12 +531,32 @@ class DashboardController extends Controller
 
                 if ($booking->draft_order_id) {
                     // Fetch from Shopify to see if it is completed (deposit) or open (remaining balance)
-                    $response = $shop->api()->rest('GET', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/' . $booking->draft_order_id . '.json');
+                    $gqlQuery = 'query getDraftOrder($id: ID!) {
+                        draftOrder(id: $id) {
+                            id
+                            status
+                            invoiceUrl
+                            order {
+                                id
+                            }
+                            lineItems(first: 50) {
+                                edges {
+                                    node {
+                                        title
+                                        appliedDiscount {
+                                            description
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }';
+                    $response = $shop->api()->graph($gqlQuery, ['id' => 'gid://shopify/DraftOrder/' . $booking->draft_order_id]);
                     
                     if (!$response['errors']) {
-                        $draftOrder = $response['body']['draft_order'] ?? null;
-                        if ($draftOrder) {
-                            $draftOrder = $this->normalizeDraftOrder($draftOrder);
+                        $draftOrderNode = $response['body']['data']['draftOrder'] ?? null;
+                        if ($draftOrderNode) {
+                            $draftOrder = $this->normalizeGqlDraftOrder($draftOrderNode);
                             $status = $draftOrder['status'] ?? '';
                             if ($status === 'completed') {
                                 $isRemainingBalance = $this->isRemainingBalanceDraftOrder($draftOrder);
@@ -574,62 +626,86 @@ class DashboardController extends Controller
                         ]
                     ]];
 
-                    $draftOrderData = [
-                        'draft_order' => [
+                    $gqlLineItems = [];
+                    foreach ($lineItems as $item) {
+                        $customAttributes = [];
+                        if (isset($item['properties'])) {
+                            foreach ($item['properties'] as $prop) {
+                                $customAttributes[] = [
+                                    'key' => $prop['name'],
+                                    'value' => (string) $prop['value']
+                                ];
+                            }
+                        }
+                        $gqlLineItems[] = [
+                            'title' => $item['title'],
+                            'originalUnitPrice' => (string) $item['price'],
+                            'quantity' => (int) $item['quantity'],
+                            'customAttributes' => $customAttributes,
+                        ];
+                    }
+
+                    $variables = [
+                        'input' => [
                             'email' => $booking->email,
-                            'customer' => [
-                                'email' => $booking->email,
-                            ],
-                            'line_items' => $lineItems,
-                            'note'  => 'BuyLater deposit — do not fulfill',
-                            'tags'  => 'buylater-deposit',
+                            'note' => 'BuyLater deposit — do not fulfill',
+                            'tags' => ['buylater-deposit'],
+                            'lineItems' => $gqlLineItems,
                         ]
                     ];
 
-                    \Illuminate\Support\Facades\Log::info("Recreating deposit draft order for booking ID {$booking->id} in sendReminder");
-                    $createRes = $shop->api()->rest('POST', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json', $draftOrderData);
-
-                    if ($createRes['errors'] === false && isset($createRes['body']['draft_order'])) {
-                        $draftOrder = $createRes['body']['draft_order'];
-                        
-                        if (is_object($draftOrder) && method_exists($draftOrder, 'toArray')) {
-                            $draftOrderArray = $draftOrder->toArray();
-                        } elseif ($draftOrder instanceof \ArrayAccess) {
-                            $draftOrderArray = json_decode(json_encode($draftOrder), true);
-                        } else {
-                            $draftOrderArray = (array) $draftOrder;
+                    \Illuminate\Support\Facades\Log::info("Recreating deposit draft order for booking ID {$booking->id} in sendReminder via GraphQL");
+                    $createMutation = 'mutation draftOrderCreate($input: DraftOrderInput!) {
+                        draftOrderCreate(input: $input) {
+                            draftOrder {
+                                id
+                                invoiceUrl
+                            }
+                            userErrors {
+                                field
+                                message
+                            }
                         }
+                    }';
 
-                        $draftOrderId = $draftOrderArray['id'] ?? null;
-                        // Fix 32-bit PHP integer overflow: extract ID from GraphQL string
-                        $gqlId = $draftOrderArray['admin_graphql_api_id'] ?? null;
+                    $createRes = $shop->api()->graph($createMutation, $variables);
+
+                    if ($createRes['errors'] === false && isset($createRes['body']['data']['draftOrderCreate']['draftOrder'])) {
+                        $draftOrder = $createRes['body']['data']['draftOrderCreate']['draftOrder'];
+                        $gqlId = $draftOrder['id'] ?? null;
+                        $checkoutUrl = $draftOrder['invoiceUrl'] ?? null;
+
                         if ($gqlId && preg_match('/DraftOrder\/(\d+)/', $gqlId, $matches)) {
                             $draftOrderId = $matches[1];
-                        } elseif ($draftOrderId !== null) {
-                            $draftOrderId = (string) $draftOrderId;
                         }
-                        $checkoutUrl  = $draftOrderArray['invoice_url'] ?? null;
 
-                        // If invoice_url is missing, try to generate it by sending invoice
-                        if (empty($checkoutUrl) && $draftOrderId) {
-                            $shop->api()->rest(
-                                'POST',
-                                '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/' . $draftOrderId . '/send_invoice.json',
-                                ['draft_order_invoice' => ['to' => $booking->email]]
-                            );
-                            
-                            $fetchRes = $shop->api()->rest(
-                                'GET',
-                                '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/' . $draftOrderId . '.json'
-                            );
-                            if ($fetchRes['errors'] === false && isset($fetchRes['body']['draft_order'])) {
-                                $refetchedOrder = $fetchRes['body']['draft_order'];
-                                if (is_object($refetchedOrder) && method_exists($refetchedOrder, 'toArray')) {
-                                    $refetchedArray = $refetchedOrder->toArray();
-                                } else {
-                                    $refetchedArray = json_decode(json_encode($refetchedOrder), true);
+                        // If invoiceUrl is missing, try to generate it by sending invoice
+                        if (empty($checkoutUrl) && $gqlId) {
+                            try {
+                                $sendInvoiceMutation = 'mutation draftOrderSendInvoice($id: ID!, $email: DraftOrderEmailInput) {
+                                    draftOrderSendInvoice(id: $id, email: $email) {
+                                        draftOrder {
+                                            id
+                                            invoiceUrl
+                                        }
+                                        userErrors {
+                                            field
+                                            message
+                                        }
+                                    }
+                                }';
+
+                                $invoiceRes = $shop->api()->graph($sendInvoiceMutation, [
+                                    'id' => $gqlId,
+                                    'email' => ['to' => $booking->email]
+                                ]);
+
+                                if ($invoiceRes['errors'] === false && isset($invoiceRes['body']['data']['draftOrderSendInvoice']['draftOrder'])) {
+                                    $refetchedOrder = $invoiceRes['body']['data']['draftOrderSendInvoice']['draftOrder'];
+                                    $checkoutUrl = $refetchedOrder['invoiceUrl'] ?? null;
                                 }
-                                $checkoutUrl = $refetchedArray['invoice_url'] ?? null;
+                            } catch (\Exception $invoiceEx) {
+                                \Illuminate\Support\Facades\Log::error('Failed to send invoice for recreated draft order', ['error' => $invoiceEx->getMessage()]);
                             }
                         }
 
@@ -681,11 +757,31 @@ class DashboardController extends Controller
         // --- SELF-HEALING: Sync Status from Shopify ---
         if ($booking->draft_order_id) {
             try {
-                $response = $shop->api()->rest('GET', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/' . $booking->draft_order_id . '.json');
+                $gqlQuery = 'query getDraftOrder($id: ID!) {
+                    draftOrder(id: $id) {
+                        id
+                        status
+                        invoiceUrl
+                        order {
+                            id
+                        }
+                        lineItems(first: 50) {
+                            edges {
+                                node {
+                                    title
+                                    appliedDiscount {
+                                        description
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }';
+                $response = $shop->api()->graph($gqlQuery, ['id' => 'gid://shopify/DraftOrder/' . $booking->draft_order_id]);
                 if (!$response['errors']) {
-                    $draftOrder = $response['body']['draft_order'] ?? null;
-                    if ($draftOrder) {
-                        $draftOrder = $this->normalizeDraftOrder($draftOrder);
+                    $draftOrderNode = $response['body']['data']['draftOrder'] ?? null;
+                    if ($draftOrderNode) {
+                        $draftOrder = $this->normalizeGqlDraftOrder($draftOrderNode);
                         $shopifyStatus = $draftOrder['status'] ?? '';
                         if ($shopifyStatus === 'completed') {
                             $isRemaining = $this->isRemainingBalanceDraftOrder($draftOrder);
@@ -730,12 +826,32 @@ class DashboardController extends Controller
 
             if ($booking->draft_order_id) {
                 // Fetch from Shopify to see if it is completed (deposit) or open (remaining balance)
-                $response = $shop->api()->rest('GET', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/' . $booking->draft_order_id . '.json');
+                $gqlQuery = 'query getDraftOrder($id: ID!) {
+                    draftOrder(id: $id) {
+                        id
+                        status
+                        invoiceUrl
+                        order {
+                            id
+                        }
+                        lineItems(first: 50) {
+                            edges {
+                                node {
+                                    title
+                                    appliedDiscount {
+                                        description
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }';
+                $response = $shop->api()->graph($gqlQuery, ['id' => 'gid://shopify/DraftOrder/' . $booking->draft_order_id]);
                 
                 if (!$response['errors']) {
-                    $draftOrder = $response['body']['draft_order'] ?? null;
-                    if ($draftOrder) {
-                        $draftOrder = $this->normalizeDraftOrder($draftOrder);
+                    $draftOrderNode = $response['body']['data']['draftOrder'] ?? null;
+                    if ($draftOrderNode) {
+                        $draftOrder = $this->normalizeGqlDraftOrder($draftOrderNode);
                         $status = $draftOrder['status'] ?? '';
                         if ($status === 'completed') {
                             $isRemaining = $this->isRemainingBalanceDraftOrder($draftOrder);
@@ -756,11 +872,14 @@ class DashboardController extends Controller
                     // Fetch actual variant price to calculate correct fixed-amount discount
                     $actualVariantPrice = (float) $booking->product_price;
                     try {
-                        $variantRes = $shop->api()->rest('GET', '/admin/api/' . config('shopify-app.api_version') . '/variants/' . $booking->variant_id . '.json');
-                        if ($variantRes['errors'] === false && isset($variantRes['body']['variant'])) {
-                            $vData = $variantRes['body']['variant'];
-                            if (is_object($vData) && method_exists($vData, 'toArray')) { $vData = $vData->toArray(); }
-                            elseif (is_object($vData)) { $vData = json_decode(json_encode($vData), true); }
+                        $gqlQuery = 'query getVariant($id: ID!) {
+                            productVariant(id: $id) {
+                                price
+                            }
+                        }';
+                        $variantRes = $shop->api()->graph($gqlQuery, ['id' => 'gid://shopify/ProductVariant/' . $booking->variant_id]);
+                        if ($variantRes['errors'] === false && isset($variantRes['body']['data']['productVariant'])) {
+                            $vData = $variantRes['body']['data']['productVariant'];
                             $actualVariantPrice = (float) ($vData['price'] ?? $booking->product_price);
                         }
                     } catch (\Exception $e) { /* fallback to product_price */ }
@@ -789,48 +908,98 @@ class DashboardController extends Controller
                     ];
                 }
 
-                // Create Draft Order using Shopify REST API via Osiset/Laravel-Shopify
-                $draftOrderData = [
-                    'draft_order' => [
-                        'line_items' => $lineItems,
-                        'customer' => [
-                            'email' => $booking->email,
-                            'first_name' => $booking->customer_name ?? 'Valued',
-                            'last_name' => 'Customer'
-                        ],
-                        'use_customer_default_address' => true,
+                // Create Draft Order using Shopify GraphQL API via Osiset/Laravel-Shopify
+                $gqlLineItems = [];
+                if ($booking->variant_id) {
+                    $gqlLineItems[] = [
+                        'variantId' => 'gid://shopify/ProductVariant/' . $booking->variant_id,
+                        'quantity' => 1,
+                        'appliedDiscount' => [
+                            'title' => 'Deposit Payment Adjustment',
+                            'description' => 'Original Deposit Paid',
+                            'value' => (float) $discountAmount,
+                            'valueType' => 'FIXED_AMOUNT',
+                        ]
+                    ];
+                } else {
+                    $gqlLineItems[] = [
+                        'title' => 'Remaining Balance - ' . $booking->product_title,
+                        'originalUnitPrice' => (string) number_format($booking->remaining_balance, 2, '.', ''),
+                        'quantity' => 1,
+                    ];
+                }
+
+                $variables = [
+                    'input' => [
+                        'email' => $booking->email,
+                        'lineItems' => $gqlLineItems,
                         'note' => 'Remaining balance payment. Original Deposit Paid: $' . number_format($booking->deposit_amount, 2),
-                        'note_attributes' => [
+                        'customAttributes' => [
                             [
-                                'name' => 'buylater_token',
-                                'value' => $booking->token
+                                'key' => 'buylater_token',
+                                'value' => (string) $booking->token
                             ],
                             [
-                                'name' => 'Original Deposit Paid',
+                                'key' => 'Original Deposit Paid',
                                 'value' => '$' . number_format($booking->deposit_amount, 2)
                             ]
                         ]
                     ]
                 ];
 
-                $response = $shop->api()->rest('POST', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json', $draftOrderData);
+                $gqlMutation = 'mutation draftOrderCreate($input: DraftOrderInput!) {
+                    draftOrderCreate(input: $input) {
+                        draftOrder {
+                            id
+                            invoiceUrl
+                        }
+                        userErrors {
+                            field
+                            message
+                        }
+                    }
+                }';
+
+                $response = $shop->api()->graph($gqlMutation, $variables);
 
                 if ($response['errors']) {
                     throw new \Exception('Shopify Draft Order API Error: ' . json_encode($response['body']));
                 }
 
-                $draftOrder = $response['body']['draft_order'] ?? null;
+                $draftOrder = $response['body']['data']['draftOrderCreate']['draftOrder'] ?? null;
                 if ($draftOrder) {
-                    $draftOrder = $this->normalizeDraftOrder($draftOrder);
-                    $draftOrderId = $draftOrder['id'] ?? null;
-                    // Fix 32-bit PHP integer overflow: extract ID from GraphQL string
-                    $gqlId = $draftOrder['admin_graphql_api_id'] ?? null;
+                    $gqlId = $draftOrder['id'] ?? null;
+                    $draftOrderId = null;
                     if ($gqlId && preg_match('/DraftOrder\/(\d+)/', $gqlId, $matches)) {
                         $draftOrderId = $matches[1];
-                    } elseif ($draftOrderId !== null) {
-                        $draftOrderId = (string) $draftOrderId;
                     }
-                    $checkoutUrl = $draftOrder['invoice_url'] ?? null;
+                    $checkoutUrl = $draftOrder['invoiceUrl'] ?? null;
+
+                    // If invoiceUrl is missing, try to generate it by sending invoice
+                    if (empty($checkoutUrl) && $gqlId) {
+                        try {
+                            $sendInvoiceMutation = 'mutation draftOrderSendInvoice($id: ID!, $email: DraftOrderEmailInput) {
+                                draftOrderSendInvoice(id: $id, email: $email) {
+                                    draftOrder {
+                                        id
+                                        invoiceUrl
+                                    }
+                                }
+                            }';
+
+                            $invoiceRes = $shop->api()->graph($sendInvoiceMutation, [
+                                'id' => $gqlId,
+                                'email' => ['to' => $booking->email]
+                            ]);
+
+                            if ($invoiceRes['errors'] === false && isset($invoiceRes['body']['data']['draftOrderSendInvoice']['draftOrder'])) {
+                                $refetchedOrder = $invoiceRes['body']['data']['draftOrderSendInvoice']['draftOrder'];
+                                $checkoutUrl = $refetchedOrder['invoiceUrl'] ?? null;
+                            }
+                        } catch (\Exception $invoiceEx) {
+                            \Illuminate\Support\Facades\Log::error('Failed to send invoice for recreated balance draft order', ['error' => $invoiceEx->getMessage()]);
+                        }
+                    }
 
                     $booking->update([
                         'draft_order_id' => $draftOrderId,
@@ -977,6 +1146,52 @@ class DashboardController extends Controller
             return (array) $draftOrder;
         }
         return $draftOrder;
+    }
+
+    /**
+     * Convert GraphQL DraftOrder node to standard REST-like array structure.
+     */
+    private function normalizeGqlDraftOrder($node)
+    {
+        if (!$node) {
+            return null;
+        }
+
+        $numericId = preg_replace('/[^0-9]/', '', $node['id'] ?? '');
+        $orderId = null;
+        if (!empty($node['order']['id'])) {
+            $orderId = preg_replace('/[^0-9]/', '', $node['order']['id']);
+        }
+
+        $lineItems = [];
+        $edges = $node['lineItems']['edges'] ?? [];
+        foreach ($edges as $edge) {
+            $li = $edge['node'] ?? [];
+            $lineItems[] = [
+                'title' => $li['title'] ?? '',
+                'applied_discount' => isset($li['appliedDiscount']) ? [
+                    'description' => $li['appliedDiscount']['description'] ?? ''
+                ] : null
+            ];
+        }
+
+        $noteAttributes = [];
+        $attrs = $node['noteAttributes'] ?? [];
+        foreach ($attrs as $attr) {
+            $noteAttributes[] = [
+                'name' => $attr['key'] ?? '',
+                'value' => $attr['value'] ?? '',
+            ];
+        }
+
+        return [
+            'id' => $numericId,
+            'status' => strtolower($node['status'] ?? ''),
+            'order_id' => $orderId,
+            'invoice_url' => $node['invoiceUrl'] ?? null,
+            'line_items' => $lineItems,
+            'note_attributes' => $noteAttributes,
+        ];
     }
 
     /**

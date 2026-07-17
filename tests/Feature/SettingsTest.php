@@ -46,8 +46,11 @@ class SettingsTest extends TestCase
         $this->withoutMiddleware();
 
         // Seed the plan
-        $plan = new \Osiset\ShopifyApp\Storage\Models\Plan();
-        $plan->id = 1;
+        $plan = \Osiset\ShopifyApp\Storage\Models\Plan::find(1);
+        if (!$plan) {
+            $plan = new \Osiset\ShopifyApp\Storage\Models\Plan();
+            $plan->id = 1;
+        }
         $plan->type = 'RECURRING';
         $plan->name = 'Pro Plan';
         $plan->price = 5.00;

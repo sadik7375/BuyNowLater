@@ -25,19 +25,25 @@ class DashboardReminderTest extends TestCase
         // 1. Mock Shopify API rest client
         $apiMock = \Mockery::mock(\Gnikyt\BasicShopifyAPI\BasicShopifyAPI::class);
 
-        // Expect the draft order creation for the deposit
-        $apiMock->shouldReceive('rest')
+        // Expect the draft order creation for the deposit via GraphQL
+        $apiMock->shouldReceive('graph')
             ->once()
-            ->with('POST', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json', \Mockery::on(function ($draftOrderData) {
-                return isset($draftOrderData['draft_order']['tags']) && $draftOrderData['draft_order']['tags'] === 'buylater-deposit';
+            ->with(\Mockery::on(function ($gqlQuery) {
+                return str_contains($gqlQuery, 'mutation draftOrderCreate');
+            }), \Mockery::on(function ($variables) {
+                return isset($variables['input']['tags']) && in_array('buylater-deposit', $variables['input']['tags']);
             }))
             ->andReturn([
                 'errors' => false,
-                'status' => 201,
                 'body' => [
-                    'draft_order' => [
-                        'id' => 999111,
-                        'invoice_url' => 'https://test-shop.myshopify.com/checkout/999111'
+                    'data' => [
+                        'draftOrderCreate' => [
+                            'draftOrder' => [
+                                'id' => 'gid://shopify/DraftOrder/999111',
+                                'invoiceUrl' => 'https://test-shop.myshopify.com/checkout/999111'
+                            ],
+                            'userErrors' => []
+                        ]
                     ]
                 ]
             ]);
@@ -99,57 +105,53 @@ class DashboardReminderTest extends TestCase
 
         $apiMock = \Mockery::mock(\Gnikyt\BasicShopifyAPI\BasicShopifyAPI::class);
 
-        // First rest call: Sync check at top of sendReminder (fetches current draft order ID 55555 which is the deposit)
-        // Since it is completed, it will be returned as completed.
-        $apiMock->shouldReceive('rest')
-            ->once()
-            ->with('GET', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/55555.json')
+        // First & Second GraphQL call: Sync check & inside if block (query getDraftOrder)
+        $apiMock->shouldReceive('graph')
+            ->twice()
+            ->with(\Mockery::on(function ($gqlQuery) {
+                return str_contains($gqlQuery, 'getDraftOrder');
+            }), \Mockery::any())
             ->andReturn([
                 'errors' => false,
-                'status' => 200,
                 'body' => [
-                    'draft_order' => [
-                        'id' => 55555,
-                        'status' => 'completed',
-                        'line_items' => [
-                            ['title' => 'Deposit — Cool Shoes', 'price' => '20.00']
+                    'data' => [
+                        'draftOrder' => [
+                            'id' => 'gid://shopify/DraftOrder/55555',
+                            'status' => 'COMPLETED',
+                            'invoiceUrl' => 'https://test-shop.myshopify.com/checkout/55555',
+                            'order' => null,
+                            'lineItems' => [
+                                'edges' => [
+                                    [
+                                        'node' => [
+                                            'title' => 'Deposit — Cool Shoes',
+                                            'appliedDiscount' => null
+                                        ]
+                                    ]
+                                ]
+                            ]
                         ]
                     ]
                 ]
             ]);
 
-        // Second rest call: Inside if (deposit_paid) block (fetches the draft order again to determine if it is completed or remaining balance)
-        $apiMock->shouldReceive('rest')
+        // Third GraphQL call: Creates the remaining balance draft order
+        $apiMock->shouldReceive('graph')
             ->once()
-            ->with('GET', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/55555.json')
+            ->with(\Mockery::on(function ($gqlQuery) {
+                return str_contains($gqlQuery, 'draftOrderCreate');
+            }), \Mockery::any())
             ->andReturn([
                 'errors' => false,
-                'status' => 200,
                 'body' => [
-                    'draft_order' => [
-                        'id' => 55555,
-                        'status' => 'completed',
-                        'line_items' => [
-                            ['title' => 'Deposit — Cool Shoes', 'price' => '20.00']
+                    'data' => [
+                        'draftOrderCreate' => [
+                            'draftOrder' => [
+                                'id' => 'gid://shopify/DraftOrder/77777',
+                                'invoiceUrl' => 'https://test-shop.myshopify.com/checkout/77777'
+                            ],
+                            'userErrors' => []
                         ]
-                    ]
-                ]
-            ]);
-
-        // Third rest call: Creates the remaining balance draft order
-        $apiMock->shouldReceive('rest')
-            ->once()
-            ->with('POST', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json', \Mockery::on(function ($draftOrderData) {
-                return isset($draftOrderData['draft_order']['line_items'][0]['title']) &&
-                       str_contains($draftOrderData['draft_order']['line_items'][0]['title'], 'Remaining Balance');
-            }))
-            ->andReturn([
-                'errors' => false,
-                'status' => 201,
-                'body' => [
-                    'draft_order' => [
-                        'id' => 77777,
-                        'invoice_url' => 'https://test-shop.myshopify.com/checkout/77777'
                     ]
                 ]
             ]);
@@ -181,10 +183,12 @@ class DashboardReminderTest extends TestCase
             'checkout_url' => 'https://test-shop.myshopify.com/checkout/55555',
         ]);
 
-        $userMock = \Mockery::mock($realUser)->makePartial();
-        $userMock->shouldReceive('api')->andReturn($apiMock);
+        $apiHelperMock = \Mockery::mock(\Osiset\ShopifyApp\Contracts\ApiHelper::class);
+        $apiHelperMock->shouldReceive('make')->andReturnSelf();
+        $apiHelperMock->shouldReceive('getApi')->andReturn($apiMock);
+        $this->app->instance(\Osiset\ShopifyApp\Contracts\ApiHelper::class, $apiHelperMock);
 
-        $this->actingAs($userMock);
+        $this->actingAs($realUser);
 
         // Mock SendGridService email sending
         \Mockery::mock('alias:App\Services\SendGridService')
@@ -209,19 +213,33 @@ class DashboardReminderTest extends TestCase
 
         $apiMock = \Mockery::mock(\Gnikyt\BasicShopifyAPI\BasicShopifyAPI::class);
 
-        // Sync check: fetches the remaining balance draft order (77777) which is completed
-        $apiMock->shouldReceive('rest')
+        // Sync check: fetches the remaining balance draft order (77777) which is completed via GraphQL
+        $apiMock->shouldReceive('graph')
             ->once()
-            ->with('GET', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/77777.json')
+            ->with(\Mockery::on(function ($gqlQuery) {
+                return str_contains($gqlQuery, 'query getDraftOrder');
+            }), ['id' => 'gid://shopify/DraftOrder/77777'])
             ->andReturn([
                 'errors' => false,
-                'status' => 200,
                 'body' => [
-                    'draft_order' => [
-                        'id' => 77777,
-                        'status' => 'completed',
-                        'line_items' => [
-                            ['title' => 'Remaining Balance - Cool Shoes', 'price' => '80.00']
+                    'data' => [
+                        'draftOrder' => [
+                            'id' => 'gid://shopify/DraftOrder/77777',
+                            'status' => 'COMPLETED',
+                            'invoiceUrl' => 'https://test-shop.myshopify.com/checkout/77777',
+                            'order' => [
+                                'id' => 'gid://shopify/Order/999'
+                            ],
+                            'lineItems' => [
+                                'edges' => [
+                                    [
+                                        'node' => [
+                                            'title' => 'Remaining Balance - Cool Shoes',
+                                            'appliedDiscount' => null
+                                        ]
+                                    ]
+                                ]
+                            ]
                         ]
                     ]
                 ]
@@ -275,24 +293,28 @@ class DashboardReminderTest extends TestCase
         $variantId = '44793613623512';
         $apiMock = \Mockery::mock(\Gnikyt\BasicShopifyAPI\BasicShopifyAPI::class);
 
-        // Expect the draft order creation for the deposit using variant_id and discount
-        $apiMock->shouldReceive('rest')
+        // Expect the draft order creation for the deposit using GraphQL
+        $apiMock->shouldReceive('graph')
             ->once()
-            ->with('POST', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json', \Mockery::on(function ($draftOrderData) use ($variantId) {
-                $lineItem = $draftOrderData['draft_order']['line_items'][0] ?? [];
-                return isset($lineItem['variant_id']) &&
-                       $lineItem['variant_id'] === (int)$variantId &&
-                       isset($lineItem['applied_discount']) &&
-                       $lineItem['applied_discount']['value'] === '80.00' && // 100 - 20 = 80 remaining
-                       $lineItem['applied_discount']['value_type'] === 'percentage';
+            ->with(\Mockery::on(function ($gqlQuery) {
+                return str_contains($gqlQuery, 'mutation draftOrderCreate');
+            }), \Mockery::on(function ($variables) use ($variantId) {
+                $lineItem = $variables['input']['lineItems'][0] ?? [];
+                return isset($lineItem['customAttributes']) &&
+                       $lineItem['customAttributes'][1]['key'] === 'Original Price' &&
+                       $lineItem['customAttributes'][2]['key'] === 'Remaining Balance';
             }))
             ->andReturn([
                 'errors' => false,
-                'status' => 201,
                 'body' => [
-                    'draft_order' => [
-                        'id' => 999222,
-                        'invoice_url' => 'https://test-shop.myshopify.com/checkout/999222'
+                    'data' => [
+                        'draftOrderCreate' => [
+                            'draftOrder' => [
+                                'id' => 'gid://shopify/DraftOrder/999222',
+                                'invoiceUrl' => 'https://test-shop.myshopify.com/checkout/999222'
+                            ],
+                            'userErrors' => []
+                        ]
                     ]
                 ]
             ]);
@@ -349,60 +371,55 @@ class DashboardReminderTest extends TestCase
         $variantId = '44793613623512';
         $apiMock = \Mockery::mock(\Gnikyt\BasicShopifyAPI\BasicShopifyAPI::class);
 
-        // GET call to sync check
-        $apiMock->shouldReceive('rest')
-            ->once()
-            ->with('GET', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/55555.json')
+        // First & Second GraphQL call: Sync check & inside if block (query getDraftOrder)
+        $apiMock->shouldReceive('graph')
+            ->twice()
+            ->with(\Mockery::on(function ($gqlQuery) {
+                return str_contains($gqlQuery, 'getDraftOrder');
+            }), \Mockery::any())
             ->andReturn([
                 'errors' => false,
-                'status' => 200,
                 'body' => [
-                    'draft_order' => [
-                        'id' => 55555,
-                        'status' => 'completed',
-                        'line_items' => [
-                            ['title' => 'Deposit — Cool Shoes', 'price' => '20.00']
+                    'data' => [
+                        'draftOrder' => [
+                            'id' => 'gid://shopify/DraftOrder/55555',
+                            'status' => 'COMPLETED',
+                            'invoiceUrl' => 'https://test-shop.myshopify.com/checkout/55555',
+                            'order' => null,
+                            'lineItems' => [
+                                'edges' => [
+                                    [
+                                        'node' => [
+                                            'title' => 'Deposit — Cool Shoes',
+                                            'appliedDiscount' => null
+                                        ]
+                                    ]
+                                ]
+                            ]
                         ]
                     ]
                 ]
             ]);
 
-        // GET call inside sendReminder to check status again
-        $apiMock->shouldReceive('rest')
-            ->once()
-            ->with('GET', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders/55555.json')
-            ->andReturn([
-                'errors' => false,
-                'status' => 200,
-                'body' => [
-                    'draft_order' => [
-                        'id' => 55555,
-                        'status' => 'completed',
-                        'line_items' => [
-                            ['title' => 'Deposit — Cool Shoes', 'price' => '20.00']
-                        ]
-                    ]
-                ]
-            ]);
 
-        // POST call to create remaining balance draft order with variant_id and discount
-        $apiMock->shouldReceive('rest')
+
+        // Draft order creation call via GraphQL
+        $apiMock->shouldReceive('graph')
             ->once()
-            ->with('POST', '/admin/api/' . config('shopify-app.api_version') . '/draft_orders.json', \Mockery::on(function ($draftOrderData) use ($variantId) {
-                $lineItem = $draftOrderData['draft_order']['line_items'][0] ?? [];
-                return isset($lineItem['variant_id']) &&
-                       $lineItem['variant_id'] === (int)$variantId &&
-                       isset($lineItem['applied_discount']) &&
-                       $lineItem['applied_discount']['value'] === '20.00' && // deposit discount applied
-                       $lineItem['applied_discount']['value_type'] === 'percentage';
-            }))
+            ->with(\Mockery::on(function ($gqlQuery) {
+                return str_contains($gqlQuery, 'draftOrderCreate');
+            }), \Mockery::any())
             ->andReturn([
                 'errors' => false,
-                'status' => 201,
                 'body' => [
-                    'draft_order' => [
-                        'id' => 88888,
-                        'invoice_url' => 'https://test-shop.myshopify.com/checkout/88888'
+                    'data' => [
+                        'draftOrderCreate' => [
+                            'draftOrder' => [
+                                'id' => 'gid://shopify/DraftOrder/88888',
+                                'invoiceUrl' => 'https://test-shop.myshopify.com/checkout/88888'
+                            ],
+                            'userErrors' => []
+                        ]
                     ]
                 ]
             ]);
@@ -435,10 +452,12 @@ class DashboardReminderTest extends TestCase
             'checkout_url' => 'https://test-shop.myshopify.com/checkout/55555',
         ]);
 
-        $userMock = \Mockery::mock($realUser)->makePartial();
-        $userMock->shouldReceive('api')->andReturn($apiMock);
+        $apiHelperMock = \Mockery::mock(\Osiset\ShopifyApp\Contracts\ApiHelper::class);
+        $apiHelperMock->shouldReceive('make')->andReturnSelf();
+        $apiHelperMock->shouldReceive('getApi')->andReturn($apiMock);
+        $this->app->instance(\Osiset\ShopifyApp\Contracts\ApiHelper::class, $apiHelperMock);
 
-        $this->actingAs($userMock);
+        $this->actingAs($realUser);
 
         \Mockery::mock('alias:App\Services\SendGridService')
             ->shouldReceive('send')
