@@ -12,8 +12,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // Run every hour to dispatch pending reminder emails
-        $schedule->command('app:send-reminders')->hourly();
+        // Run every minute to check and dispatch due reminders
+        $schedule->command('app:send-reminders')->everyMinute();
     }
 
     /**
