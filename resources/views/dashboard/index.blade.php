@@ -1564,7 +1564,14 @@
     <s-link href="/reminders">Reminders</s-link>
     <s-link href="/price-alerts">Price Alerts</s-link>
     <s-link href="/app-settings">Settings</s-link>
-    <s-link href="/support">View More</s-link>
+    @if(in_array($activeTab, ['tab-support', 'tab-how-it-works', 'tab-benefits', 'tab-pricing']))
+        <s-link href="/support">View More ▾</s-link>
+        <s-link href="/support">↳ Support</s-link>
+        <s-link href="/benefits">↳ Benefits</s-link>
+        <s-link href="/price-plan">↳ Price Plan</s-link>
+    @else
+        <s-link href="/support">View More</s-link>
+    @endif
 </s-app-nav>
 
 <div class="app-layout">
@@ -2571,12 +2578,7 @@
     <!-- Tab 6: Support (Consolidated View More) -->
     <div id="tab-support" class="tab-content" style="display: {{ $activeTab === 'tab-support' ? 'block' : 'none' }};">
         
-        <!-- Sub Tab Bar -->
-        <div class="sub-tab-bar" style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 24px; padding-bottom: 0;">
-            <button type="button" class="sub-tab-btn {{ $subTab === 'support' ? 'active' : '' }}" data-sub-tab="sub-tab-how-it-works" onclick="switchSubTab('sub-tab-how-it-works')">Support</button>
-            <button type="button" class="sub-tab-btn {{ $subTab === 'benefits' ? 'active' : '' }}" data-sub-tab="sub-tab-benefits" onclick="switchSubTab('sub-tab-benefits')">Benefits</button>
-            <button type="button" class="sub-tab-btn {{ $subTab === 'pricing' ? 'active' : '' }}" data-sub-tab="sub-tab-pricing" onclick="switchSubTab('sub-tab-pricing')">Price Plan</button>
-        </div>
+
 
         <!-- Sub Tab 1: Support (previously How It Works) -->
         <div id="sub-tab-how-it-works" class="sub-tab-content" style="display: {{ $subTab === 'support' ? 'block' : 'none' }};">
@@ -3238,55 +3240,58 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Intercept clicks on s-link inside s-app-nav to perform instant SPA tab switching
-    const links = document.querySelectorAll('s-app-nav s-link');
-    links.forEach(link => {
-        link.addEventListener('click', function(e) {
-            const href = link.getAttribute('href');
+    // Intercept clicks on s-link inside s-app-nav dynamically (using event delegation)
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('s-app-nav s-link');
+        if (!link) return;
+
+        const href = link.getAttribute('href');
+        
+        // Map paths to tab IDs
+        let tabId = 'tab-overview';
+        let subTabId = null;
+        if (href === '/bookings') {
+            tabId = 'tab-bookings-list';
+        } else if (href === '/reminders') {
+            tabId = 'tab-reminders-list';
+        } else if (href === '/price-alerts') {
+            tabId = 'tab-subscribers-list';
+        } else if (href === '/app-settings') {
+            tabId = 'tab-settings';
+        } else if (href === '/support') {
+            tabId = 'tab-support';
+            subTabId = 'sub-tab-how-it-works';
+        } else if (href === '/how-it-works') {
+            tabId = 'tab-support';
+            subTabId = 'sub-tab-how-it-works';
+        } else if (href === '/benefits') {
+            tabId = 'tab-support';
+            subTabId = 'sub-tab-benefits';
+        } else if (href === '/price-plan') {
+            tabId = 'tab-support';
+            subTabId = 'sub-tab-pricing';
+        }
+        
+        // Check if tab exists
+        const targetEl = document.getElementById(tabId);
+        if (targetEl) {
+            e.preventDefault();
+            e.stopPropagation();
             
-            // Map paths to tab IDs
-            let tabId = 'tab-overview';
-            let subTabId = null;
-            if (href === '/bookings') {
-                tabId = 'tab-bookings-list';
-            } else if (href === '/reminders') {
-                tabId = 'tab-reminders-list';
-            } else if (href === '/price-alerts') {
-                tabId = 'tab-subscribers-list';
-            } else if (href === '/app-settings') {
-                tabId = 'tab-settings';
-            } else if (href === '/support') {
-                tabId = 'tab-support';
-                subTabId = 'sub-tab-how-it-works';
-            } else if (href === '/how-it-works') {
-                tabId = 'tab-support';
-                subTabId = 'sub-tab-how-it-works';
-            } else if (href === '/benefits') {
-                tabId = 'tab-support';
-                subTabId = 'sub-tab-benefits';
-            } else if (href === '/price-plan') {
-                tabId = 'tab-support';
-                subTabId = 'sub-tab-pricing';
-            }
+            // Update history path while preserving shop/host parameters
+            const currentSearch = window.location.search;
+            const newUrl = href + currentSearch;
+            history.pushState({ tabId: tabId, subTabId: subTabId }, '', newUrl);
             
-            // Check if tab exists
-            const targetEl = document.getElementById(tabId);
-            if (targetEl) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                // Update history path while preserving shop/host parameters
-                const currentSearch = window.location.search;
-                const newUrl = href + currentSearch;
-                history.pushState({ tabId: tabId, subTabId: subTabId }, '', newUrl);
-                
-                // Switch tab instantly
-                switchTab(null, tabId);
-                if (subTabId) {
-                    switchSubTab(subTabId, false);
-                }
+            // Switch tab instantly
+            switchTab(null, tabId);
+            if (subTabId) {
+                switchSubTab(subTabId, false);
             }
-        });
+
+            // Dynamically update s-app-nav sidebar HTML
+            updateAppSidebarNav(tabId);
+        }
     });
 
     // Handle back/forward buttons
@@ -3317,8 +3322,37 @@ document.addEventListener('DOMContentLoaded', function() {
         if (subTabId) {
             switchSubTab(subTabId, false);
         }
+        updateAppSidebarNav(tabId);
     });
 });
+
+    function updateAppSidebarNav(tabId) {
+        const appNav = document.querySelector('s-app-nav');
+        if (!appNav) return;
+        
+        if (tabId === 'tab-support') {
+            appNav.innerHTML = `
+                <s-link href="/" rel="home">Overview</s-link>
+                <s-link href="/bookings">Bookings & Deposits</s-link>
+                <s-link href="/reminders">Reminders</s-link>
+                <s-link href="/price-alerts">Price Alerts</s-link>
+                <s-link href="/app-settings">Settings</s-link>
+                <s-link href="/support">View More ▾</s-link>
+                <s-link href="/support">↳ Support</s-link>
+                <s-link href="/benefits">↳ Benefits</s-link>
+                <s-link href="/price-plan">↳ Price Plan</s-link>
+            `;
+        } else {
+            appNav.innerHTML = `
+                <s-link href="/" rel="home">Overview</s-link>
+                <s-link href="/bookings">Bookings & Deposits</s-link>
+                <s-link href="/reminders">Reminders</s-link>
+                <s-link href="/price-alerts">Price Alerts</s-link>
+                <s-link href="/app-settings">Settings</s-link>
+                <s-link href="/support">View More</s-link>
+            `;
+        }
+    }
 
     function switchSubTab(subTabId, pushState = true) {
         // Hide all sub-tab contents
