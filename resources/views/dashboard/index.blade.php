@@ -2191,7 +2191,7 @@
                                             @if($booking->status !== 'completed' && $booking->status !== 'expired')
                                                 <form action="{{ route('bookings.send_reminder', array_merge(['id' => $booking->id], request()->query())) }}" method="POST" style="margin:0;">
                                                     @csrf
-                                                    <s-button submit="true" variant="secondary">Send Reminder</s-button>
+                                                    <button type="submit" class="btn-action-secondary">Send Reminder</button>
                                                 </form>
                                             @endif
                                         </div>
