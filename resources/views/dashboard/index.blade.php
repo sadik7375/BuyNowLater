@@ -1564,14 +1564,10 @@
     <a href="/reminders">Reminders</a>
     <a href="/price-alerts">Price Alerts</a>
     <a href="/app-settings">Settings</a>
-    @if(in_array($activeTab, ['tab-support', 'tab-how-it-works', 'tab-benefits', 'tab-pricing']))
-        <a href="/how-it-works">View more</a>
-        <a href="/support">↳ Support</a>
-        <a href="/benefits">↳ Benefits</a>
-        <a href="/price-plan">↳ Price Plan</a>
-    @else
-        <a href="/how-it-works">View more</a>
-    @endif
+    <a href="/support">View more</a>
+    <a href="/how-it-works">↳ Support</a>
+    <a href="/benefits">↳ Benefits</a>
+    <a href="/price-plan">↳ Price Plan</a>
 </ui-nav-menu>
 
 <div class="app-layout">
@@ -3288,9 +3284,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (subTabId) {
                 switchSubTab(subTabId, false);
             }
-
-            // Dynamically update ui-nav-menu sidebar HTML
-            updateAppSidebarNav(tabId);
         }
     });
 
@@ -3322,37 +3315,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (subTabId) {
             switchSubTab(subTabId, false);
         }
-        updateAppSidebarNav(tabId);
     });
 });
-
-    function updateAppSidebarNav(tabId) {
-        const appNav = document.querySelector('ui-nav-menu');
-        if (!appNav) return;
-        
-        if (tabId === 'tab-support') {
-            appNav.innerHTML = `
-                <a href="/" rel="home">Overview</a>
-                <a href="/bookings">Bookings & Deposits</a>
-                <a href="/reminders">Reminders</a>
-                <a href="/price-alerts">Price Alerts</a>
-                <a href="/app-settings">Settings</a>
-                <a href="/how-it-works">View more</a>
-                <a href="/support">↳ Support</a>
-                <a href="/benefits">↳ Benefits</a>
-                <a href="/price-plan">↳ Price Plan</a>
-            `;
-        } else {
-            appNav.innerHTML = `
-                <a href="/" rel="home">Overview</a>
-                <a href="/bookings">Bookings & Deposits</a>
-                <a href="/reminders">Reminders</a>
-                <a href="/price-alerts">Price Alerts</a>
-                <a href="/app-settings">Settings</a>
-                <a href="/how-it-works">View more</a>
-            `;
-        }
-    }
 
     function switchSubTab(subTabId, pushState = true) {
         // Hide all sub-tab contents
