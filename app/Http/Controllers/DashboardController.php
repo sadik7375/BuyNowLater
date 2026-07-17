@@ -16,6 +16,7 @@ class DashboardController extends Controller
         $shop = auth()->user();
 
         $activeTab = 'tab-overview';
+        $subTab = 'support';
         if ($request->is('bookings')) {
             $activeTab = 'tab-bookings-list';
         } elseif ($request->is('reminders')) {
@@ -24,12 +25,15 @@ class DashboardController extends Controller
             $activeTab = 'tab-subscribers-list';
         } elseif ($request->is('app-settings')) {
             $activeTab = 'tab-settings';
-        } elseif ($request->is('how-it-works')) {
-            $activeTab = 'tab-how-it-works';
+        } elseif ($request->is('how-it-works') || $request->is('support')) {
+            $activeTab = 'tab-support';
+            $subTab = 'support';
         } elseif ($request->is('benefits')) {
-            $activeTab = 'tab-benefits';
+            $activeTab = 'tab-support';
+            $subTab = 'benefits';
         } elseif ($request->is('price-plan')) {
-            $activeTab = 'tab-pricing';
+            $activeTab = 'tab-support';
+            $subTab = 'pricing';
         }
 
         $settings = Setting::firstOrCreate(
@@ -276,7 +280,7 @@ class DashboardController extends Controller
             'expiringToday', 'expiringTomorrow', 'expiringThisWeek', 'isMockExpiring',
             'statusCounts', 'isMockStatus', 'todayRemindersCount',
             'dateFilter', 'start', 'end', 'monthlyUsageCount', 'targetedProducts',
-            'activeTab'
+            'activeTab', 'subTab'
         ));
     }
 

@@ -1534,6 +1534,28 @@
         margin: 0;
         vertical-align: middle;
     }
+
+    /* Sub-tabs inside View More (Support) */
+    .sub-tab-btn {
+        background: none;
+        border: none;
+        padding: 8px 16px;
+        font-size: 13.5px;
+        font-weight: 500;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+    }
+    .sub-tab-btn:hover {
+        color: var(--text-main);
+    }
+    .sub-tab-btn.active {
+        color: var(--primary-color);
+        font-weight: 600;
+        border-bottom: 2px solid var(--primary-color);
+    }
 </style>
 
 <s-app-nav>
@@ -1542,9 +1564,7 @@
     <s-link href="/reminders">Reminders</s-link>
     <s-link href="/price-alerts">Price Alerts</s-link>
     <s-link href="/app-settings">Settings</s-link>
-    <s-link href="/how-it-works">How It Works</s-link>
-    <s-link href="/benefits">Benefits</s-link>
-    <s-link href="/price-plan">Price Plan</s-link>
+    <s-link href="/support">View More</s-link>
 </s-app-nav>
 
 <div class="app-layout">
@@ -2548,228 +2568,239 @@
         </form>
     </div>
 
-    <!-- Tab 6: How It Works -->
-    <div id="tab-how-it-works" class="tab-content" style="display: {{ $activeTab === 'tab-how-it-works' ? 'block' : 'none' }};">
-        <div class="guide-header">
-            <h2>How It Works</h2>
-            <p>Understand the core features, options flow, and customer journey of the Buy Later app.</p>
+    <!-- Tab 6: Support (Consolidated View More) -->
+    <div id="tab-support" class="tab-content" style="display: {{ $activeTab === 'tab-support' ? 'block' : 'none' }};">
+        
+        <!-- Sub Tab Bar -->
+        <div class="sub-tab-bar" style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 24px; padding-bottom: 0;">
+            <button type="button" class="sub-tab-btn {{ $subTab === 'support' ? 'active' : '' }}" data-sub-tab="sub-tab-how-it-works" onclick="switchSubTab('sub-tab-how-it-works')">Support</button>
+            <button type="button" class="sub-tab-btn {{ $subTab === 'benefits' ? 'active' : '' }}" data-sub-tab="sub-tab-benefits" onclick="switchSubTab('sub-tab-benefits')">Benefits</button>
+            <button type="button" class="sub-tab-btn {{ $subTab === 'pricing' ? 'active' : '' }}" data-sub-tab="sub-tab-pricing" onclick="switchSubTab('sub-tab-pricing')">Price Plan</button>
         </div>
 
-        <div class="panel-card" style="margin-bottom: 24px;">
-            <h3>🔄 Storefront Customer Journey</h3>
-            <div class="guide-timeline">
-                <div class="guide-timeline-item">
-                    <h5>1. Trigger Widget on Product Page</h5>
-                    <p>The "Buy Later" button is placed seamlessly next to or below your standard add-to-cart button using Shopify App Blocks. It dynamically loads configuration settings (colors, fonts, allowed options) directly from the application database.</p>
-                </div>
-                <div class="guide-timeline-item">
-                    <h5>2. Option Selection Modal</h5>
-                    <p>Clicking the button opens an attractive, clean modal presenting three flexible options to the customer: Book with Deposit, Set a Reminder, or Subscribe to Discount Alerts.</p>
-                </div>
-                <div class="guide-timeline-item">
-                    <h5>3. Processing the Selection</h5>
-                    <p>
-                        • <strong>Book It Now (Partial Paid)</strong>: The customer provides their email, pays the required deposit (e.g. 10%), and is redirected to checkout. A secure hold is created, and the status updates in your dashboard.<br>
-                        • <strong>Remind Me Later</strong>: The customer picks a custom date and time to receive an automated follow-up email containing a direct link to the product.<br>
-                        • <strong>Alert Me on Discount</strong>: Subscribes the customer to instant price drop alerts for the specific product.
-                    </p>
-                </div>
-                <div class="guide-timeline-item">
-                    <h5>4. Completing the Purchase</h5>
-                    <p>For deposit holds, customers can revisit their portal to pay the remaining balance, settling the draft order. Reminder and discount emails contain direct purchase links to ensure quick conversion.</p>
-                </div>
+        <!-- Sub Tab 1: Support (previously How It Works) -->
+        <div id="sub-tab-how-it-works" class="sub-tab-content" style="display: {{ $subTab === 'support' ? 'block' : 'none' }};">
+            <div class="guide-header">
+                <h2>Support</h2>
+                <p>Understand the core features, options flow, and customer journey of the Buy Later app.</p>
             </div>
-        </div>
 
-        <div class="guide-grid-3">
-            <div class="guide-card-premium">
-                <div class="guide-card-badge">💰</div>
-                <h4>Deposit Holds</h4>
-                <p>Ensures immediate cash flow by collecting partial payments while reserving high-demand items for customers.</p>
+            <div class="panel-card" style="margin-bottom: 24px;">
+                <h3>🔄 Storefront Customer Journey</h3>
+                <div class="guide-timeline">
+                    <div class="guide-timeline-item">
+                        <h5>1. Trigger Widget on Product Page</h5>
+                        <p>The "Buy Later" button is placed seamlessly next to or below your standard add-to-cart button using Shopify App Blocks. It dynamically loads configuration settings (colors, fonts, allowed options) directly from the application database.</p>
+                    </div>
+                    <div class="guide-timeline-item">
+                        <h5>2. Option Selection Modal</h5>
+                        <p>Clicking the button opens an attractive, clean modal presenting three flexible options to the customer: Book with Deposit, Set a Reminder, or Subscribe to Discount Alerts.</p>
+                    </div>
+                    <div class="guide-timeline-item">
+                        <h5>3. Processing the Selection</h5>
+                        <p>
+                            • <strong>Book It Now (Partial Paid)</strong>: The customer provides their email, pays the required deposit (e.g. 10%), and is redirected to checkout. A secure hold is created, and the status updates in your dashboard.<br>
+                            • <strong>Remind Me Later</strong>: The customer picks a custom date and time to receive an automated follow-up email containing a direct link to the product.<br>
+                            • <strong>Alert Me on Discount</strong>: Subscribes the customer to instant price drop alerts for the specific product.
+                        </p>
+                    </div>
+                    <div class="guide-timeline-item">
+                        <h5>4. Completing the Purchase</h5>
+                        <p>For deposit holds, customers can revisit their portal to pay the remaining balance, settling the draft order. Reminder and discount emails contain direct purchase links to ensure quick conversion.</p>
+                    </div>
+                </div>
             </div>
-            <div class="guide-card-premium">
-                <div class="guide-card-badge">⏰</div>
-                <h4>Automated Reminders</h4>
-                <p>Draft orders are linked directly inside scheduler tasks to send professional reminder emails exactly when requested.</p>
-            </div>
-            <div class="guide-card-premium">
-                <div class="guide-card-badge">🔔</div>
-                <h4>Price Alert Engine</h4>
-                <p>Scans price updates across products and variants, immediately emailing subscribers if a discount is published.</p>
-            </div>
-        </div>
 
-        <div class="panel-card" style="margin-top: 32px; border-top: 4px solid var(--primary-color);">
-            <h3>✉️ Feedback &amp; Complaint Form</h3>
-            <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 20px;">
-                Have a feature suggestion, found a bug, or want to register a complaint? Let us know directly. We value your input and respond to support messages within 24 hours.
-            </p>
-            
-            <form id="feedback-form" style="display: flex; flex-direction: column; gap: 16px;">
-                <div class="guide-grid-2" style="margin-bottom: 0; gap: 16px;">
+            <div class="guide-grid-3">
+                <div class="guide-card-premium">
+                    <div class="guide-card-badge">💰</div>
+                    <h4>Deposit Holds</h4>
+                    <p>Ensures immediate cash flow by collecting partial payments while reserving high-demand items for customers.</p>
+                </div>
+                <div class="guide-card-premium">
+                    <div class="guide-card-badge">⏰</div>
+                    <h4>Automated Reminders</h4>
+                    <p>Draft orders are linked directly inside scheduler tasks to send professional reminder emails exactly when requested.</p>
+                </div>
+                <div class="guide-card-premium">
+                    <div class="guide-card-badge">🔔</div>
+                    <h4>Price Alert Engine</h4>
+                    <p>Scans price updates across products and variants, immediately emailing subscribers if a discount is published.</p>
+                </div>
+            </div>
+
+            <div class="panel-card" style="margin-top: 32px; border-top: 4px solid var(--primary-color);">
+                <h3>✉️ Feedback &amp; Complaint Form</h3>
+                <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 20px;">
+                    Have a feature suggestion, found a bug, or want to register a complaint? Let us know directly. We value your input and respond to support messages within 24 hours.
+                </p>
+                
+                <form id="feedback-form" style="display: flex; flex-direction: column; gap: 16px;">
+                    <div class="guide-grid-2" style="margin-bottom: 0; gap: 16px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="feedback_type" style="font-weight: 500;">Feedback Type</label>
+                            <select id="feedback_type" name="feedback_type" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit;" required>
+                                <option value="General Feedback">General Feedback</option>
+                                <option value="Bug Report">Report a Bug</option>
+                                <option value="Feature Request">Feature Request</option>
+                                <option value="Complaint">Complaint</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="feedback_contact" style="font-weight: 500;">Contact Email</label>
+                            <input type="email" id="feedback_contact" name="feedback_contact" value="{{ $shop->email ?? '' }}" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit;" required>
+                        </div>
+                    </div>
+
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label for="feedback_type" style="font-weight: 500;">Feedback Type</label>
-                        <select id="feedback_type" name="feedback_type" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit;" required>
-                            <option value="General Feedback">General Feedback</option>
-                            <option value="Bug Report">Report a Bug</option>
-                            <option value="Feature Request">Feature Request</option>
-                            <option value="Complaint">Complaint</option>
-                        </select>
+                        <label for="feedback_subject" style="font-weight: 500;">Subject</label>
+                        <input type="text" id="feedback_subject" name="feedback_subject" placeholder="What is this about?" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit;" required>
                     </div>
+
                     <div class="form-group" style="margin-bottom: 0;">
-                        <label for="feedback_contact" style="font-weight: 500;">Contact Email</label>
-                        <input type="email" id="feedback_contact" name="feedback_contact" value="{{ $shop->email ?? '' }}" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit;" required>
+                        <label for="feedback_message" style="font-weight: 500;">Message</label>
+                        <textarea id="feedback_message" name="feedback_message" rows="4" placeholder="Detail your feedback, suggestion or complaint..." style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; resize: vertical;" required></textarea>
                     </div>
-                </div>
 
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label for="feedback_subject" style="font-weight: 500;">Subject</label>
-                    <input type="text" id="feedback_subject" name="feedback_subject" placeholder="What is this about?" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit;" required>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 0;">
-                    <label for="feedback_message" style="font-weight: 500;">Message</label>
-                    <textarea id="feedback_message" name="feedback_message" rows="4" placeholder="Detail your feedback, suggestion or complaint..." style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; resize: vertical;" required></textarea>
-                </div>
-
-                <div style="text-align: right;">
-                    <button type="submit" id="feedback-submit-btn" class="btn-save" style="margin-top: 8px;">Submit Feedback</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Tab 7: Benefits -->
-    <div id="tab-benefits" class="tab-content" style="display: {{ $activeTab === 'tab-benefits' ? 'block' : 'none' }};">
-        <div class="guide-header">
-            <h2>Merchant &amp; Customer Benefits</h2>
-            <p>Discover how the Buy Later suite increases conversions, prevents cart abandonment, and drives customer loyalty.</p>
-        </div>
-
-        <div class="guide-grid-2">
-            <div class="guide-card-premium">
-                <div class="guide-card-badge">🚀</div>
-                <h4>Boost Storefront Conversions</h4>
-                <p>Lower the barrier to entry by offering low-deposit holds (e.g. 10% or 15% upfront). Customers who aren't ready to pay the full price today can lock in their purchase instantly, boosting your immediate sale counts.</p>
-            </div>
-            <div class="guide-card-premium">
-                <div class="guide-card-badge">📉</div>
-                <h4>Minimize Cart Abandonment</h4>
-                <p>Instead of leaving empty-handed when budget or timing isn't right, users can save products using custom reminders or discount alerts. This acts as a warm lead generator, keeping your brand fresh in their inbox.</p>
-            </div>
-            <div class="guide-card-premium">
-                <div class="guide-card-badge">📧</div>
-                <h4>High-Quality Retargeting List</h4>
-                <p>Every reminder request and price drop alert subscription captures the customer's email with their direct consent. Build an active list of warm leads with high buying intent for your store's products.</p>
-            </div>
-            <div class="guide-card-premium">
-                <div class="guide-card-badge">🔒</div>
-                <h4>Secure &amp; Compliant Holds</h4>
-                <p>All deposit reservations leverage Shopify's native Draft Order API, securing stock allocation and keeping inventory levels fully synchronized with your Shopify admin. Zero manual order reconciliations are required.</p>
+                    <div style="text-align: right;">
+                        <button type="submit" id="feedback-submit-btn" class="btn-save" style="margin-top: 8px;">Submit Feedback</button>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <div class="panel-card">
-            <h3>✨ Customer Experience Perks</h3>
-            <p style="font-size: 13.5px; color: var(--text-muted); line-height: 1.6; margin: 0 0 16px 0;">
-                Shoppers love flexibility. By integrating Buy Later options, you offer an upscale shopping experience similar to modern retail layaway systems.
-            </p>
-            <div class="guide-grid-3" style="margin-bottom: 0;">
-                <div style="background: rgba(0,128,96,0.03); padding: 16px; border-radius: 8px;">
-                    <h5 style="margin:0 0 6px 0; font-size:13.5px; font-weight:600; color:var(--primary-color);">No credit checks</h5>
-                    <p style="margin:0; font-size:12.5px; color:var(--text-muted);">Risk-free reservation options with zero debt or interest charges.</p>
-                </div>
-                <div style="background: rgba(0,128,96,0.03); padding: 16px; border-radius: 8px;">
-                    <h5 style="margin:0 0 6px 0; font-size:13.5px; font-weight:600; color:var(--primary-color);">Secure checkouts</h5>
-                    <p style="margin:0; font-size:12.5px; color:var(--text-muted);">Processed directly through Shopify's secure storefront checkout.</p>
-                </div>
-                <div style="background: rgba(0,128,96,0.03); padding: 16px; border-radius: 8px;">
-                    <h5 style="margin:0 0 6px 0; font-size:13.5px; font-weight:600; color:var(--primary-color);">Self-serve portal</h5>
-                    <p style="margin:0; font-size:12.5px; color:var(--text-muted);">Storefront proxy lets customers check their balance and complete orders anytime.</p>
-                </div>
+        <!-- Sub Tab 2: Benefits -->
+        <div id="sub-tab-benefits" class="sub-tab-content" style="display: {{ $subTab === 'benefits' ? 'block' : 'none' }};">
+            <div class="guide-header">
+                <h2>Merchant &amp; Customer Benefits</h2>
+                <p>Discover how the Buy Later suite increases conversions, prevents cart abandonment, and drives customer loyalty.</p>
             </div>
-        </div>
-    </div>
 
-    <!-- Tab: Price Plan -->
-    <div id="tab-pricing" class="tab-content" style="display: {{ $activeTab === 'tab-pricing' ? 'block' : 'none' }};">
-        <div class="guide-header">
-            <h2>Select Price Plan</h2>
-            <p>Upgrade to unlock unlimited reservations, reminders, and price drop notifications.</p>
-        </div>
-
-        <div class="pricing-grid">
-            <!-- Free Plan -->
-            <div class="pricing-card">
-                <div>
-                    <div class="pricing-card-header">
-                        <h3>Free Plan</h3>
-                        <p>Perfect for testing and getting started with holds & alerts.</p>
-                    </div>
-                    <div class="pricing-price">
-                        <span class="amount">$0</span>
-                        <span class="period">/ month</span>
-                    </div>
-                    <ul class="pricing-features">
-                        <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                            Up to 10 combined items (Holds, Reminders, Alerts)
-                        </li>
-                        <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                            Standard Email support
-                        </li>
-                        <li class="disabled">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            Unlimited customer reservations
-                        </li>
-                    </ul>
+            <div class="guide-grid-2">
+                <div class="guide-card-premium">
+                    <div class="guide-card-badge">🚀</div>
+                    <h4>Boost Storefront Conversions</h4>
+                    <p>Lower the barrier to entry by offering low-deposit holds (e.g. 10% or 15% upfront). Customers who aren't ready to pay the full price today can lock in their purchase instantly, boosting your immediate sale counts.</p>
                 </div>
-                <div>
-                    @if(!$hasPlan)
-                        <s-button disabled="true" style="margin: 0; width: 100%;">Current Plan</s-button>
-                    @else
-                        <s-button disabled="true" style="margin: 0; width: 100%;">Free Tier</s-button>
-                    @endif
+                <div class="guide-card-premium">
+                    <div class="guide-card-badge">📉</div>
+                    <h4>Minimize Cart Abandonment</h4>
+                    <p>Instead of leaving empty-handed when budget or timing isn't right, users can save products using custom reminders or discount alerts. This acts as a warm lead generator, keeping your brand fresh in their inbox.</p>
+                </div>
+                <div class="guide-card-premium">
+                    <div class="guide-card-badge">📧</div>
+                    <h4>High-Quality Retargeting List</h4>
+                    <p>Every reminder request and price drop alert subscription captures the customer's email with their direct consent. Build an active list of warm leads with high buying intent for your store's products.</p>
+                </div>
+                <div class="guide-card-premium">
+                    <div class="guide-card-badge">🔒</div>
+                    <h4>Secure &amp; Compliant Holds</h4>
+                    <p>All deposit reservations leverage Shopify's native Draft Order API, securing stock allocation and keeping inventory levels fully synchronized with your Shopify admin. Zero manual order reconciliations are required.</p>
                 </div>
             </div>
 
-            <!-- Premium Plan -->
-            <div class="pricing-card popular">
-                <div>
-                    <div class="pricing-card-header">
-                        <h3>Premium Plan</h3>
-                        <p>Unlimited reservations, holds, reminders, and drop alerts.</p>
+            <div class="panel-card">
+                <h3>✨ Customer Experience Perks</h3>
+                <p style="font-size: 13.5px; color: var(--text-muted); line-height: 1.6; margin: 0 0 16px 0;">
+                    Shoppers love flexibility. By integrating Buy Later options, you offer an upscale shopping experience similar to modern retail layaway systems.
+                </p>
+                <div class="guide-grid-3" style="margin-bottom: 0;">
+                    <div style="background: rgba(0,128,96,0.03); padding: 16px; border-radius: 8px;">
+                        <h5 style="margin:0 0 6px 0; font-size:13.5px; font-weight:600; color:var(--primary-color);">No credit checks</h5>
+                        <p style="margin:0; font-size:12.5px; color:var(--text-muted);">Risk-free reservation options with zero debt or interest charges.</p>
                     </div>
-                    <div class="pricing-price">
-                        <span class="amount">$5</span>
-                        <span class="period">/ month</span>
+                    <div style="background: rgba(0,128,96,0.03); padding: 16px; border-radius: 8px;">
+                        <h5 style="margin:0 0 6px 0; font-size:13.5px; font-weight:600; color:var(--primary-color);">Secure checkouts</h5>
+                        <p style="margin:0; font-size:12.5px; color:var(--text-muted);">Processed directly through Shopify's secure storefront checkout.</p>
                     </div>
-                    <ul class="pricing-features">
-                        <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                            <strong>Unlimited</strong> reservations & holds
-                        </li>
-                        <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                            <strong>Unlimited</strong> email reminders
-                        </li>
-                        <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                            <strong>Unlimited</strong> price drop alerts
-                        </li>
-                        <li>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                            Priority support (Email & Live Chat)
-                        </li>
-                    </ul>
+                    <div style="background: rgba(0,128,96,0.03); padding: 16px; border-radius: 8px;">
+                        <h5 style="margin:0 0 6px 0; font-size:13.5px; font-weight:600; color:var(--primary-color);">Self-serve portal</h5>
+                        <p style="margin:0; font-size:12.5px; color:var(--text-muted);">Storefront proxy lets customers check their balance and complete orders anytime.</p>
+                    </div>
                 </div>
-                <div>
-                    @if($hasPlan)
-                        <s-button disabled="true" style="margin: 0; width: 100%;">Current Plan</s-button>
-                    @else
-                        <s-button href="{{ route('billing', array_merge(['plan' => 1], request()->query())) }}" variant="primary" target="_top" style="margin: 0; width: 100%;">Upgrade to Premium</s-button>
-                    @endif
+            </div>
+        </div>
+
+        <!-- Sub Tab 3: Price Plan -->
+        <div id="sub-tab-pricing" class="sub-tab-content" style="display: {{ $subTab === 'pricing' ? 'block' : 'none' }};">
+            <div class="guide-header">
+                <h2>Select Price Plan</h2>
+                <p>Upgrade to unlock unlimited reservations, reminders, and price drop notifications.</p>
+            </div>
+
+            <div class="pricing-grid">
+                <!-- Free Plan -->
+                <div class="pricing-card">
+                    <div>
+                        <div class="pricing-card-header">
+                            <h3>Free Plan</h3>
+                            <p>Perfect for testing and getting started with holds & alerts.</p>
+                        </div>
+                        <div class="pricing-price">
+                            <span class="amount">$0</span>
+                            <span class="period">/ month</span>
+                        </div>
+                        <ul class="pricing-features">
+                            <li>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                Up to 10 combined items (Holds, Reminders, Alerts)
+                            </li>
+                            <li>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                Standard Email support
+                            </li>
+                            <li class="disabled">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                Unlimited customer reservations
+                            </li>
+                        </ul>
+                    </div>
+                    <div>
+                        @if(!$hasPlan)
+                            <s-button disabled="true" style="margin: 0; width: 100%;">Current Plan</s-button>
+                        @else
+                            <s-button disabled="true" style="margin: 0; width: 100%;">Free Tier</s-button>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Premium Plan -->
+                <div class="pricing-card popular">
+                    <div>
+                        <div class="pricing-card-header">
+                            <h3>Premium Plan</h3>
+                            <p>Unlimited reservations, holds, reminders, and drop alerts.</p>
+                        </div>
+                        <div class="pricing-price">
+                            <span class="amount">$5</span>
+                            <span class="period">/ month</span>
+                        </div>
+                        <ul class="pricing-features">
+                            <li>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                <strong>Unlimited</strong> reservations & holds
+                            </li>
+                            <li>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                <strong>Unlimited</strong> email reminders
+                            </li>
+                            <li>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                <strong>Unlimited</strong> price drop alerts
+                            </li>
+                            <li>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                Priority support (Email & Live Chat)
+                            </li>
+                        </ul>
+                    </div>
+                    <div>
+                        @if($hasPlan)
+                            <s-button disabled="true" style="margin: 0; width: 100%;">Current Plan</s-button>
+                        @else
+                            <s-button href="{{ route('billing', array_merge(['plan' => 1], request()->query())) }}" variant="primary" target="_top" style="margin: 0; width: 100%;">Upgrade to Premium</s-button>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
@@ -3215,6 +3246,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Map paths to tab IDs
             let tabId = 'tab-overview';
+            let subTabId = null;
             if (href === '/bookings') {
                 tabId = 'tab-bookings-list';
             } else if (href === '/reminders') {
@@ -3223,12 +3255,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 tabId = 'tab-subscribers-list';
             } else if (href === '/app-settings') {
                 tabId = 'tab-settings';
+            } else if (href === '/support') {
+                tabId = 'tab-support';
+                subTabId = 'sub-tab-how-it-works';
             } else if (href === '/how-it-works') {
-                tabId = 'tab-how-it-works';
+                tabId = 'tab-support';
+                subTabId = 'sub-tab-how-it-works';
             } else if (href === '/benefits') {
-                tabId = 'tab-benefits';
+                tabId = 'tab-support';
+                subTabId = 'sub-tab-benefits';
             } else if (href === '/price-plan') {
-                tabId = 'tab-pricing';
+                tabId = 'tab-support';
+                subTabId = 'sub-tab-pricing';
             }
             
             // Check if tab exists
@@ -3240,10 +3278,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Update history path while preserving shop/host parameters
                 const currentSearch = window.location.search;
                 const newUrl = href + currentSearch;
-                history.pushState({ tabId: tabId }, '', newUrl);
+                history.pushState({ tabId: tabId, subTabId: subTabId }, '', newUrl);
                 
                 // Switch tab instantly
                 switchTab(null, tabId);
+                if (subTabId) {
+                    switchSubTab(subTabId, false);
+                }
             }
         });
     });
@@ -3252,6 +3293,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('popstate', function(event) {
         const path = window.location.pathname;
         let tabId = 'tab-overview';
+        let subTabId = null;
         if (path === '/bookings') {
             tabId = 'tab-bookings-list';
         } else if (path === '/reminders') {
@@ -3260,17 +3302,54 @@ document.addEventListener('DOMContentLoaded', function() {
             tabId = 'tab-subscribers-list';
         } else if (path === '/app-settings') {
             tabId = 'tab-settings';
-        } else if (path === '/how-it-works') {
-            tabId = 'tab-how-it-works';
+        } else if (path === '/support' || path === '/how-it-works') {
+            tabId = 'tab-support';
+            subTabId = 'sub-tab-how-it-works';
         } else if (path === '/benefits') {
-            tabId = 'tab-benefits';
+            tabId = 'tab-support';
+            subTabId = 'sub-tab-benefits';
         } else if (path === '/price-plan') {
-            tabId = 'tab-pricing';
+            tabId = 'tab-support';
+            subTabId = 'sub-tab-pricing';
         }
         
         switchTab(null, tabId);
+        if (subTabId) {
+            switchSubTab(subTabId, false);
+        }
     });
 });
+
+    function switchSubTab(subTabId, pushState = true) {
+        // Hide all sub-tab contents
+        const contents = document.querySelectorAll('.sub-tab-content');
+        contents.forEach(content => content.style.display = 'none');
+        
+        // Deactivate all sub-tab buttons
+        const buttons = document.querySelectorAll('.sub-tab-btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        
+        // Show active content
+        const targetContent = document.getElementById(subTabId);
+        if (targetContent) {
+            targetContent.style.display = 'block';
+        }
+        
+        // Activate clicked button
+        const targetBtn = document.querySelector(`.sub-tab-btn[data-sub-tab="${subTabId}"]`);
+        if (targetBtn) {
+            targetBtn.classList.add('active');
+        }
+
+        if (pushState) {
+            let path = '/support';
+            if (subTabId === 'sub-tab-benefits') path = '/benefits';
+            else if (subTabId === 'sub-tab-pricing') path = '/price-plan';
+            
+            const currentSearch = window.location.search;
+            history.pushState({ tabId: 'tab-support', subTabId: subTabId }, '', path + currentSearch);
+        }
+    }
 
     function switchTab(event, tabId) {
         const tabContents = document.querySelectorAll('.tab-content');
@@ -3312,9 +3391,7 @@ document.addEventListener('DOMContentLoaded', function() {
             else if (tabId === 'tab-reminders-list') path = '/reminders';
             else if (tabId === 'tab-subscribers-list') path = '/price-alerts';
             else if (tabId === 'tab-settings') path = '/app-settings';
-            else if (tabId === 'tab-how-it-works') path = '/how-it-works';
-            else if (tabId === 'tab-benefits') path = '/benefits';
-            else if (tabId === 'tab-pricing') path = '/price-plan';
+            else if (tabId === 'tab-support') path = '/support';
 
             const currentSearch = window.location.search;
             history.pushState({ tabId: tabId }, '', path + currentSearch);
