@@ -1565,9 +1565,11 @@
     <a href="/price-alerts">Price Alerts</a>
     <a href="/app-settings">Settings</a>
     <a href="/support">View more</a>
-    <a href="/support?tab=support">↳ Support</a>
-    <a href="/support?tab=benefits">↳ Benefits</a>
-    <a href="/support?tab=pricing">↳ Price Plan</a>
+    @if($activeTab === 'tab-support')
+        <a href="/how-it-works">↳ Support</a>
+        <a href="/benefits">↳ Benefits</a>
+        <a href="/price-plan">↳ Price Plan</a>
+    @endif
 </ui-nav-menu>
 
 <div class="app-layout">
@@ -3241,120 +3243,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Intercept clicks on a inside ui-nav-menu dynamically (using event delegation)
-    document.addEventListener('click', function(e) {
-        const link = e.target.closest('ui-nav-menu a');
-        if (!link) return;
-
-        const href = link.getAttribute('href');
-        
-        // Parse path and query parameters
-        let path = href;
-        let tabParam = null;
-        if (href.startsWith('/') || href.startsWith('http')) {
-            try {
-                const urlObj = new URL(href, window.location.origin);
-                path = urlObj.pathname;
-                tabParam = urlObj.searchParams.get('tab');
-            } catch(err) {
-                console.error(err);
-            }
-        }
-
-        // Map paths to tab IDs
-        let tabId = 'tab-overview';
-        let subTabId = null;
-        if (path === '/bookings') {
-            tabId = 'tab-bookings-list';
-        } else if (path === '/reminders') {
-            tabId = 'tab-reminders-list';
-        } else if (path === '/price-alerts') {
-            tabId = 'tab-subscribers-list';
-        } else if (path === '/app-settings') {
-            tabId = 'tab-settings';
-        } else if (path === '/support' || path === '/how-it-works') {
-            tabId = 'tab-support';
-            subTabId = 'sub-tab-how-it-works'; // Default
-            if (tabParam === 'benefits') {
-                subTabId = 'sub-tab-benefits';
-            } else if (tabParam === 'pricing') {
-                subTabId = 'sub-tab-pricing';
-            }
-        } else if (path === '/benefits') {
-            tabId = 'tab-support';
-            subTabId = 'sub-tab-benefits';
-        } else if (path === '/price-plan') {
-            tabId = 'tab-support';
-            subTabId = 'sub-tab-pricing';
-        }
-        
-        // Check if tab exists
-        const targetEl = document.getElementById(tabId);
-        if (targetEl) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Build new URL preserving existing query parameters like shop/host
-            const urlParams = new URLSearchParams(window.location.search);
-            if (tabParam) {
-                urlParams.set('tab', tabParam);
-            } else {
-                urlParams.delete('tab');
-            }
-            const newUrl = path + '?' + urlParams.toString();
-            history.pushState({ tabId: tabId, subTabId: subTabId }, '', newUrl);
-            
-            // Switch tab instantly
-            switchTab(null, tabId);
-            if (subTabId) {
-                switchSubTab(subTabId, false);
-            }
-        }
-    });
-
-    // Handle back/forward buttons
-    window.addEventListener('popstate', function(event) {
-        let path = window.location.pathname;
-        let tabParam = null;
-        try {
-            const urlObj = new URL(window.location.href);
-            path = urlObj.pathname;
-            tabParam = urlObj.searchParams.get('tab');
-        } catch(err) {
-            console.error(err);
-        }
-
-        let tabId = 'tab-overview';
-        let subTabId = null;
-        if (path === '/bookings') {
-            tabId = 'tab-bookings-list';
-        } else if (path === '/reminders') {
-            tabId = 'tab-reminders-list';
-        } else if (path === '/price-alerts') {
-            tabId = 'tab-subscribers-list';
-        } else if (path === '/app-settings') {
-            tabId = 'tab-settings';
-        } else if (path === '/support' || path === '/how-it-works') {
-            tabId = 'tab-support';
-            subTabId = 'sub-tab-how-it-works';
-            if (tabParam === 'benefits') {
-                subTabId = 'sub-tab-benefits';
-            } else if (tabParam === 'pricing') {
-                subTabId = 'sub-tab-pricing';
-            }
-        } else if (path === '/benefits') {
-            tabId = 'tab-support';
-            subTabId = 'sub-tab-benefits';
-        } else if (path === '/price-plan') {
-            tabId = 'tab-support';
-            subTabId = 'sub-tab-pricing';
-        }
-        
-        switchTab(null, tabId);
-        if (subTabId) {
-            switchSubTab(subTabId, false);
-        }
-    });
+    // Remove dynamic sidebar event listener to allow full page navigation (essential for App Bridge v4 sidebar rendering updates)
 });
 
     function switchSubTab(subTabId, pushState = true) {
@@ -3379,19 +3268,30 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (pushState) {
-            let path = '/support';
-            let tabVal = 'support';
-            if (subTabId === 'sub-tab-benefits') tabVal = 'benefits';
-            else if (subTabId === 'sub-tab-pricing') tabVal = 'pricing';
+            let path = '/how-it-works';
+            if (subTabId === 'sub-tab-benefits') path = '/benefits';
+            else if (subTabId === 'sub-tab-pricing') path = '/price-plan';
             
             const urlParams = new URLSearchParams(window.location.search);
-            urlParams.set('tab', tabVal);
             const newUrl = path + '?' + urlParams.toString();
             history.pushState({ tabId: 'tab-support', subTabId: subTabId }, '', newUrl);
         }
     }
 
     function switchTab(event, tabId) {
+        let actualTabId = tabId;
+        let subTabId = null;
+        if (tabId === 'tab-pricing' || tabId === 'tab-price-plan') {
+            actualTabId = 'tab-support';
+            subTabId = 'sub-tab-pricing';
+        } else if (tabId === 'tab-how-it-works') {
+            actualTabId = 'tab-support';
+            subTabId = 'sub-tab-how-it-works';
+        } else if (tabId === 'tab-benefits') {
+            actualTabId = 'tab-support';
+            subTabId = 'sub-tab-benefits';
+        }
+
         const tabContents = document.querySelectorAll('.tab-content');
         tabContents.forEach(content => content.style.display = 'none');
 
@@ -3401,9 +3301,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const sidebarBtns = document.querySelectorAll('.sidebar-btn');
         sidebarBtns.forEach(btn => btn.classList.remove('active'));
 
-        const targetEl = document.getElementById(tabId);
+        const targetEl = document.getElementById(actualTabId);
         if (targetEl) {
             targetEl.style.display = 'block';
+        }
+
+        if (subTabId) {
+            switchSubTab(subTabId, false);
         }
 
         // Set active on sidebar button
@@ -3427,14 +3331,18 @@ document.addEventListener('DOMContentLoaded', function() {
         // Push URL state if triggered inside the page via UI events
         if (event) {
             let path = '/';
-            if (tabId === 'tab-bookings-list') path = '/bookings';
-            else if (tabId === 'tab-reminders-list') path = '/reminders';
-            else if (tabId === 'tab-subscribers-list') path = '/price-alerts';
-            else if (tabId === 'tab-settings') path = '/app-settings';
-            else if (tabId === 'tab-support') path = '/support';
+            if (actualTabId === 'tab-bookings-list') path = '/bookings';
+            else if (actualTabId === 'tab-reminders-list') path = '/reminders';
+            else if (actualTabId === 'tab-subscribers-list') path = '/price-alerts';
+            else if (actualTabId === 'tab-settings') path = '/app-settings';
+            else if (actualTabId === 'tab-support') {
+                path = '/how-it-works';
+                if (subTabId === 'sub-tab-benefits') path = '/benefits';
+                else if (subTabId === 'sub-tab-pricing') path = '/price-plan';
+            }
 
             const currentSearch = window.location.search;
-            history.pushState({ tabId: tabId }, '', path + currentSearch);
+            history.pushState({ tabId: actualTabId, subTabId: subTabId }, '', path + currentSearch);
         }
     }
 
