@@ -3206,7 +3206,88 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Remove dynamic sidebar event listener to allow full page navigation (essential for App Bridge v4 sidebar rendering updates)
+    // Intercept clicks on custom polaris navigation tags inside the iframe
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('ui-nav-menu a');
+        if (!link) return;
+
+        const href = link.getAttribute('href');
+        let path = href;
+        
+        if (href.startsWith('/') || href.startsWith('http')) {
+            try {
+                const urlObj = new URL(href, window.location.origin);
+                path = urlObj.pathname;
+            } catch(err) {
+                console.error(err);
+            }
+        }
+
+        // Map paths to tab IDs
+        let tabId = 'tab-overview';
+        let subTabId = null;
+        
+        if (path === '/bookings') {
+            tabId = 'tab-bookings-list';
+        } else if (path === '/reminders') {
+            tabId = 'tab-reminders-list';
+        } else if (path === '/price-alerts') {
+            tabId = 'tab-subscribers-list';
+        } else if (path === '/app-settings') {
+            tabId = 'tab-settings';
+        } else if (path === '/how-it-works' || path === '/support') {
+            tabId = 'tab-support';
+            subTabId = 'sub-tab-how-it-works';
+        } else if (path === '/price-plan') {
+            tabId = 'tab-support';
+            subTabId = 'sub-tab-pricing';
+        }
+        
+        const targetEl = document.getElementById(tabId);
+        if (targetEl) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Build new URL preserving existing query parameters like shop/host
+            const urlParams = new URLSearchParams(window.location.search);
+            const newUrl = path + '?' + urlParams.toString();
+            history.pushState({ tabId: tabId, subTabId: subTabId }, '', newUrl);
+            
+            // Switch tab instantly
+            switchTab(null, tabId);
+            if (subTabId) {
+                switchSubTab(subTabId, false);
+            }
+        }
+    });
+
+    // Handle back/forward buttons
+    window.addEventListener('popstate', function(event) {
+        let path = window.location.pathname;
+        let tabId = 'tab-overview';
+        let subTabId = null;
+        
+        if (path === '/bookings') {
+            tabId = 'tab-bookings-list';
+        } else if (path === '/reminders') {
+            tabId = 'tab-reminders-list';
+        } else if (path === '/price-alerts') {
+            tabId = 'tab-subscribers-list';
+        } else if (path === '/app-settings') {
+            tabId = 'tab-settings';
+        } else if (path === '/how-it-works' || path === '/support') {
+            tabId = 'tab-support';
+            subTabId = 'sub-tab-how-it-works';
+        } else if (path === '/price-plan') {
+            tabId = 'tab-support';
+            subTabId = 'sub-tab-pricing';
+        }
+        
+        switchTab(null, tabId);
+        if (subTabId) {
+            switchSubTab(subTabId, false);
+        }
+    });
 });
 
     function switchSubTab(subTabId, pushState = true) {
