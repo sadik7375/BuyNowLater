@@ -141,16 +141,13 @@ class DashboardController extends Controller
         };
 
         $reminders   = Reminder::where('shop_id', $shop->id)
-            ->when($dateFilter !== 'all' && $start && $end, fn($q) => $q->whereBetween('created_at', [$start, $end]))
             ->orderBy('created_at', 'desc')
             ->get();
         $subscribers = Subscriber::where('shop_id', $shop->id)
-            ->when($dateFilter !== 'all' && $start && $end, fn($q) => $q->whereBetween('created_at', [$start, $end]))
             ->orderBy('created_at', 'desc')
             ->get();
         $bookings    = Booking::where('shop_id', $shop->id)
             ->where('status', '!=', 'pending')
-            ->when($dateFilter !== 'all' && $start && $end, fn($q) => $q->whereBetween('created_at', [$start, $end]))
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -192,16 +189,13 @@ class DashboardController extends Controller
         // --- Overview Stats (100% Dynamic from Database) ---
         $revenueRecovered = Booking::where('shop_id', $shop->id)
             ->where('status', 'completed')
-            ->when($dateFilter !== 'all' && $start && $end, fn($q) => $q->whereBetween('created_at', [$start, $end]))
             ->sum('product_price');
 
         $activeBookings = Booking::where('shop_id', $shop->id)
             ->where('status', 'deposit_paid')
-            ->when($dateFilter !== 'all' && $start && $end, fn($q) => $q->whereBetween('created_at', [$start, $end]))
             ->count();
 
         $alertSubscribersCount = Subscriber::where('shop_id', $shop->id)
-            ->when($dateFilter !== 'all' && $start && $end, fn($q) => $q->whereBetween('created_at', [$start, $end]))
             ->count();
 
         $conversionRate = 0.0;

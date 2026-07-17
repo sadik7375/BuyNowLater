@@ -1623,9 +1623,9 @@
 
     <div class="filter-toolbar-container">
         <div class="filter-presets">
-            <button class="filter-btn {{ $dateFilter == 'all' ? 'active' : '' }}" onclick="applyDateFilter('all')">All Time</button>
-            <button class="filter-btn {{ $dateFilter == 'today' ? 'active' : '' }}" onclick="applyDateFilter('today')">Today</button>
-            <button class="filter-btn {{ $dateFilter == 'week' ? 'active' : '' }}" onclick="applyDateFilter('week')">This Week</button>
+            <button class="filter-btn" id="btn_filter_all" onclick="setClientDateFilter('all')">All Time</button>
+            <button class="filter-btn" id="btn_filter_today" onclick="setClientDateFilter('today')">Today</button>
+            <button class="filter-btn" id="btn_filter_week" onclick="setClientDateFilter('week')">This Week</button>
         </div>
         <div class="date-picker-wrapper">
             <button type="button" class="date-picker-activator" id="date_picker_activator_btn">
@@ -1751,19 +1751,9 @@
         <div class="stat-card">
             <div class="stat-info">
                 <div class="stat-label" title="Total revenue generated from fully completed and paid orders">Revenue Recovered</div>
-                <div class="stat-value">${{ number_format($revenueRecovered, 2) }}</div>
+                <div class="stat-value" id="stat_revenue_recovered">${{ number_format($revenueRecovered, 2) }}</div>
                 <div class="stat-change">
-                    <span>
-                        @if($dateFilter === 'today')
-                            Today's recovered revenue
-                        @elseif($dateFilter === 'week')
-                            Recovered this week
-                        @elseif($dateFilter === 'custom')
-                            Recovered in custom range
-                        @else
-                            All-time recovered revenue
-                        @endif
-                    </span>
+                    <span id="stat_revenue_change_text">All-time recovered revenue</span>
                 </div>
             </div>
             <div class="stat-visual">
@@ -1775,19 +1765,9 @@
         <div class="stat-card">
             <div class="stat-info">
                 <div class="stat-label" title="Active reservations currently on hold awaiting balance payment">Active Bookings</div>
-                <div class="stat-value">{{ $activeBookings }}</div>
+                <div class="stat-value" id="stat_active_bookings">{{ $activeBookings }}</div>
                 <div class="stat-change">
-                    <span>
-                        @if($dateFilter === 'today')
-                            Active bookings created today
-                        @elseif($dateFilter === 'week')
-                            Active bookings created this week
-                        @elseif($dateFilter === 'custom')
-                            Active bookings in custom range
-                        @else
-                            Current total active bookings
-                        @endif
-                    </span>
+                    <span id="stat_active_change_text">Current total active bookings</span>
                 </div>
             </div>
             <div class="stat-visual">
@@ -1813,19 +1793,9 @@
         <div class="stat-card">
             <div class="stat-info">
                 <div class="stat-label" title="Customers signed up to receive alerts when prices drop">Alert Subscribers</div>
-                <div class="stat-value">{{ number_format($alertSubscribersCount) }}</div>
+                <div class="stat-value" id="stat_alert_subscribers">{{ number_format($alertSubscribersCount) }}</div>
                 <div class="stat-change">
-                    <span>
-                        @if($dateFilter === 'today')
-                            Subscribers joined today
-                        @elseif($dateFilter === 'week')
-                            Subscribers joined this week
-                        @elseif($dateFilter === 'custom')
-                            Subscribers in custom range
-                        @else
-                            Total alert subscribers
-                        @endif
-                    </span>
+                    <span id="stat_subscribers_change_text">Total alert subscribers</span>
                 </div>
             </div>
             <div class="stat-visual">
@@ -1897,11 +1867,11 @@
                             </div>
                         </div>
                     @else
-                        @foreach($bookings->take(5) as $booking)
+                        @foreach($bookings as $booking)
                             @php
                                 $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : $booking->email;
                             @endphp
-                            <div class="booking-item">
+                            <div class="booking-item" data-created-at="{{ $booking->created_at->timestamp }}">
                                 <div class="user-avatar-info">
                                     <div class="avatar-circle">{{ strtoupper(substr($displayName, 0, 2)) }}</div>
                                     <div class="user-meta">
@@ -1934,24 +1904,24 @@
                     <canvas id="statusDonutChart" style="max-height: 160px; max-width: 160px;"></canvas>
                     <div class="donut-center-text" style="position: absolute; text-align: center; pointer-events: none; top: 50%; left: 50%; transform: translate(-50%, -50%);">
                         <span style="font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: -2px;">Total</span>
-                        <span style="font-size: 24px; font-weight: 700; color: var(--text-main); line-height: 1;">{{ array_sum($statusCounts) }}</span>
+                        <span id="donut_total_count" style="font-size: 24px; font-weight: 700; color: var(--text-main); line-height: 1;">{{ array_sum($statusCounts) }}</span>
                     </div>
                 </div>
                 <div class="donut-legend" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 12px;">
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="width: 10px; height: 10px; border-radius: 50%; background-color: #005ea2; display: inline-block;"></span>
                         <span style="color: var(--text-muted);">Partial Paid:</span>
-                        <strong style="color: var(--text-main);">{{ $statusCounts['deposit_paid'] }}</strong>
+                        <strong id="legend_partial_paid" style="color: var(--text-main);">{{ $statusCounts['deposit_paid'] }}</strong>
                     </div>
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="width: 10px; height: 10px; border-radius: 50%; background-color: #108043; display: inline-block;"></span>
                         <span style="color: var(--text-muted);">Full Paid:</span>
-                        <strong style="color: var(--text-main);">{{ $statusCounts['completed'] }}</strong>
+                        <strong id="legend_full_paid" style="color: var(--text-main);">{{ $statusCounts['completed'] }}</strong>
                     </div>
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="width: 10px; height: 10px; border-radius: 50%; background-color: #d82c0d; display: inline-block;"></span>
                         <span style="color: var(--text-muted);">Expired:</span>
-                        <strong style="color: var(--text-main);">{{ $statusCounts['expired'] }}</strong>
+                        <strong id="legend_expired" style="color: var(--text-main);">{{ $statusCounts['expired'] }}</strong>
                     </div>
                 </div>
             </div>
@@ -2131,7 +2101,7 @@
                                     $searchText = strtolower(($booking->customer_name ?? '') . ' ' . $booking->email . ' ' . $booking->product_title);
                                     $createdAtTimestamp = $booking->created_at ? $booking->created_at->timestamp : 0;
                                 @endphp
-                                <s-table-row data-search-text="{{ $searchText }}" data-status="{{ $booking->status }}" data-created-at="{{ $createdAtTimestamp }}" data-balance="{{ $booking->remaining_balance }}">
+                                <s-table-row data-search-text="{{ $searchText }}" data-status="{{ $booking->status }}" data-created-at="{{ $createdAtTimestamp }}" data-balance="{{ $booking->remaining_balance }}" data-price="{{ $booking->product_price }}">
                                     <s-table-cell>
                                         @if($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null' && strtolower($booking->customer_name) !== strtolower($booking->email))
                                             <strong>{{ $booking->customer_name }}</strong><br>
@@ -2247,7 +2217,7 @@
                                 @php
                                     $searchText = strtolower($reminder->email . ' ' . $reminder->product_title);
                                 @endphp
-                                <s-table-row data-search-text="{{ $searchText }}" data-status="{{ $reminder->status }}">
+                                <s-table-row data-search-text="{{ $searchText }}" data-status="{{ $reminder->status }}" data-created-at="{{ $reminder->created_at->timestamp }}">
                                     <s-table-cell>
                                         @php
                                             $parts = explode('/', $reminder->product_id);
@@ -2321,7 +2291,7 @@
                                 @php
                                     $searchText = strtolower($subscriber->email . ' ' . $subscriber->product_title);
                                 @endphp
-                                <s-table-row data-search-text="{{ $searchText }}" data-status="{{ $subscriber->status }}">
+                                <s-table-row data-search-text="{{ $searchText }}" data-status="{{ $subscriber->status }}" data-created-at="{{ $subscriber->created_at->timestamp }}">
                                     <s-table-cell>
                                         @php
                                             $parts = explode('/', $subscriber->product_id);
@@ -3228,7 +3198,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const parts = val.split('--');
                 const startDate = parts[0];
                 const endDate = parts[1];
-                applyDateFilter('custom', startDate, endDate);
+                setClientDateFilter('custom', startDate, endDate);
+                datePickerPopover.style.display = 'none';
             } else {
                 datePickerPopover.style.display = 'none';
             }
@@ -3333,18 +3304,231 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-// Apply date filter by updating query parameters
-function applyDateFilter(filter, startDate = null, endDate = null) {
-    const params = new URLSearchParams(window.location.search);
-    params.set('date_filter', filter);
-    if (filter === 'custom') {
-        if (startDate) params.set('start_date', startDate);
-        if (endDate) params.set('end_date', endDate);
-    } else {
-        params.delete('start_date');
-        params.delete('end_date');
+// Apply client-side date filtering (SPA style, no redirects)
+window.currentDateStart = null;
+window.currentDateEnd = null;
+window.currentDateFilterPreset = 'all';
+
+function setClientDateFilter(preset, startDate = null, endDate = null, pushState = true) {
+    window.currentDateFilterPreset = preset;
+    
+    // Toggle active class on preset buttons
+    document.querySelectorAll('.filter-presets .filter-btn').forEach(btn => btn.classList.remove('active'));
+    
+    let labelText = 'Select Date';
+    
+    if (preset === 'all') {
+        window.currentDateStart = null;
+        window.currentDateEnd = null;
+        const btn = document.getElementById('btn_filter_all');
+        if (btn) btn.classList.add('active');
+    } else if (preset === 'today') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        window.currentDateStart = Math.floor(today.getTime() / 1000);
+        
+        const todayEnd = new Date();
+        todayEnd.setHours(23, 59, 59, 999);
+        window.currentDateEnd = Math.floor(todayEnd.getTime() / 1000);
+        
+        const btn = document.getElementById('btn_filter_today');
+        if (btn) btn.classList.add('active');
+    } else if (preset === 'week') {
+        const weekStart = new Date();
+        const day = weekStart.getDay();
+        const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
+        weekStart.setDate(diff);
+        weekStart.setHours(0, 0, 0, 0);
+        window.currentDateStart = Math.floor(weekStart.getTime() / 1000);
+        
+        const weekEnd = new Date(weekStart.getTime());
+        weekEnd.setDate(weekEnd.getDate() + 6);
+        weekEnd.setHours(23, 59, 59, 999);
+        window.currentDateEnd = Math.floor(weekEnd.getTime() / 1000);
+        
+        const btn = document.getElementById('btn_filter_week');
+        if (btn) btn.classList.add('active');
+    } else if (preset === 'custom' && startDate && endDate) {
+        const startD = new Date(startDate + 'T00:00:00');
+        const endD = new Date(endDate + 'T23:59:59');
+        window.currentDateStart = Math.floor(startD.getTime() / 1000);
+        window.currentDateEnd = Math.floor(endD.getTime() / 1000);
+        
+        // Format display label
+        const options = { month: 'short', day: 'numeric', year: 'numeric' };
+        labelText = startD.toLocaleDateString('en-US', options) + ' – ' + endD.toLocaleDateString('en-US', options);
     }
-    window.location.search = params.toString();
+    
+    // Update Date Picker button text
+    const datePickerText = document.querySelector('.date-picker-activator span');
+    if (datePickerText) {
+        datePickerText.textContent = labelText;
+    }
+    
+    // Update pushState URL
+    if (pushState) {
+        const params = new URLSearchParams(window.location.search);
+        params.set('date_filter', preset);
+        if (preset === 'custom') {
+            params.set('start_date', startDate);
+            params.set('end_date', endDate);
+        } else {
+            params.delete('start_date');
+            params.delete('end_date');
+        }
+        const newUrl = window.location.pathname + '?' + params.toString();
+        history.pushState(null, '', newUrl);
+    }
+    
+    // Trigger filters on all lists/tables
+    if (typeof filterBookings === 'function') filterBookings();
+    if (typeof filterReminders === 'function') filterReminders();
+    if (typeof filterSubscribers === 'function') filterSubscribers();
+    
+    // Filter recent bookings list (Overview tab)
+    filterRecentBookingsList();
+    
+    // Recalculate statistics cards and breakdown chart
+    recalculateStatsAndChart();
+}
+
+function filterRecentBookingsList() {
+    const listContainer = document.querySelector('.recent-bookings-list');
+    if (!listContainer) return;
+    
+    const items = Array.from(listContainer.querySelectorAll('.booking-item'));
+    let visibleCount = 0;
+    
+    items.forEach(item => {
+        const createdAt = parseInt(item.getAttribute('data-created-at')) || 0;
+        const matchesDate = !window.currentDateStart || (createdAt >= window.currentDateStart && createdAt <= window.currentDateEnd);
+        
+        if (matchesDate && visibleCount < 5) {
+            item.style.display = 'flex';
+            visibleCount++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+function recalculateStatsAndChart() {
+    // 1. Query all booking rows
+    const tbody = document.querySelector('#tab-bookings-list s-table-body');
+    if (!tbody) return;
+    const rows = Array.from(tbody.querySelectorAll('s-table-row:not(#bookings-no-results)'));
+    
+    let totalRevenue = 0;
+    let activeBookingsCount = 0;
+    let expiredBookingsCount = 0;
+    let completedBookingsCount = 0;
+    let depositPaidBookingsCount = 0;
+    
+    rows.forEach(row => {
+        const createdAt = parseInt(row.getAttribute('data-created-at')) || 0;
+        const matchesDate = !window.currentDateStart || (createdAt >= window.currentDateStart && createdAt <= window.currentDateEnd);
+        
+        if (matchesDate) {
+            const status = row.getAttribute('data-status');
+            const price = parseFloat(row.getAttribute('data-price')) || 0;
+            
+            if (status === 'completed') {
+                totalRevenue += price;
+                completedBookingsCount++;
+            } else if (status === 'deposit_paid') {
+                activeBookingsCount++;
+                depositPaidBookingsCount++;
+            } else if (status === 'expired') {
+                expiredBookingsCount++;
+            }
+        }
+    });
+    
+    // 2. Query all subscribers rows
+    const subscribersTbody = document.querySelector('#tab-subscribers-list s-table-body');
+    let subscribersCount = 0;
+    if (subscribersTbody) {
+        const subRows = Array.from(subscribersTbody.querySelectorAll('s-table-row:not(#subscribers-no-results)'));
+        subRows.forEach(row => {
+            const createdAt = parseInt(row.getAttribute('data-created-at')) || 0;
+            const matchesDate = !window.currentDateStart || (createdAt >= window.currentDateStart && createdAt <= window.currentDateEnd);
+            if (matchesDate) {
+                subscribersCount++;
+            }
+        });
+    }
+    
+    // 3. Update stats cards
+    const revenueEl = document.getElementById('stat_revenue_recovered');
+    if (revenueEl) revenueEl.textContent = '$' + totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    
+    const activeEl = document.getElementById('stat_active_bookings');
+    if (activeEl) activeEl.textContent = activeBookingsCount;
+    
+    const subscribersEl = document.getElementById('stat_alert_subscribers');
+    if (subscribersEl) subscribersEl.textContent = subscribersCount;
+    
+    // 4. Update change description labels
+    let descText = 'All-time recovered revenue';
+    let activeDescText = 'Current total active bookings';
+    let subDescText = 'Total alert subscribers';
+    
+    if (window.currentDateFilterPreset === 'today') {
+        descText = "Today's recovered revenue";
+        activeDescText = 'Active bookings created today';
+        subDescText = 'Subscribers joined today';
+    } else if (window.currentDateFilterPreset === 'week') {
+        descText = 'Recovered this week';
+        activeDescText = 'Active bookings created this week';
+        subDescText = 'Subscribers joined this week';
+    } else if (window.currentDateFilterPreset === 'custom') {
+        descText = 'Recovered in custom range';
+        activeDescText = 'Active bookings in custom range';
+        subDescText = 'Subscribers in custom range';
+    }
+    
+    const revDesc = document.getElementById('stat_revenue_change_text');
+    if (revDesc) revDesc.textContent = descText;
+    
+    const activeDesc = document.getElementById('stat_active_change_text');
+    if (activeDesc) activeDesc.textContent = activeDescText;
+    
+    const subDesc = document.getElementById('stat_subscribers_change_text');
+    if (subDesc) subDesc.textContent = subDescText;
+    
+    // 5. Update Status Breakdown Chart
+    const chartInstance = window.statusDonutChartInstance;
+    if (chartInstance) {
+        const totalBookings = depositPaidBookingsCount + completedBookingsCount + expiredBookingsCount;
+        
+        // Update total center text
+        const centerTotalText = document.getElementById('donut_total_count');
+        if (centerTotalText) centerTotalText.textContent = totalBookings;
+        
+        // Update Legend Values
+        const legendPartial = document.getElementById('legend_partial_paid');
+        if (legendPartial) legendPartial.textContent = depositPaidBookingsCount;
+        const legendFull = document.getElementById('legend_full_paid');
+        if (legendFull) legendFull.textContent = completedBookingsCount;
+        const legendExpired = document.getElementById('legend_expired');
+        if (legendExpired) legendExpired.textContent = expiredBookingsCount;
+        
+        // Rebuild chart dataset
+        if (totalBookings === 0) {
+            chartInstance.data.labels = ['No Bookings'];
+            chartInstance.data.datasets[0].data = [1];
+            chartInstance.data.datasets[0].backgroundColor = ['#e4e5e7'];
+            chartInstance.data.datasets[0].hoverOffset = 0;
+            chartInstance.options.plugins.tooltip.enabled = false;
+        } else {
+            chartInstance.data.labels = ['Partial Paid', 'Full Paid', 'Expired'];
+            chartInstance.data.datasets[0].data = [depositPaidBookingsCount, completedBookingsCount, expiredBookingsCount];
+            chartInstance.data.datasets[0].backgroundColor = ['#005ea2', '#108043', '#d82c0d'];
+            chartInstance.data.datasets[0].hoverOffset = 4;
+            chartInstance.options.plugins.tooltip.enabled = true;
+        }
+        chartInstance.update();
+    }
 }
 
 // Client-side search, filtering and sorting logic
@@ -3361,11 +3545,13 @@ function filterBookings() {
     rows.forEach(row => {
         const searchText = row.getAttribute('data-search-text') || '';
         const status = row.getAttribute('data-status') || '';
+        const createdAt = parseInt(row.getAttribute('data-created-at')) || 0;
         
         const matchesSearch = searchText.includes(searchVal);
         const matchesStatus = statusVal === 'all' || status === statusVal;
+        const matchesDate = !window.currentDateStart || (createdAt >= window.currentDateStart && createdAt <= window.currentDateEnd);
 
-        if (matchesSearch && matchesStatus) {
+        if (matchesSearch && matchesStatus && matchesDate) {
             row.style.display = '';
             visibleCount++;
         } else {
@@ -3410,11 +3596,13 @@ function filterReminders() {
     rows.forEach(row => {
         const searchText = row.getAttribute('data-search-text') || '';
         const status = row.getAttribute('data-status') || '';
+        const createdAt = parseInt(row.getAttribute('data-created-at')) || 0;
         
         const matchesSearch = searchText.includes(searchVal);
         const matchesStatus = statusVal === 'all' || status === statusVal;
+        const matchesDate = !window.currentDateStart || (createdAt >= window.currentDateStart && createdAt <= window.currentDateEnd);
 
-        if (matchesSearch && matchesStatus) {
+        if (matchesSearch && matchesStatus && matchesDate) {
             row.style.display = '';
             visibleCount++;
         } else {
@@ -3441,11 +3629,13 @@ function filterSubscribers() {
     rows.forEach(row => {
         const searchText = row.getAttribute('data-search-text') || '';
         const status = row.getAttribute('data-status') || '';
+        const createdAt = parseInt(row.getAttribute('data-created-at')) || 0;
         
         const matchesSearch = searchText.includes(searchVal);
         const matchesStatus = statusVal === 'all' || status === statusVal;
+        const matchesDate = !window.currentDateStart || (createdAt >= window.currentDateStart && createdAt <= window.currentDateEnd);
 
-        if (matchesSearch && matchesStatus) {
+        if (matchesSearch && matchesStatus && matchesDate) {
             row.style.display = '';
             visibleCount++;
         } else {
@@ -3502,7 +3692,7 @@ function filterSubscribers() {
             };
         }
 
-        new Chart(ctx, {
+        window.statusDonutChartInstance = new Chart(ctx, {
             type: 'doughnut',
             data: chartData,
             options: {
@@ -3531,6 +3721,16 @@ function filterSubscribers() {
                 }
             }
         });
+
+        // Apply initial client-side date filter from URL params if present
+        const dateFilterParam = urlParams.get('date_filter') || 'all';
+        const startDateParam = urlParams.get('start_date');
+        const endDateParam = urlParams.get('end_date');
+        if (dateFilterParam === 'custom' && startDateParam && endDateParam) {
+            setClientDateFilter('custom', startDateParam, endDateParam, false);
+        } else {
+            setClientDateFilter(dateFilterParam, null, null, false);
+        }
     });
 
     function downloadCSV(filename, headers, rows) {
