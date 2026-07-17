@@ -1558,21 +1558,21 @@
     }
 </style>
 
-<s-app-nav>
-    <s-link href="/" rel="home">Overview</s-link>
-    <s-link href="/bookings">Bookings & Deposits</s-link>
-    <s-link href="/reminders">Reminders</s-link>
-    <s-link href="/price-alerts">Price Alerts</s-link>
-    <s-link href="/app-settings">Settings</s-link>
+<ui-nav-menu>
+    <a href="/" rel="home">Overview</a>
+    <a href="/bookings">Bookings & Deposits</a>
+    <a href="/reminders">Reminders</a>
+    <a href="/price-alerts">Price Alerts</a>
+    <a href="/app-settings">Settings</a>
     @if(in_array($activeTab, ['tab-support', 'tab-how-it-works', 'tab-benefits', 'tab-pricing']))
-        <s-link href="/support">View more</s-link>
-        <s-link href="/how-it-works">↳ Support</s-link>
-        <s-link href="/benefits">↳ Benefits</s-link>
-        <s-link href="/price-plan">↳ Price Plan</s-link>
+        <a href="/support">View more</a>
+        <a href="/how-it-works">↳ Support</a>
+        <a href="/benefits">↳ Benefits</a>
+        <a href="/price-plan">↳ Price Plan</a>
     @else
-        <s-link href="/support">View more</s-link>
+        <a href="/support">View more</a>
     @endif
-</s-app-nav>
+</ui-nav-menu>
 
 <div class="app-layout">
 
@@ -3240,9 +3240,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Intercept clicks on s-link inside s-app-nav dynamically (using event delegation)
+    // Intercept clicks on a inside ui-nav-menu dynamically (using event delegation)
     document.addEventListener('click', function(e) {
-        const link = e.target.closest('s-app-nav s-link');
+        const link = e.target.closest('ui-nav-menu a');
         if (!link) return;
 
         const href = link.getAttribute('href');
@@ -3289,7 +3289,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 switchSubTab(subTabId, false);
             }
 
-            // Dynamically update s-app-nav sidebar HTML
+            // Dynamically update ui-nav-menu sidebar HTML
             updateAppSidebarNav(tabId);
         }
     });
@@ -3327,29 +3327,29 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
     function updateAppSidebarNav(tabId) {
-        const appNav = document.querySelector('s-app-nav');
+        const appNav = document.querySelector('ui-nav-menu');
         if (!appNav) return;
         
         if (tabId === 'tab-support') {
             appNav.innerHTML = `
-                <s-link href="/" rel="home">Overview</s-link>
-                <s-link href="/bookings">Bookings & Deposits</s-link>
-                <s-link href="/reminders">Reminders</s-link>
-                <s-link href="/price-alerts">Price Alerts</s-link>
-                <s-link href="/app-settings">Settings</s-link>
-                <s-link href="/support">View more</s-link>
-                <s-link href="/how-it-works">↳ Support</s-link>
-                <s-link href="/benefits">↳ Benefits</s-link>
-                <s-link href="/price-plan">↳ Price Plan</s-link>
+                <a href="/" rel="home">Overview</a>
+                <a href="/bookings">Bookings & Deposits</a>
+                <a href="/reminders">Reminders</a>
+                <a href="/price-alerts">Price Alerts</a>
+                <a href="/app-settings">Settings</a>
+                <a href="/support">View more</a>
+                <a href="/how-it-works">↳ Support</a>
+                <a href="/benefits">↳ Benefits</a>
+                <a href="/price-plan">↳ Price Plan</a>
             `;
         } else {
             appNav.innerHTML = `
-                <s-link href="/" rel="home">Overview</s-link>
-                <s-link href="/bookings">Bookings & Deposits</s-link>
-                <s-link href="/reminders">Reminders</s-link>
-                <s-link href="/price-alerts">Price Alerts</s-link>
-                <s-link href="/app-settings">Settings</s-link>
-                <s-link href="/support">View more</s-link>
+                <a href="/" rel="home">Overview</a>
+                <a href="/bookings">Bookings & Deposits</a>
+                <a href="/reminders">Reminders</a>
+                <a href="/price-alerts">Price Alerts</a>
+                <a href="/app-settings">Settings</a>
+                <a href="/support">View more</a>
             `;
         }
     }
