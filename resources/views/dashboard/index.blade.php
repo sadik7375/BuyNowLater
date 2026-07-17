@@ -2331,7 +2331,7 @@
                                         </a>
                                     </s-table-cell>
                                     <s-table-cell>{{ $reminder->email }}</s-table-cell>
-                                    <s-table-cell class="local-datetime" data-utc="{{ $reminder->scheduled_at->toIso8601String() }}">{{ $reminder->scheduled_at->format('M j, Y g:i a') }}</s-table-cell>
+                                    <s-table-cell><span class="local-datetime" data-utc="{{ $reminder->scheduled_at->toIso8601String() }}">{{ $reminder->scheduled_at->format('M j, Y g:i a') }}</span></s-table-cell>
                                     <s-table-cell>
                                         @if($reminder->status === 'sent')
                                             <s-badge tone="success">Sent</s-badge>
@@ -2343,7 +2343,7 @@
                                             <s-badge>{{ $reminder->status }}</s-badge>
                                         @endif
                                     </s-table-cell>
-                                    <s-table-cell class="local-datetime" data-utc="{{ $reminder->sent_at ? $reminder->sent_at->toIso8601String() : '' }}">{{ $reminder->sent_at ? $reminder->sent_at->format('M j, Y g:i a') : '-' }}</s-table-cell>
+                                    <s-table-cell><span class="local-datetime" data-utc="{{ $reminder->sent_at ? $reminder->sent_at->toIso8601String() : '' }}">{{ $reminder->sent_at ? $reminder->sent_at->format('M j, Y g:i a') : '-' }}</span></s-table-cell>
                                 </s-table-row>
                             @endforeach
                             <s-table-row id="reminders-no-results" style="display: none;">

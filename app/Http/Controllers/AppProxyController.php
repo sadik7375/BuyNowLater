@@ -56,7 +56,7 @@ class AppProxyController extends Controller
 
         // Parse scheduled date
         $scheduledInput = $request->input('scheduled_at_utc') ?: $request->input('scheduled_at');
-        $scheduledAt = Carbon::parse($scheduledInput);
+        $scheduledAt = Carbon::parse($scheduledInput)->setTimezone(config('app.timezone'));
 
         // Check if reminder is in the past
         if ($scheduledAt->isPast()) {
@@ -281,7 +281,7 @@ class AppProxyController extends Controller
         ]);
 
         $scheduledInput = $request->input('scheduled_at_utc') ?: $request->input('scheduled_at');
-        $scheduledAt = Carbon::parse($scheduledInput);
+        $scheduledAt = Carbon::parse($scheduledInput)->setTimezone(config('app.timezone'));
 
         if ($scheduledAt->isPast()) {
             return view('reminders.customer_action', [
