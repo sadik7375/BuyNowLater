@@ -2574,7 +2574,12 @@
     <!-- Tab 6: Support (Consolidated View More) -->
     <div id="tab-support" class="tab-content" style="display: {{ $activeTab === 'tab-support' ? 'block' : 'none' }};">
         
-
+        <!-- Sub Tabs Navigation Bar -->
+        <div class="sub-tab-bar" style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 24px;">
+            <button class="sub-tab-btn {{ $subTab === 'support' ? 'active' : '' }}" data-sub-tab="sub-tab-how-it-works" onclick="switchSubTab('sub-tab-how-it-works')">Support</button>
+            <button class="sub-tab-btn {{ $subTab === 'benefits' ? 'active' : '' }}" data-sub-tab="sub-tab-benefits" onclick="switchSubTab('sub-tab-benefits')">Benefits</button>
+            <button class="sub-tab-btn {{ $subTab === 'pricing' ? 'active' : '' }}" data-sub-tab="sub-tab-pricing" onclick="switchSubTab('sub-tab-pricing')">Price Plan</button>
+        </div>
 
         <!-- Sub Tab 1: Support (previously How It Works) -->
         <div id="sub-tab-how-it-works" class="sub-tab-content" style="display: {{ $subTab === 'support' ? 'block' : 'none' }};">
