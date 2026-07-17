@@ -28,6 +28,11 @@ class DashboardController extends Controller
         } elseif ($request->is('how-it-works') || $request->is('support')) {
             $activeTab = 'tab-support';
             $subTab = 'support';
+            if ($request->get('tab') === 'benefits') {
+                $subTab = 'benefits';
+            } elseif ($request->get('tab') === 'pricing') {
+                $subTab = 'pricing';
+            }
         } elseif ($request->is('benefits')) {
             $activeTab = 'tab-support';
             $subTab = 'benefits';

@@ -1565,9 +1565,9 @@
     <a href="/price-alerts">Price Alerts</a>
     <a href="/app-settings">Settings</a>
     <a href="/support">View more</a>
-    <a href="/how-it-works">↳ Support</a>
-    <a href="/benefits">↳ Benefits</a>
-    <a href="/price-plan">↳ Price Plan</a>
+    <a href="/support?tab=support">↳ Support</a>
+    <a href="/support?tab=benefits">↳ Benefits</a>
+    <a href="/support?tab=pricing">↳ Price Plan</a>
 </ui-nav-menu>
 
 <div class="app-layout">
@@ -3243,27 +3243,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const href = link.getAttribute('href');
         
+        // Parse path and query parameters
+        let path = href;
+        let tabParam = null;
+        if (href.startsWith('/') || href.startsWith('http')) {
+            try {
+                const urlObj = new URL(href, window.location.origin);
+                path = urlObj.pathname;
+                tabParam = urlObj.searchParams.get('tab');
+            } catch(err) {
+                console.error(err);
+            }
+        }
+
         // Map paths to tab IDs
         let tabId = 'tab-overview';
         let subTabId = null;
-        if (href === '/bookings') {
+        if (path === '/bookings') {
             tabId = 'tab-bookings-list';
-        } else if (href === '/reminders') {
+        } else if (path === '/reminders') {
             tabId = 'tab-reminders-list';
-        } else if (href === '/price-alerts') {
+        } else if (path === '/price-alerts') {
             tabId = 'tab-subscribers-list';
-        } else if (href === '/app-settings') {
+        } else if (path === '/app-settings') {
             tabId = 'tab-settings';
-        } else if (href === '/support') {
+        } else if (path === '/support' || path === '/how-it-works') {
             tabId = 'tab-support';
-            subTabId = 'sub-tab-how-it-works';
-        } else if (href === '/how-it-works') {
-            tabId = 'tab-support';
-            subTabId = 'sub-tab-how-it-works';
-        } else if (href === '/benefits') {
+            subTabId = 'sub-tab-how-it-works'; // Default
+            if (tabParam === 'benefits') {
+                subTabId = 'sub-tab-benefits';
+            } else if (tabParam === 'pricing') {
+                subTabId = 'sub-tab-pricing';
+            }
+        } else if (path === '/benefits') {
             tabId = 'tab-support';
             subTabId = 'sub-tab-benefits';
-        } else if (href === '/price-plan') {
+        } else if (path === '/price-plan') {
             tabId = 'tab-support';
             subTabId = 'sub-tab-pricing';
         }
@@ -3274,9 +3289,14 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             e.stopPropagation();
             
-            // Update history path while preserving shop/host parameters
-            const currentSearch = window.location.search;
-            const newUrl = href + currentSearch;
+            // Build new URL preserving existing query parameters like shop/host
+            const urlParams = new URLSearchParams(window.location.search);
+            if (tabParam) {
+                urlParams.set('tab', tabParam);
+            } else {
+                urlParams.delete('tab');
+            }
+            const newUrl = path + '?' + urlParams.toString();
             history.pushState({ tabId: tabId, subTabId: subTabId }, '', newUrl);
             
             // Switch tab instantly
@@ -3289,7 +3309,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Handle back/forward buttons
     window.addEventListener('popstate', function(event) {
-        const path = window.location.pathname;
+        let path = window.location.pathname;
+        let tabParam = null;
+        try {
+            const urlObj = new URL(window.location.href);
+            path = urlObj.pathname;
+            tabParam = urlObj.searchParams.get('tab');
+        } catch(err) {
+            console.error(err);
+        }
+
         let tabId = 'tab-overview';
         let subTabId = null;
         if (path === '/bookings') {
@@ -3303,6 +3332,11 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (path === '/support' || path === '/how-it-works') {
             tabId = 'tab-support';
             subTabId = 'sub-tab-how-it-works';
+            if (tabParam === 'benefits') {
+                subTabId = 'sub-tab-benefits';
+            } else if (tabParam === 'pricing') {
+                subTabId = 'sub-tab-pricing';
+            }
         } else if (path === '/benefits') {
             tabId = 'tab-support';
             subTabId = 'sub-tab-benefits';
@@ -3341,11 +3375,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (pushState) {
             let path = '/support';
-            if (subTabId === 'sub-tab-benefits') path = '/benefits';
-            else if (subTabId === 'sub-tab-pricing') path = '/price-plan';
+            let tabVal = 'support';
+            if (subTabId === 'sub-tab-benefits') tabVal = 'benefits';
+            else if (subTabId === 'sub-tab-pricing') tabVal = 'pricing';
             
-            const currentSearch = window.location.search;
-            history.pushState({ tabId: 'tab-support', subTabId: subTabId }, '', path + currentSearch);
+            const urlParams = new URLSearchParams(window.location.search);
+            urlParams.set('tab', tabVal);
+            const newUrl = path + '?' + urlParams.toString();
+            history.pushState({ tabId: 'tab-support', subTabId: subTabId }, '', newUrl);
         }
     }
 
