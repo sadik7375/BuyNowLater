@@ -2635,9 +2635,12 @@
             @csrf
             <input type="hidden" name="token" class="session-token" value="">
 
-            <!-- Card 1: Storefront Widget -->
             <div class="panel-card" style="margin-bottom: 20px;">
                 <h3>Storefront Widget & Payment Customization</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+                    <p style="margin: 0; font-size: 13.5px; color: var(--text-muted);">Customize the storefront widget details and deposit settings.</p>
+                    <button type="button" onclick="showOnboardingAgain()" style="background: none; border: none; color: var(--accent-blue); cursor: pointer; font-size: 13px; font-weight: 500; text-decoration: underline; padding: 0;">Show Storefront Setup Guide</button>
+                </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="button_text">Button Text</label>
@@ -4707,6 +4710,14 @@ function filterSubscribers() {
         document.querySelectorAll('.onboarding-card').forEach(el => {
             el.style.display = 'none';
         });
+    };
+
+    window.showOnboardingAgain = function() {
+        localStorage.removeItem('hideOnboarding');
+        document.querySelectorAll('.onboarding-card').forEach(el => {
+            el.style.display = 'block';
+        });
+        alert('Setup guide is now visible at the top of your Overview, Bookings, and Settings tabs.');
     };
 
     if (localStorage.getItem('hideOnboarding') === 'true') {
