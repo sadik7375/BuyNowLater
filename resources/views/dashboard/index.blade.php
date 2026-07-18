@@ -2869,6 +2869,7 @@
         
         <!-- Sub Tabs Navigation Bar Hidden since links are direct now -->
         <div class="sub-tab-bar" style="display: none;">
+        </div>
 
         <!-- Sub Tab 1: Support (previously How It Works) -->
         <div id="sub-tab-how-it-works" class="sub-tab-content" style="display: {{ $subTab === 'support' ? 'block' : 'none' }};">
