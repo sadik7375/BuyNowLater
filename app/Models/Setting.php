@@ -29,6 +29,7 @@ class Setting extends Model
         'product_targeting_type',
         'targeted_product_ids',
         'selling_plan_group_id',
+        'selling_plan_id',
         'use_selling_plan',
     ];
 

@@ -484,6 +484,7 @@ class AppProxyController extends Controller
             'button_text' => $settings ? $settings->button_text : null,
             'use_selling_plan' => $settings ? (bool) ($settings->use_selling_plan ?? false) : false,
             'selling_plan_group_id' => $settings ? $settings->selling_plan_group_id : null,
+            'selling_plan_id' => $settings ? $settings->selling_plan_id : null,
         ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
           ->header('Pragma', 'no-cache');
     }

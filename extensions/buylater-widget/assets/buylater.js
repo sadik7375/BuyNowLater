@@ -94,9 +94,12 @@ function initBuyLaterWidget() {
           triggerBtn.style.display = 'inline-block';
         }
       }
-      if (data.use_selling_plan) {
+      if (data.use_selling_plan || data.selling_plan_id) {
         window.buylaterUseSellingPlan = true;
         window.buylaterSellingPlanGroupId = data.selling_plan_group_id;
+        if (data.selling_plan_id) {
+          window.buylaterSellingPlanId = data.selling_plan_id;
+        }
       }
       if (data.deposit_percentage) {
         depositPercentage = parseInt(data.deposit_percentage, 10);

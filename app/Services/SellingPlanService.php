@@ -107,6 +107,7 @@ class SellingPlanService
                 if ($groupId && $settings) {
                     $settings->update([
                         'selling_plan_group_id' => $groupId,
+                        'selling_plan_id' => $planId,
                         'use_selling_plan' => true,
                     ]);
                 }

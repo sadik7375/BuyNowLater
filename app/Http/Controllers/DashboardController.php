@@ -59,6 +59,7 @@ class DashboardController extends Controller
                 if ($res && !empty($res['group_id'])) {
                     $settings->update([
                         'selling_plan_group_id' => $res['group_id'],
+                        'selling_plan_id' => $res['plan_id'] ?? null,
                         'use_selling_plan' => true,
                     ]);
                 }

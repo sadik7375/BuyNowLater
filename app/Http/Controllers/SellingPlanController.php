@@ -75,8 +75,10 @@ class SellingPlanController extends Controller
             $this->sellingPlanService->attachProducts($shop, $groupId, $productGqlIds);
         }
 
+        $planId = $result['plan_id'] ?? null;
         $settings->update([
             'selling_plan_group_id' => $groupId,
+            'selling_plan_id' => $planId,
             'use_selling_plan' => true,
         ]);
 

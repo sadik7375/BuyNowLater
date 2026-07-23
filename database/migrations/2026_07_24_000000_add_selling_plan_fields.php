@@ -33,6 +33,9 @@ return new class extends Migration
                 if (!Schema::hasColumn('buylater_settings', 'selling_plan_group_id')) {
                     $table->string('selling_plan_group_id')->nullable();
                 }
+                if (!Schema::hasColumn('buylater_settings', 'selling_plan_id')) {
+                    $table->string('selling_plan_id')->nullable();
+                }
                 if (!Schema::hasColumn('buylater_settings', 'use_selling_plan')) {
                     $table->boolean('use_selling_plan')->default(false);
                 }
