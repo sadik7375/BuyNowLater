@@ -1,6 +1,7 @@
 function initBuyLaterWidget() {
   if (window.buylaterInitialized) return;
   window.buylaterInitialized = true;
+  window.buylaterUseSellingPlan = true;
 
   const triggerBtn = document.getElementById('buylater-trigger');
   const modal = document.getElementById('buylater-modal');
