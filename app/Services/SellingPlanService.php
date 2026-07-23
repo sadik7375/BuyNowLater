@@ -102,7 +102,11 @@ class SellingPlanService
                 $group = $response['body']['data']['sellingPlanGroupCreate']['sellingPlanGroup'];
                 $groupId = $group['id'] ?? null;
                 $plans = $group['sellingPlans']['edges'] ?? [];
-                $planId = $plans[0]['node']['id'] ?? null;
+                $rawPlanId = $plans[0]['node']['id'] ?? null;
+                $planId = $rawPlanId;
+                if ($rawPlanId && preg_match('/SellingPlan\/(\d+)/', $rawPlanId, $m)) {
+                    $planId = $m[1];
+                }
 
                 if ($groupId && $settings) {
                     $settings->update([
@@ -115,7 +119,7 @@ class SellingPlanService
                 Log::info("SellingPlanService: Successfully created SellingPlanGroup {$groupId} with plan {$planId}");
                 return [
                     'group_id' => $groupId,
-                    'plan_id' => $planId,
+                    'plan_id' => $rawPlanId,
                 ];
             } else {
                 $userErrors = $response['body']['data']['sellingPlanGroupCreate']['userErrors'] ?? [];

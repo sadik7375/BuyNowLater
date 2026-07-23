@@ -474,6 +474,24 @@ class AppProxyController extends Controller
             }
         }
 
+        $sellingPlanId = $settings ? $settings->selling_plan_id : null;
+        if ($sellingPlanId && preg_match('/SellingPlan\/(\d+)/', $sellingPlanId, $m)) {
+            $sellingPlanId = $m[1];
+        }
+
+        $currentProductId = $request->query('product_id') ?: $request->input('product_id');
+        if ($shop && $settings && $settings->selling_plan_group_id && $currentProductId) {
+            $cleanId = preg_replace('/[^0-9]/', '', $currentProductId);
+            if (!empty($cleanId)) {
+                try {
+                    $sellingPlanService = app(\App\Services\SellingPlanService::class);
+                    $sellingPlanService->attachProducts($shop, $settings->selling_plan_group_id, ["gid://shopify/Product/{$cleanId}"]);
+                } catch (\Exception $ex) {
+                    Log::warn('Auto attach product exception in getSettings: ' . $ex->getMessage());
+                }
+            }
+        }
+
         return response()->json([
             'enabled' => $isWidgetEnabled,
             'deposit_percentage' => $settings ? (int) $settings->deposit_percentage : 10,
@@ -484,7 +502,7 @@ class AppProxyController extends Controller
             'button_text' => $settings ? $settings->button_text : null,
             'use_selling_plan' => $settings ? (bool) ($settings->use_selling_plan ?? false) : false,
             'selling_plan_group_id' => $settings ? $settings->selling_plan_group_id : null,
-            'selling_plan_id' => $settings ? $settings->selling_plan_id : null,
+            'selling_plan_id' => $sellingPlanId,
         ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
           ->header('Pragma', 'no-cache');
     }

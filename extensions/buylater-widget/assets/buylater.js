@@ -438,7 +438,11 @@ function initBuyLaterWidget() {
         quantity: 1
       };
       if (window.buylaterSellingPlanId) {
-        cartBody.selling_plan = window.buylaterSellingPlanId;
+        let planId = String(window.buylaterSellingPlanId);
+        if (planId.includes('/')) {
+          planId = planId.split('/').pop();
+        }
+        cartBody.selling_plan = parseInt(planId, 10) || planId;
       }
       fetch('/cart/add.js', {
         method: 'POST',
