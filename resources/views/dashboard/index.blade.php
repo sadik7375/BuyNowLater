@@ -2722,6 +2722,38 @@
                 </div>
             </div>
 
+            <!-- Card 1.6: Native Checkout & Selling Plan API -->
+            <div class="panel-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 100%); border: 1px solid #b3d7ff;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+                    <div>
+                        <h3 style="color: #004085; display: flex; align-items: center; gap: 8px;">
+                            ⚡ Native Checkout Deposit (Shopify Selling Plan API)
+                            @if($settings->use_selling_plan)
+                                <s-badge tone="success">Active</s-badge>
+                            @else
+                                <s-badge tone="warning">Standard Draft Order</s-badge>
+                            @endif
+                        </h3>
+                        <p style="font-size: 13px; color: #495057; margin-top: -5px; max-width: 650px;">
+                            Enable native Shopify checkout for deposits! When enabled, customers pay deposits directly inside Shopify's native checkout without email invoice links, complying 100% with Shopify App Store Purchase Option requirements.
+                        </p>
+                    </div>
+                    <div>
+                        @if($settings->use_selling_plan)
+                            <form action="{{ route('selling_plans.destroy', request()->query()) }}" method="POST" style="margin:0;">
+                                @csrf
+                                <s-button variant="secondary" submit="true">Deactivate Native Checkout</s-button>
+                            </form>
+                        @else
+                            <form action="{{ route('selling_plans.setup', request()->query()) }}" method="POST" style="margin:0;">
+                                @csrf
+                                <s-button variant="primary" submit="true">Activate Native Checkout (Selling Plan API)</s-button>
+                            </form>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
             <!-- Card 2: Email Templates -->
             <div class="panel-card">
                 <h3>Email Templates & Sender Display</h3>
