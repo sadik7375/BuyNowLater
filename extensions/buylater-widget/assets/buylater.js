@@ -93,6 +93,10 @@ document.addEventListener('DOMContentLoaded', function() {
           triggerBtn.style.display = 'inline-block';
         }
       }
+      if (data.use_selling_plan) {
+        window.buylaterUseSellingPlan = true;
+        window.buylaterSellingPlanGroupId = data.selling_plan_group_id;
+      }
       if (data.deposit_percentage) {
         depositPercentage = parseInt(data.deposit_percentage, 10);
         updateDepositDisplay();
@@ -423,31 +427,74 @@ document.addEventListener('DOMContentLoaded', function() {
       deposit_percentage: depositPercentage
     };
 
-    fetch('/apps/buylater-proxy/bookings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    })
-    .then(handleResponse)
-    .then(data => {
-      showMessage('Success! Redirecting you to checkout to pay the deposit...', 'success');
-      if (data.checkout_url) {
-        setTimeout(() => {
-          // Redirect the top frame to the checkout URL, avoiding pop-up blockers
-          window.top.location.href = data.checkout_url;
-        }, 1500);
+    if (window.buylaterUseSellingPlan) {
+      showMessage('Success! Adding deposit option to cart & redirecting to checkout...', 'success');
+      const cartBody = {
+        id: payload.variant_id || payload.product_id,
+        quantity: 1
+      };
+      if (window.buylaterSellingPlanId) {
+        cartBody.selling_plan = window.buylaterSellingPlanId;
       }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      showMessage(error.message || 'Failed to initialize booking. Please try again.', 'error');
-    })
-    .finally(() => {
-      isBookSubmitting = false;
-      submitBtn.disabled = false;
+      fetch('/cart/add.js', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(cartBody)
+      })
+      .then(res => res.json())
+      .then(cartData => {
+        // Record pending booking in app database asynchronously
+        fetch('/apps/buylater-proxy/bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ ...payload, payment_type: 'selling_plan' })
+        }).catch(e => console.warn('Background booking record log error:', e));
+
+        setTimeout(() => {
+          window.top.location.href = '/checkout';
+        }, 1000);
+      })
+      .catch(err => {
+        console.warn('Native cart/add.js failed, falling back to standard proxy booking:', err);
+        executeProxyBooking(payload);
+      });
+      return;
+    }
+
+    executeProxyBooking(payload);
+
+    function executeProxyBooking(bookingPayload) {
+      fetch('/apps/buylater-proxy/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(bookingPayload)
+      })
+      .then(handleResponse)
+      .then(data => {
+        showMessage('Success! Redirecting you to checkout to pay the deposit...', 'success');
+        if (data.checkout_url) {
+          setTimeout(() => {
+            window.top.location.href = data.checkout_url;
+          }, 1500);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showMessage(error.message || 'Failed to initialize booking. Please try again.', 'error');
+      })
+      .finally(() => {
+        isBookSubmitting = false;
+        submitBtn.disabled = false;
+        submitBtn.classList.add('enabled');
+        submitBtn.querySelector('span').textContent = originalBtnText;
+      });
+    }
       submitBtn.classList.add('enabled');
       submitBtn.querySelector('span').textContent = originalBtnText;
     });
