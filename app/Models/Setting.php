@@ -28,6 +28,8 @@ class Setting extends Model
         'hold_duration_days',
         'product_targeting_type',
         'targeted_product_ids',
+        'selling_plan_group_id',
+        'use_selling_plan',
     ];
 
     public function shop()

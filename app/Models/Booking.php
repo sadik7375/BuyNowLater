@@ -31,6 +31,10 @@ class Booking extends Model
         'deposit_paid_at',
         'completed_at',
         'balance_order_id',
+        'selling_plan_id',
+        'selling_plan_group_id',
+        'subscription_contract_id',
+        'payment_type',
     ];
 
     protected $casts = [
