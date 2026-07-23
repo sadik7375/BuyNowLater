@@ -382,29 +382,47 @@ class AppProxyController extends Controller
         // Generate a unique token
         $token = strtolower(Str::random(32));
 
-        // -----------------------------------------------------------------------
-        // Create a Shopify Draft Order.
-        // Link to the real variant if variant_id is provided, using a line-item
-        // discount so the checkout amount is exactly the deposit amount.
-        // -----------------------------------------------------------------------
-        $checkoutUrl  = null;
-        $draftOrderId = null;
-
         $variantId = $request->input('variant_id');
         if ($variantId && str_contains($variantId, '/')) {
             $parts = explode('/', $variantId);
             $variantId = end($parts);
         }
 
-        // We always use a custom line item representing the deposit amount directly.
-        // This avoids currency localization/conversion issues and prevents confusing
-        // "Deposit Payment Adjustment" discounts from displaying on the checkout page.
+        $paymentType = $request->input('payment_type') ?: ($settings && $settings->use_selling_plan ? 'selling_plan' : 'draft_order');
+
+        if ($paymentType === 'selling_plan') {
+            Log::info('AppProxy: Creating selling_plan booking without draft order.');
+            $booking = Booking::create([
+                'shop_id' => $shop->id,
+                'email' => $request->input('email'),
+                'product_id' => $request->input('product_id'),
+                'variant_id' => $variantId,
+                'product_title' => $request->input('product_title'),
+                'product_handle' => $request->input('product_handle'),
+                'product_image' => $request->input('product_image'),
+                'product_price' => $productPrice,
+                'deposit_amount' => $depositAmount,
+                'remaining_balance' => $remainingBalance,
+                'currency' => $currency,
+                'status' => 'pending',
+                'token' => $token,
+                'payment_type' => 'selling_plan',
+                'customer_name' => $request->input('customer_name') ?: ($request->input('name') ?: null),
+            ]);
+
+            return response()->json([
+                'message' => 'Selling Plan booking created successfully.',
+                'booking' => $booking,
+                'checkout_url' => '/checkout',
+            ], 201);
+        }
+
         $lineItems = [[
-            'title'             => 'Deposit — ' . $request->input('product_title'),
-            'price'             => number_format($depositAmount, 2, '.', ''),
-            'quantity'          => 1,
+            'title' => 'Deposit — ' . $request->input('product_title'),
+            'price' => number_format($depositAmount, 2, '.', ''),
+            'quantity' => 1,
             'requires_shipping' => false,
-            'properties'        => [
+            'properties' => [
                 ['name' => '_token', 'value' => $token],
                 ['name' => 'Original Price', 'value' => number_format($productPrice, 2) . ' ' . $currency],
                 ['name' => 'Remaining Balance', 'value' => number_format($remainingBalance, 2) . ' ' . $currency],
