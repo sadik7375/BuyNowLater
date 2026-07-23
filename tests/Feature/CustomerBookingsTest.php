@@ -158,12 +158,11 @@ class CustomerBookingsTest extends TestCase
 
         $response->assertStatus(200);
 
-        // Assert that $bookings contains only the paid booking (1 booking)
+        // Assert that $bookings contains all bookings (2 bookings: 1 pending, 1 paid)
         $bookings = $response->viewData('bookings');
-        $this->assertCount(1, $bookings);
-        $this->assertEquals('paid_token', $bookings->first()->token);
+        $this->assertCount(2, $bookings);
 
-        // Assert that $activeBookings is 1 (excluding pending)
+        // Assert that $activeBookings is 1 (deposit_paid only)
         $activeBookings = $response->viewData('activeBookings');
         $this->assertEquals(1, $activeBookings);
     }

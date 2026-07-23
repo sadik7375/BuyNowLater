@@ -17,17 +17,10 @@ redirect_urls = [
 [webhooks]
 api_version = "2026-07"
 
-[[webhooks.subscriptions]]
-topics = [ "customers/data_request" ]
-uri = "/webhook/customers-data-request"
-
-[[webhooks.subscriptions]]
-topics = [ "customers/redact" ]
-uri = "/webhook/customers-redact"
-
-[[webhooks.subscriptions]]
-topics = [ "shop/redact" ]
-uri = "/webhook/shop-redact"
+[webhooks.privacy_compliance]
+customer_deletion_url = "https://buylater.cannyapps.com/webhook/customers-redact"
+customer_data_request_url = "https://buylater.cannyapps.com/webhook/customers-data-request"
+shop_deletion_url = "https://buylater.cannyapps.com/webhook/shop-redact"
 
 [app_proxy]
 url = "https://buylater.cannyapps.com"

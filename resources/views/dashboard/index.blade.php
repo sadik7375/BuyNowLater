@@ -2397,6 +2397,8 @@
                                             <s-badge tone="success">Full Paid</s-badge>
                                         @elseif($booking->status === 'deposit_paid')
                                             <s-badge tone="info">Partial Paid</s-badge>
+                                        @elseif($booking->status === 'pending')
+                                            <s-badge tone="warning">Pending Deposit</s-badge>
                                         @elseif($booking->status === 'expired')
                                             <s-badge tone="critical">Expired</s-badge>
                                         @else

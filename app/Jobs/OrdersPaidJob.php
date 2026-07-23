@@ -142,7 +142,7 @@ class OrdersPaidJob implements ShouldQueue
 
         // Update booking status
         if ($token) {
-            $booking = Booking::where('token', $token)->first();
+            $booking = Booking::where('token', $token)->where('shop_id', $shop->id)->first();
             if ($booking) {
                 if ($isDeposit) {
                     if ($booking->status === 'pending') {
@@ -153,7 +153,13 @@ class OrdersPaidJob implements ShouldQueue
                         $customer = $this->data->customer ?? null;
                         $customerName = null;
                         if ($customer) {
-                            $customerName = trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''));
+                            $fetchedName = trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''));
+                            if (!empty($fetchedName)) {
+                                $customerName = $fetchedName;
+                            }
+                        }
+                        if (empty($customerName)) {
+                            $customerName = $booking->customer_name;
                         }
 
                         $booking->update([

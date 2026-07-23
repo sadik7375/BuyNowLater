@@ -173,7 +173,6 @@ class DashboardController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
         $bookings    = Booking::where('shop_id', $shop->id)
-            ->where('status', '!=', 'pending')
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -200,7 +199,7 @@ class DashboardController extends Controller
 
         // --- Status Counts (100% Dynamic from Database) ---
         $statusCounts = [
-            'pending'      => 0,
+            'pending'      => $bookings->where('status', 'pending')->count(),
             'deposit_paid' => $bookings->where('status', 'deposit_paid')->count(),
             'completed'    => $bookings->where('status', 'completed')->count(),
             'expired'      => $bookings->where('status', 'expired')->count(),

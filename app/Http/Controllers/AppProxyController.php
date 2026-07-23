@@ -544,6 +544,7 @@ class AppProxyController extends Controller
             'checkout_url' => $checkoutUrl,
             'status' => 'pending',
             'token' => $token,
+            'customer_name' => $request->input('customer_name') ?: ($request->input('name') ?: null),
         ]);
 
         if (!$checkoutUrl) {

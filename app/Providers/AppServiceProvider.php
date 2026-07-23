@@ -20,6 +20,16 @@ class AppServiceProvider extends ServiceProvider
             \Osiset\ShopifyApp\Actions\AuthenticateShop::class,
             \App\Actions\CustomAuthenticateShop::class
         );
+
+        $this->app->bind(
+            \Osiset\ShopifyApp\Actions\GetPlanUrl::class,
+            \App\Actions\GetPlanUrl::class
+        );
+
+        $this->app->bind(
+            \Osiset\ShopifyApp\Actions\ActivatePlan::class,
+            \App\Actions\ActivatePlan::class
+        );
     }
 
     /**
