@@ -47,8 +47,25 @@ class DashboardController extends Controller
                 'show_reminders'           => true,
                 'show_alerts'              => true,
                 'hold_duration_days'       => 14,
+                'use_selling_plan'         => true,
             ]
         );
+
+        // Auto-initialize Selling Plan Group if not set up
+        if (!$settings->selling_plan_group_id || !$settings->use_selling_plan) {
+            try {
+                $sellingPlanService = app(\App\Services\SellingPlanService::class);
+                $res = $sellingPlanService->createOrUpdatePlanGroup($shop, (int) $settings->deposit_percentage, (int) $settings->hold_duration_days);
+                if ($res && !empty($res['group_id'])) {
+                    $settings->update([
+                        'selling_plan_group_id' => $res['group_id'],
+                        'use_selling_plan' => true,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("DashboardController: Auto selling plan group setup failed: " . $e->getMessage());
+            }
+        }
 
         // ---------- Self-Healing: Sync Status of Active Bookings ----------
         $syncCacheKey = "shop_{$shop->id}_sync_lock";
