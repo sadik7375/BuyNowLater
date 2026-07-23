@@ -436,6 +436,14 @@ return [
             'topic' => 'SHOP_REDACT',
             'address' => env('APP_URL') . '/webhook/shop-redact',
         ],
+        [
+            'topic' => 'SUBSCRIPTION_CONTRACTS_CREATE',
+            'address' => env('APP_URL') . '/webhook/subscription-contract-create',
+        ],
+        [
+            'topic' => 'SUBSCRIPTION_BILLING_ATTEMPTS_SUCCESS',
+            'address' => env('APP_URL') . '/webhook/subscription-billing-success',
+        ],
     ],
 
     /*
