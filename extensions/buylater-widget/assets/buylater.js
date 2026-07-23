@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+function initBuyLaterWidget() {
   if (window.buylaterInitialized) return;
   window.buylaterInitialized = true;
 
@@ -495,8 +495,26 @@ document.addEventListener('DOMContentLoaded', function() {
         submitBtn.querySelector('span').textContent = originalBtnText;
       });
     }
-      submitBtn.classList.add('enabled');
-      submitBtn.querySelector('span').textContent = originalBtnText;
-    });
   });
+}
+
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+  initBuyLaterWidget();
+} else {
+  document.addEventListener('DOMContentLoaded', initBuyLaterWidget);
+}
+
+// Fallback Document Event Delegation so clicking trigger button ALWAYS opens modal
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('#buylater-trigger, .buylater-btn');
+  if (btn) {
+    const modal = document.getElementById('buylater-modal');
+    const stepOptions = document.getElementById('buylater-step-options');
+    if (modal) {
+      modal.style.display = 'flex';
+      if (stepOptions) {
+        stepOptions.classList.add('active');
+      }
+    }
+  }
 });
