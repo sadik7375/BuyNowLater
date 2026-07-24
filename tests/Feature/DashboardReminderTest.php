@@ -77,16 +77,32 @@ class DashboardReminderTest extends TestCase
             'checkout_url' => null,
         ]);
 
+        // Expect the draft order send invoice mutation via GraphQL
+        $apiMock->shouldReceive('graph')
+            ->once()
+            ->with(\Mockery::on(function ($gqlQuery) {
+                return str_contains($gqlQuery, 'mutation draftOrderSendInvoice');
+            }), \Mockery::on(function ($variables) {
+                return $variables['id'] === 'gid://shopify/DraftOrder/999111' && $variables['email']['to'] === 'customer@example.com';
+            }))
+            ->andReturn([
+                'errors' => false,
+                'body' => [
+                    'data' => [
+                        'draftOrderSendInvoice' => [
+                            'draftOrder' => [
+                                'id' => 'gid://shopify/DraftOrder/999111'
+                            ],
+                            'userErrors' => []
+                        ]
+                    ]
+                ]
+            ]);
+
         $userMock = \Mockery::mock($realUser)->makePartial();
         $userMock->shouldReceive('api')->andReturn($apiMock);
 
         $this->actingAs($userMock);
-
-        // Mock SendGridService email sending
-        \Mockery::mock('alias:App\Services\SendGridService')
-            ->shouldReceive('send')
-            ->once()
-            ->andReturn(true);
 
         $response = $this->post(route('bookings.send_reminder', ['id' => $booking->id]));
 
@@ -183,18 +199,34 @@ class DashboardReminderTest extends TestCase
             'checkout_url' => 'https://test-shop.myshopify.com/checkout/55555',
         ]);
 
+        // Expect the draft order send invoice mutation via GraphQL
+        $apiMock->shouldReceive('graph')
+            ->once()
+            ->with(\Mockery::on(function ($gqlQuery) {
+                return str_contains($gqlQuery, 'mutation draftOrderSendInvoice');
+            }), \Mockery::on(function ($variables) {
+                return $variables['id'] === 'gid://shopify/DraftOrder/77777' && $variables['email']['to'] === 'customer@example.com';
+            }))
+            ->andReturn([
+                'errors' => false,
+                'body' => [
+                    'data' => [
+                        'draftOrderSendInvoice' => [
+                            'draftOrder' => [
+                                'id' => 'gid://shopify/DraftOrder/77777'
+                            ],
+                            'userErrors' => []
+                        ]
+                    ]
+                ]
+            ]);
+
         $apiHelperMock = \Mockery::mock(\Osiset\ShopifyApp\Contracts\ApiHelper::class);
         $apiHelperMock->shouldReceive('make')->andReturnSelf();
         $apiHelperMock->shouldReceive('getApi')->andReturn($apiMock);
         $this->app->instance(\Osiset\ShopifyApp\Contracts\ApiHelper::class, $apiHelperMock);
 
         $this->actingAs($realUser);
-
-        // Mock SendGridService email sending
-        \Mockery::mock('alias:App\Services\SendGridService')
-            ->shouldReceive('send')
-            ->once()
-            ->andReturn(true);
 
         $response = $this->post(route('bookings.send_reminder', ['id' => $booking->id]));
 
@@ -347,15 +379,32 @@ class DashboardReminderTest extends TestCase
             'checkout_url' => null,
         ]);
 
+        // Expect the draft order send invoice mutation via GraphQL
+        $apiMock->shouldReceive('graph')
+            ->once()
+            ->with(\Mockery::on(function ($gqlQuery) {
+                return str_contains($gqlQuery, 'mutation draftOrderSendInvoice');
+            }), \Mockery::on(function ($variables) {
+                return $variables['id'] === 'gid://shopify/DraftOrder/999222' && $variables['email']['to'] === 'customer@example.com';
+            }))
+            ->andReturn([
+                'errors' => false,
+                'body' => [
+                    'data' => [
+                        'draftOrderSendInvoice' => [
+                            'draftOrder' => [
+                                'id' => 'gid://shopify/DraftOrder/999222'
+                            ],
+                            'userErrors' => []
+                        ]
+                    ]
+                ]
+            ]);
+
         $userMock = \Mockery::mock($realUser)->makePartial();
         $userMock->shouldReceive('api')->andReturn($apiMock);
 
         $this->actingAs($userMock);
-
-        \Mockery::mock('alias:App\Services\SendGridService')
-            ->shouldReceive('send')
-            ->once()
-            ->andReturn(true);
 
         $response = $this->post(route('bookings.send_reminder', ['id' => $booking->id]));
         $response->assertStatus(302);
@@ -452,17 +501,34 @@ class DashboardReminderTest extends TestCase
             'checkout_url' => 'https://test-shop.myshopify.com/checkout/55555',
         ]);
 
+        // Expect the draft order send invoice mutation via GraphQL
+        $apiMock->shouldReceive('graph')
+            ->once()
+            ->with(\Mockery::on(function ($gqlQuery) {
+                return str_contains($gqlQuery, 'mutation draftOrderSendInvoice');
+            }), \Mockery::on(function ($variables) {
+                return $variables['id'] === 'gid://shopify/DraftOrder/88888' && $variables['email']['to'] === 'customer@example.com';
+            }))
+            ->andReturn([
+                'errors' => false,
+                'body' => [
+                    'data' => [
+                        'draftOrderSendInvoice' => [
+                            'draftOrder' => [
+                                'id' => 'gid://shopify/DraftOrder/88888'
+                            ],
+                            'userErrors' => []
+                        ]
+                    ]
+                ]
+            ]);
+
         $apiHelperMock = \Mockery::mock(\Osiset\ShopifyApp\Contracts\ApiHelper::class);
         $apiHelperMock->shouldReceive('make')->andReturnSelf();
         $apiHelperMock->shouldReceive('getApi')->andReturn($apiMock);
         $this->app->instance(\Osiset\ShopifyApp\Contracts\ApiHelper::class, $apiHelperMock);
 
         $this->actingAs($realUser);
-
-        \Mockery::mock('alias:App\Services\SendGridService')
-            ->shouldReceive('send')
-            ->once()
-            ->andReturn(true);
 
         $response = $this->post(route('bookings.send_reminder', ['id' => $booking->id]));
         $response->assertStatus(302);

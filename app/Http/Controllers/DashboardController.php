@@ -528,23 +528,10 @@ class DashboardController extends Controller
             return back()->with('error', 'This booking has expired.');
         }
 
-        $apiKey = $setting->sendgrid_api_key ?? config('services.sendgrid.api_key');
-        $fromEmail = $setting->sendgrid_from_email ?? config('services.sendgrid.from_email');
-
-        // Format Shop Name
-        $senderName = $setting->sender_display_name ?? null;
-        if (empty($senderName)) {
-            $shopDomain = $shop->name;
-            $cleanName = str_replace('.myshopify.com', '', $shopDomain);
-            $cleanName = ucwords(str_replace(['-', '_'], ' ', $cleanName));
-            $senderName = $cleanName;
-        }
-
         if ($booking->status === 'deposit_paid') {
             // For deposit paid, we send the remaining balance invoice link!
             try {
                 $needsNewDraftOrder = true;
-                $checkoutUrl = null;
 
                 if ($booking->draft_order_id) {
                     // Fetch from Shopify to see if it is completed (deposit) or open (remaining balance)
@@ -584,7 +571,6 @@ class DashboardController extends Controller
                                 }
                             } else {
                                 $needsNewDraftOrder = false;
-                                $checkoutUrl = $draftOrder['invoice_url'] ?? '';
                             }
                         }
                     }
@@ -597,22 +583,15 @@ class DashboardController extends Controller
                     }
                 }
 
-                if ($checkoutUrl) {
-                    $subject = "Reminder: Complete Your Booking - Remaining Balance for " . $booking->product_title;
-                    
-                    $htmlContent = view('emails.booking_reminder', [
-                        'booking' => $booking,
-                        'senderName' => $senderName,
-                        'buttonUrl' => $checkoutUrl,
-                        'isDepositPaid' => true
-                    ])->render();
-
-                    \App\Services\SendGridService::send($apiKey, $fromEmail, $booking->email, $subject, $htmlContent);
-
-                    return back()->with('success', 'Balance reminder email sent to ' . $booking->email);
+                if ($booking->draft_order_id) {
+                    $sent = $this->sendShopifyDraftOrderInvoice($shop, $booking->draft_order_id, $booking->email);
+                    if ($sent) {
+                        return back()->with('success', 'Shopify remaining balance invoice sent successfully to ' . $booking->email);
+                    }
+                    return back()->with('error', 'Failed to send Shopify remaining balance invoice.');
                 }
 
-                return back()->with('error', 'Failed to retrieve invoice URL from Shopify response.');
+                return back()->with('error', 'Failed to retrieve invoice ID from Shopify.');
 
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('Draft Order Balance Creation failed in sendReminder: ' . $e->getMessage());
@@ -620,8 +599,7 @@ class DashboardController extends Controller
             }
         } else {
             // For pending (deposit not paid yet), send reminder to pay the deposit!
-            $checkoutUrl = $booking->checkout_url;
-            if (!$checkoutUrl || !$booking->draft_order_id) {
+            if (!$booking->draft_order_id) {
                 try {
                     $productPrice = (float) $booking->product_price;
                     $depositAmount = (float) $booking->deposit_amount;
@@ -629,8 +607,6 @@ class DashboardController extends Controller
                     $token = $booking->token;
 
                     // We always use a custom line item representing the deposit amount directly.
-                    // This avoids currency localization/conversion issues and prevents confusing
-                    // "Deposit Payment Adjustment" discounts from displaying on the checkout page.
                     $lineItems = [[
                         'title'             => 'Deposit — ' . $booking->product_title,
                         'price'             => number_format($depositAmount, 2, '.', ''),
@@ -696,36 +672,6 @@ class DashboardController extends Controller
                             $draftOrderId = $matches[1];
                         }
 
-                        // If invoiceUrl is missing, try to generate it by sending invoice
-                        if (empty($checkoutUrl) && $gqlId) {
-                            try {
-                                $sendInvoiceMutation = 'mutation draftOrderSendInvoice($id: ID!, $email: DraftOrderEmailInput) {
-                                    draftOrderSendInvoice(id: $id, email: $email) {
-                                        draftOrder {
-                                            id
-                                            invoiceUrl
-                                        }
-                                        userErrors {
-                                            field
-                                            message
-                                        }
-                                    }
-                                }';
-
-                                $invoiceRes = $shop->api()->graph($sendInvoiceMutation, [
-                                    'id' => $gqlId,
-                                    'email' => ['to' => $booking->email]
-                                ]);
-
-                                if ($invoiceRes['errors'] === false && isset($invoiceRes['body']['data']['draftOrderSendInvoice']['draftOrder'])) {
-                                    $refetchedOrder = $invoiceRes['body']['data']['draftOrderSendInvoice']['draftOrder'];
-                                    $checkoutUrl = $refetchedOrder['invoiceUrl'] ?? null;
-                                }
-                            } catch (\Exception $invoiceEx) {
-                                \Illuminate\Support\Facades\Log::error('Failed to send invoice for recreated draft order', ['error' => $invoiceEx->getMessage()]);
-                            }
-                        }
-
                         if ($checkoutUrl) {
                             $booking->update([
                                 'draft_order_id' => $draftOrderId,
@@ -743,22 +689,15 @@ class DashboardController extends Controller
                 }
             }
 
-            $subject = "Reminder: Secure Your Booking for " . $booking->product_title;
-            
-            $htmlContent = view('emails.booking_reminder', [
-                'booking' => $booking,
-                'senderName' => $senderName,
-                'buttonUrl' => $checkoutUrl,
-                'isDepositPaid' => false
-            ])->render();
-
-            $success = \App\Services\SendGridService::send($apiKey, $fromEmail, $booking->email, $subject, $htmlContent);
-
-            if ($success) {
-                return back()->with('success', 'Deposit reminder email sent to ' . $booking->email);
+            if ($booking->draft_order_id) {
+                $sent = $this->sendShopifyDraftOrderInvoice($shop, $booking->draft_order_id, $booking->email);
+                if ($sent) {
+                    return back()->with('success', 'Shopify deposit invoice sent successfully to ' . $booking->email);
+                }
+                return back()->with('error', 'Failed to send Shopify deposit invoice.');
             }
 
-            return back()->with('error', 'Failed to dispatch email via SendGrid.');
+            return back()->with('error', 'Failed to retrieve deposit invoice ID from Shopify.');
         }
     }
 
@@ -1025,37 +964,15 @@ class DashboardController extends Controller
                 }
             }
 
-            if ($checkoutUrl) {
-                // Also send email with invoice URL to the customer
-                $setting = Setting::where('shop_id', $shop->id)->first();
-                $apiKey = $setting->sendgrid_api_key ?? config('services.sendgrid.api_key');
-                $fromEmail = $setting->sendgrid_from_email ?? config('services.sendgrid.from_email');
-
-                // Format Shop Name
-                $senderName = $setting->sender_display_name ?? null;
-                if (empty($senderName)) {
-                    $shopDomain = $shop->name;
-                    $cleanName = str_replace('.myshopify.com', '', $shopDomain);
-                    $cleanName = ucwords(str_replace(['-', '_'], ' ', $cleanName));
-                    $senderName = $cleanName;
+            if ($booking->draft_order_id) {
+                $sent = $this->sendShopifyDraftOrderInvoice($shop, $booking->draft_order_id, $booking->email);
+                if ($sent) {
+                    return back()->with('success', 'Shopify remaining balance invoice sent successfully to ' . $booking->email);
                 }
-
-                $subject = "Complete Your Booking - Remaining Balance for " . $booking->product_title;
-                
-                // Render the beautiful HTML view
-                $htmlContent = view('emails.booking_reminder', [
-                    'booking' => $booking,
-                    'senderName' => $senderName,
-                    'buttonUrl' => $checkoutUrl,
-                    'isDepositPaid' => true
-                ])->render();
-
-                \App\Services\SendGridService::send($apiKey, $fromEmail, $booking->email, $subject, $htmlContent);
-
-                return back()->with('success', 'Draft order invoice created and sent successfully!');
+                return back()->with('error', 'Failed to send Shopify remaining balance invoice.');
             }
 
-            return back()->with('error', 'Failed to retrieve invoice URL from Shopify response.');
+            return back()->with('error', 'Failed to retrieve invoice ID from Shopify.');
 
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Draft Order Balance Creation failed: ' . $e->getMessage());
@@ -1249,5 +1166,47 @@ class DashboardController extends Controller
         }
 
         return false;
+    }
+
+    /**
+     * Send Shopify Draft Order Invoice to the customer using draftOrderSendInvoice mutation.
+     */
+    private function sendShopifyDraftOrderInvoice($shop, $draftOrderId, $emailAddress): bool
+    {
+        try {
+            $gqlId = 'gid://shopify/DraftOrder/' . $draftOrderId;
+            $sendInvoiceMutation = 'mutation draftOrderSendInvoice($id: ID!, $email: DraftOrderEmailInput) {
+                draftOrderSendInvoice(id: $id, email: $email) {
+                    draftOrder {
+                        id
+                    }
+                    userErrors {
+                        field
+                        message
+                    }
+                }
+            }';
+
+            $response = $shop->api()->graph($sendInvoiceMutation, [
+                'id' => $gqlId,
+                'email' => ['to' => $emailAddress]
+            ]);
+
+            if ($response['errors']) {
+                \Illuminate\Support\Facades\Log::error("sendShopifyDraftOrderInvoice API errors: " . json_encode($response['body']));
+                return false;
+            }
+
+            $userErrors = $response['body']['data']['draftOrderSendInvoice']['userErrors'] ?? [];
+            if (!empty($userErrors)) {
+                \Illuminate\Support\Facades\Log::error("sendShopifyDraftOrderInvoice User errors: " . json_encode($userErrors));
+                return false;
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("sendShopifyDraftOrderInvoice exception: " . $e->getMessage());
+            return false;
+        }
     }
 }
