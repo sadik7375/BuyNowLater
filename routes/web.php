@@ -702,6 +702,44 @@ Route::group(['prefix' => 'deploy'], function() {
             return 'DB Check failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString();
         }
     });
+
+    Route::get('/purge-selling-plans', function() {
+        try {
+            $shops = \App\Models\User::all();
+            $results = [];
+            $sellingPlanService = app(\App\Services\SellingPlanService::class);
+            
+            foreach ($shops as $shop) {
+                $settings = \App\Models\Setting::where('shop_id', $shop->id)->first();
+                if ($settings) {
+                    $groupId = $settings->selling_plan_group_id;
+                    $deleted = false;
+                    if ($groupId) {
+                        try {
+                            $sellingPlanService->deletePlanGroup($shop, $groupId);
+                            $deleted = true;
+                        } catch (\Exception $ex) {
+                            \Log::error("Failed to delete plan group for shop {$shop->name}: " . $ex->getMessage());
+                        }
+                    }
+                    
+                    $settings->update([
+                        'selling_plan_group_id' => null,
+                        'selling_plan_id' => null,
+                        'use_selling_plan' => false,
+                    ]);
+                    
+                    $results[] = "Shop {$shop->name}: Purged (deleted group from Shopify: " . ($deleted ? 'yes' : 'no') . ")";
+                } else {
+                    $results[] = "Shop {$shop->name}: No settings found";
+                }
+            }
+            
+            return 'Purge results: <br><pre>' . implode("\n", $results) . '</pre>';
+        } catch (\Exception $e) {
+            return 'Purge failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString();
+        }
+    });
 });
 
 
