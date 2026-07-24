@@ -301,6 +301,108 @@ Route::group(['prefix' => 'deploy'], function() {
         }
     });
 
+    Route::get('/debug-sync', function() {
+        try {
+            $shopName = request('shop');
+            if ($shopName) {
+                $shop = \App\Models\User::where('name', $shopName)->first();
+            } else {
+                $shop = \App\Models\User::first();
+            }
+
+            if (!$shop) {
+                return 'No shop user found in DB.';
+            }
+
+            $output = "Debugging sync for shop: {$shop->name}\n\n";
+
+            // Query draft orders
+            $gqlDraftOrdersQuery = 'query {
+                draftOrders(first: 100, reverse: true) {
+                    edges {
+                        node {
+                            id
+                            name
+                            status
+                            tags
+                            note
+                            lineItems(first: 5) {
+                                edges {
+                                    node {
+                                        title
+                                        customAttributes {
+                                            key
+                                            value
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }';
+
+            $draftRes = $shop->api()->graph($gqlDraftOrdersQuery);
+            $draftEdges = $draftRes['body']['data']['draftOrders']['edges'] ?? [];
+            $output .= "Draft Orders count: " . count($draftEdges) . "\n";
+            foreach ($draftEdges as $edge) {
+                $node = $edge['node'] ?? [];
+                $output .= " - Draft: " . ($node['name'] ?? 'N/A') . " (ID: " . ($node['id'] ?? 'N/A') . "), Status: " . ($node['status'] ?? 'N/A') . ", Tags: " . json_encode($node['tags'] ?? []) . ", Note: " . json_encode($node['note'] ?? '') . "\n";
+                $lineItems = $node['lineItems']['edges'] ?? [];
+                foreach ($lineItems as $liEdge) {
+                    $li = $liEdge['node'] ?? [];
+                    $output .= "   * Line Item: " . ($li['title'] ?? 'N/A') . ", customAttributes: " . json_encode($li['customAttributes'] ?? []) . "\n";
+                }
+            }
+
+            $output .= "\n" . str_repeat('=', 40) . "\n\n";
+
+            // Query orders
+            $gqlOrdersQuery = 'query {
+                orders(first: 100, reverse: true) {
+                    edges {
+                        node {
+                            id
+                            name
+                            displayFinancialStatus
+                            displayFulfillmentStatus
+                            tags
+                            note
+                            lineItems(first: 5) {
+                                edges {
+                                    node {
+                                        title
+                                        customAttributes {
+                                            key
+                                            value
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }';
+
+            $orderRes = $shop->api()->graph($gqlOrdersQuery);
+            $orderEdges = $orderRes['body']['data']['orders']['edges'] ?? [];
+            $output .= "Orders count: " . count($orderEdges) . "\n";
+            foreach ($orderEdges as $edge) {
+                $node = $edge['node'] ?? [];
+                $output .= " - Order: " . ($node['name'] ?? 'N/A') . " (ID: " . ($node['id'] ?? 'N/A') . "), Financial: " . ($node['displayFinancialStatus'] ?? 'N/A') . ", Fulfillment: " . ($node['displayFulfillmentStatus'] ?? 'N/A') . ", Tags: " . json_encode($node['tags'] ?? []) . ", Note: " . json_encode($node['note'] ?? '') . "\n";
+                $lineItems = $node['lineItems']['edges'] ?? [];
+                foreach ($lineItems as $liEdge) {
+                    $li = $liEdge['node'] ?? [];
+                    $output .= "   * Line Item: " . ($li['title'] ?? 'N/A') . ", customAttributes: " . json_encode($li['customAttributes'] ?? []) . "\n";
+                }
+            }
+
+            return '<pre>' . e($output) . '</pre>';
+        } catch (\Exception $e) {
+            return 'Debug sync failed: ' . $e->getMessage();
+        }
+    });
+
     Route::get('/wipe-bookings', function() {
         try {
             $count = \App\Models\Booking::count();
