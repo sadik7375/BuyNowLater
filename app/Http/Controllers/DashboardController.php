@@ -1172,6 +1172,13 @@ class DashboardController extends Controller
                                     node {
                                         title
                                         quantity
+                                        variant {
+                                            id
+                                            product {
+                                                id
+                                                handle
+                                            }
+                                        }
                                         customAttributes {
                                             key
                                             value
@@ -1218,6 +1225,13 @@ class DashboardController extends Controller
                                     node {
                                         title
                                         quantity
+                                        variant {
+                                            id
+                                            product {
+                                                id
+                                                handle
+                                            }
+                                        }
                                         customAttributes {
                                             key
                                             value
@@ -1282,6 +1296,21 @@ class DashboardController extends Controller
                         $lineItemsNode = $node['lineItems']['edges'] ?? [];
                         $productTitle = !empty($lineItemsNode[0]['node']['title']) ? $lineItemsNode[0]['node']['title'] : 'N/A';
 
+                        // Extract product and variant IDs
+                        $firstLineItemNode = $lineItemsNode[0]['node'] ?? null;
+                        $variantNode = $firstLineItemNode['variant'] ?? null;
+                        $variantId = null;
+                        if ($variantNode && isset($variantNode['id'])) {
+                            $variantId = preg_replace('/[^0-9]/', '', $variantNode['id']);
+                        }
+
+                        $productNode = $variantNode['product'] ?? null;
+                        $productId = null;
+                        if ($productNode && isset($productNode['id'])) {
+                            $productId = preg_replace('/[^0-9]/', '', $productNode['id']);
+                        }
+                        $productHandle = $productNode['handle'] ?? 'N/A';
+
                         // Extract prices
                         $originalPrice = 0.0;
                         $depositAmount = 0.0;
@@ -1322,6 +1351,9 @@ class DashboardController extends Controller
                             'token' => $token,
                             'customer_name' => $customerName,
                             'email' => $email,
+                            'product_id' => $productId ?? 'N/A',
+                            'product_handle' => $productHandle ?? 'N/A',
+                            'variant_id' => $variantId,
                             'product_title' => $productTitle,
                             'product_price' => $originalPrice,
                             'deposit_amount' => $depositAmount,
@@ -1404,6 +1436,21 @@ class DashboardController extends Controller
                         $lineItemsNode = $node['lineItems']['edges'] ?? [];
                         $productTitle = !empty($lineItemsNode[0]['node']['title']) ? $lineItemsNode[0]['node']['title'] : 'N/A';
 
+                        // Extract product and variant IDs
+                        $firstLineItemNode = $lineItemsNode[0]['node'] ?? null;
+                        $variantNode = $firstLineItemNode['variant'] ?? null;
+                        $variantId = null;
+                        if ($variantNode && isset($variantNode['id'])) {
+                            $variantId = preg_replace('/[^0-9]/', '', $variantNode['id']);
+                        }
+
+                        $productNode = $variantNode['product'] ?? null;
+                        $productId = null;
+                        if ($productNode && isset($productNode['id'])) {
+                            $productId = preg_replace('/[^0-9]/', '', $productNode['id']);
+                        }
+                        $productHandle = $productNode['handle'] ?? 'N/A';
+
                         // Extract prices
                         $originalPrice = 0.0;
                         $depositAmount = 0.0;
@@ -1444,6 +1491,9 @@ class DashboardController extends Controller
                             'token' => $token,
                             'customer_name' => $customerName,
                             'email' => $email,
+                            'product_id' => $productId ?? 'N/A',
+                            'product_handle' => $productHandle ?? 'N/A',
+                            'variant_id' => $variantId,
                             'product_title' => $productTitle,
                             'product_price' => $originalPrice,
                             'deposit_amount' => $depositAmount,
