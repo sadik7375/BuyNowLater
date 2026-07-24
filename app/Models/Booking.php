@@ -94,6 +94,7 @@ class Booking extends Model
                     'email' => $this->email,
                     'lineItems' => $gqlLineItems,
                     'note' => 'Remaining balance payment. Original Deposit Paid: ' . number_format((float) $this->deposit_amount, 2) . ' ' . ($this->currency ?: 'USD'),
+                    'tags' => ['buylater-balance'],
                     'customAttributes' => [
                         [
                             'key' => 'buylater_token',

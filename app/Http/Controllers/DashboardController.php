@@ -70,7 +70,7 @@ class DashboardController extends Controller
 
         // ---------- Self-Healing: Sync Status of Active Bookings ----------
         $syncCacheKey = "shop_{$shop->id}_sync_lock";
-        if (!\Illuminate\Support\Facades\Cache::has($syncCacheKey)) {
+        if ($request->query('force_sync') || !\Illuminate\Support\Facades\Cache::has($syncCacheKey)) {
             $this->syncBookingsWithShopify($shop);
             // Put a lock for 10 seconds to avoid redundant heavy API requests on rapid clicks/reloads
             \Illuminate\Support\Facades\Cache::put($syncCacheKey, true, now()->addSeconds(10));
@@ -1142,15 +1142,17 @@ class DashboardController extends Controller
         try {
             // 1. Fetch latest draft orders matching our app tags/notes
             $gqlDraftOrdersQuery = 'query {
-                draftOrders(first: 50, reverse: true, query: "tag:buylater-deposit OR tag:buylater-balance OR note:buylater_token OR note:BuyLater") {
+                draftOrders(first: 50, reverse: true, query: "tag:buylater-deposit OR tag:buylater-balance OR note:buylater_token OR note:BuyLater OR note:\'Remaining balance\'") {
                     edges {
                         node {
                             id
                             name
                             status
                             invoiceUrl
+                            tags
                             order {
                                 id
+                                name
                             }
                             note
                             customAttributes {
@@ -1182,13 +1184,14 @@ class DashboardController extends Controller
 
             // 2. Fetch latest orders matching our app tags/notes
             $gqlOrdersQuery = 'query {
-                orders(first: 50, reverse: true, query: "tag:buylater-deposit OR tag:buylater-balance OR note:buylater_token") {
+                orders(first: 50, reverse: true, query: "tag:buylater-deposit OR tag:buylater-balance OR note:buylater_token OR note:\'Remaining balance\'") {
                     edges {
                         node {
                             id
                             name
                             displayFinancialStatus
                             displayFulfillmentStatus
+                            tags
                             note
                             customAttributes {
                                 key
@@ -1275,24 +1278,36 @@ class DashboardController extends Controller
                 $node = $edge['node'] ?? null;
                 if (!$node) continue;
 
-                $token = $this->extractTokenFromNode($node);
-                if (!$token) continue;
-
                 $draftStatus = strtoupper($node['status'] ?? '');
                 $numericDraftId = preg_replace('/[^0-9]/', '', $node['id'] ?? '');
                 $isRemaining = $this->isRemainingBalanceNode($node);
                 $checkoutUrl = $node['invoiceUrl'] ?? null;
 
-                $booking = Booking::where('shop_id', $shop->id)->where('token', $token)->first();
+                // 1. Try to match by draft_order_id first (highly reliable for draft order flow)
+                $booking = null;
+                if ($numericDraftId) {
+                    $booking = Booking::where('shop_id', $shop->id)->where('draft_order_id', $numericDraftId)->first();
+                }
+
+                // 2. Fallback to token extraction
+                if (!$booking) {
+                    $token = $this->extractTokenFromNode($node);
+                    if ($token) {
+                        $booking = Booking::where('shop_id', $shop->id)->where('token', $token)->first();
+                    }
+                }
+
                 if ($booking) {
                     if ($draftStatus === 'COMPLETED') {
                         $orderId = !empty($node['order']['id']) ? preg_replace('/[^0-9]/', '', $node['order']['id']) : null;
+                        $orderName = !empty($node['order']['name']) ? $node['order']['name'] : null;
                         if ($isRemaining) {
                             if ($booking->status !== 'completed') {
                                 $booking->update([
                                     'status' => 'completed',
                                     'completed_at' => now(),
                                     'balance_order_id' => $orderId,
+                                    'balance_order_name' => $orderName,
                                 ]);
                                 \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} marked completed via Draft Order completion.");
                             }
@@ -1301,6 +1316,7 @@ class DashboardController extends Controller
                                 $booking->update([
                                     'status' => 'deposit_paid',
                                     'order_id' => $orderId,
+                                    'order_name' => $orderName,
                                     'expires_at' => now()->addDays($holdDurationDays),
                                     'deposit_paid_at' => now(),
                                     'draft_order_id' => null,
@@ -1371,6 +1387,15 @@ class DashboardController extends Controller
      */
     private function isRemainingBalanceNode($node): bool
     {
+        // Check tags
+        $tags = $node['tags'] ?? [];
+        if (is_string($tags)) {
+            $tags = array_map('trim', explode(',', $tags));
+        }
+        if (in_array('buylater-balance', $tags)) {
+            return true;
+        }
+
         $note = $node['note'] ?? '';
         if (stripos($note, 'Remaining balance payment') !== false) {
             return true;
