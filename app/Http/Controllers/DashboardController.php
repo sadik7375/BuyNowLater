@@ -69,12 +69,7 @@ class DashboardController extends Controller
         }
 
         // ---------- Self-Healing: Sync Status of Active Bookings ----------
-        $syncCacheKey = "shop_{$shop->id}_sync_lock";
-        if ($request->query('force_sync') || !\Illuminate\Support\Facades\Cache::has($syncCacheKey)) {
-            $this->syncBookingsWithShopify($shop);
-            // Put a lock for 10 seconds to avoid redundant heavy API requests on rapid clicks/reloads
-            \Illuminate\Support\Facades\Cache::put($syncCacheKey, true, now()->addSeconds(10));
-        }
+        $this->syncBookingsWithShopify($shop);
 
         // ---------- Date Filter Handling ----------
         $dateFilter = $request->query('date_filter', 'all'); // all, today, week, custom
