@@ -100,6 +100,9 @@ Route::get('/status-settings-db', function() {
                 'hold_duration_days' => $s->hold_duration_days,
                 'product_targeting_type' => $s->product_targeting_type,
                 'targeted_product_ids' => $s->targeted_product_ids,
+                'use_selling_plan' => $s->use_selling_plan,
+                'selling_plan_group_id' => $s->selling_plan_group_id,
+                'selling_plan_id' => $s->selling_plan_id,
             ];
         });
         return response()->json($settings);

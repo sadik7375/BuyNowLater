@@ -433,7 +433,7 @@ function initBuyLaterWidget() {
 
     if (window.buylaterUseSellingPlan) {
       showMessage('Success! Adding deposit option to cart & redirecting to checkout...', 'success');
-      const cartBody = {
+      const item = {
         id: payload.variant_id || payload.product_id,
         quantity: 1
       };
@@ -442,8 +442,11 @@ function initBuyLaterWidget() {
         if (planId.includes('/')) {
           planId = planId.split('/').pop();
         }
-        cartBody.selling_plan = parseInt(planId, 10) || planId;
+        item.selling_plan = parseInt(planId, 10) || planId;
       }
+      const cartBody = {
+        items: [item]
+      };
       fetch('/cart/clear.js', { method: 'POST' })
       .then(() => fetch('/cart/add.js', {
         method: 'POST',

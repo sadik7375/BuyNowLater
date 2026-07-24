@@ -72,7 +72,7 @@ class SellingPlanService
                                         'percentage' => (float) $depositPercentage,
                                     ],
                                 ],
-                                'remainingBalanceChargeTrigger' => 'NO_TRIGGER',
+                                'remainingBalanceChargeTrigger' => 'ON_FULFILLMENT',
                             ],
                         ],
                         'deliveryPolicy' => [

@@ -36,6 +36,5 @@ subpath = "buylater-proxy"
 prefix = "apps"
 
 [build]
-include_config_on_deploy = true
 
 
