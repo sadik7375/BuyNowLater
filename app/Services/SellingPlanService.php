@@ -67,6 +67,7 @@ class SellingPlanService
                         'billingPolicy' => [
                             'fixed' => [
                                 'checkoutCharge' => [
+                                    'type' => 'PERCENTAGE',
                                     'value' => [
                                         'percentage' => (float) $depositPercentage,
                                     ],
