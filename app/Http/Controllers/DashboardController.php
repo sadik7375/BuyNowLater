@@ -15,6 +15,11 @@ class DashboardController extends Controller
     {
         $shop = auth()->user();
 
+        if ($request->query('clear_all_bookings') === 'yes') {
+            Booking::where('shop_id', $shop->id)->delete();
+            return redirect($request->url());
+        }
+
         $activeTab = 'tab-overview';
         $subTab = 'support';
         if ($request->is('bookings')) {
@@ -1145,11 +1150,19 @@ class DashboardController extends Controller
                             status
                             invoiceUrl
                             tags
+                            note
+                            totalPrice
+                            currencyCode
+                            createdAt
+                            customer {
+                                firstName
+                                lastName
+                                email
+                            }
                             order {
                                 id
                                 name
                             }
-                            note
                             customAttributes {
                                 key
                                 value
@@ -1188,6 +1201,14 @@ class DashboardController extends Controller
                             displayFulfillmentStatus
                             tags
                             note
+                            totalPrice
+                            currencyCode
+                            createdAt
+                            customer {
+                                firstName
+                                lastName
+                                email
+                            }
                             customAttributes {
                                 key
                                 value
@@ -1240,10 +1261,74 @@ class DashboardController extends Controller
                 }
 
                 // 2. Fallback to token matching
+                $token = null;
                 if (!$booking) {
                     $token = $this->extractTokenFromNode($node);
                     if ($token) {
                         $booking = Booking::where('shop_id', $shop->id)->where('token', $token)->first();
+                    }
+                }
+
+                // 3. Auto-create booking if it doesn't exist but has a token
+                if (!$booking) {
+                    if (!$token) {
+                        $token = $this->extractTokenFromNode($node);
+                    }
+                    if ($token) {
+                        $customer = $node['customer'] ?? null;
+                        $customerName = $customer ? trim(($customer['firstName'] ?? '') . ' ' . ($customer['lastName'] ?? '')) : 'N/A';
+                        $email = $customer ? ($customer['email'] ?? 'N/A') : 'N/A';
+
+                        $lineItemsNode = $node['lineItems']['edges'] ?? [];
+                        $productTitle = !empty($lineItemsNode[0]['node']['title']) ? $lineItemsNode[0]['node']['title'] : 'N/A';
+
+                        // Extract prices
+                        $originalPrice = 0.0;
+                        $depositAmount = 0.0;
+                        $remainingBalance = 0.0;
+
+                        $attrs = array_merge($node['customAttributes'] ?? [], !empty($lineItemsNode[0]['node']['customAttributes']) ? $lineItemsNode[0]['node']['customAttributes'] : []);
+                        foreach ($attrs as $attr) {
+                            $key = strtolower($attr['key'] ?? '');
+                            $val = $attr['value'] ?? '';
+                            if (stripos($key, 'original price') !== false || stripos($key, 'product price') !== false) {
+                                $originalPrice = (float) preg_replace('/[^0-9.]/', '', $val);
+                            }
+                            if (stripos($key, 'deposit') !== false) {
+                                $depositAmount = (float) preg_replace('/[^0-9.]/', '', $val);
+                            }
+                            if (stripos($key, 'balance') !== false || stripos($key, 'remaining') !== false) {
+                                $remainingBalance = (float) preg_replace('/[^0-9.]/', '', $val);
+                            }
+                        }
+
+                        if ($depositAmount === 0.0 && isset($node['totalPrice'])) {
+                            $depositAmount = (float) $node['totalPrice'];
+                        }
+                        if ($originalPrice === 0.0) {
+                            $pct = (float) ($settings->deposit_percentage ?? 10) / 100;
+                            if ($pct > 0) {
+                                $originalPrice = $depositAmount / $pct;
+                            } else {
+                                $originalPrice = $depositAmount;
+                            }
+                        }
+                        if ($remainingBalance === 0.0) {
+                            $remainingBalance = $originalPrice - $depositAmount;
+                        }
+
+                        $booking = Booking::create([
+                            'shop_id' => $shop->id,
+                            'token' => $token,
+                            'customer_name' => $customerName,
+                            'email' => $email,
+                            'product_title' => $productTitle,
+                            'product_price' => $originalPrice,
+                            'deposit_amount' => $depositAmount,
+                            'remaining_balance' => $remainingBalance,
+                            'status' => 'pending',
+                        ]);
+                        \Illuminate\Support\Facades\Log::info("Sync: Auto-created Booking ID {$booking->id} from Order {$node['name']}");
                     }
                 }
 
@@ -1297,11 +1382,75 @@ class DashboardController extends Controller
                     $booking = Booking::where('shop_id', $shop->id)->where('draft_order_id', $numericDraftId)->first();
                 }
 
-                // 2. Fallback to token extraction
+                // 2. Fallback to token matching
+                $token = null;
                 if (!$booking) {
                     $token = $this->extractTokenFromNode($node);
                     if ($token) {
                         $booking = Booking::where('shop_id', $shop->id)->where('token', $token)->first();
+                    }
+                }
+
+                // 3. Auto-create booking if it doesn't exist but has a token
+                if (!$booking) {
+                    if (!$token) {
+                        $token = $this->extractTokenFromNode($node);
+                    }
+                    if ($token) {
+                        $customer = $node['customer'] ?? null;
+                        $customerName = $customer ? trim(($customer['firstName'] ?? '') . ' ' . ($customer['lastName'] ?? '')) : 'N/A';
+                        $email = $customer ? ($customer['email'] ?? 'N/A') : 'N/A';
+
+                        $lineItemsNode = $node['lineItems']['edges'] ?? [];
+                        $productTitle = !empty($lineItemsNode[0]['node']['title']) ? $lineItemsNode[0]['node']['title'] : 'N/A';
+
+                        // Extract prices
+                        $originalPrice = 0.0;
+                        $depositAmount = 0.0;
+                        $remainingBalance = 0.0;
+
+                        $attrs = array_merge($node['customAttributes'] ?? [], !empty($lineItemsNode[0]['node']['customAttributes']) ? $lineItemsNode[0]['node']['customAttributes'] : []);
+                        foreach ($attrs as $attr) {
+                            $key = strtolower($attr['key'] ?? '');
+                            $val = $attr['value'] ?? '';
+                            if (stripos($key, 'original price') !== false || stripos($key, 'product price') !== false) {
+                                $originalPrice = (float) preg_replace('/[^0-9.]/', '', $val);
+                            }
+                            if (stripos($key, 'deposit') !== false) {
+                                $depositAmount = (float) preg_replace('/[^0-9.]/', '', $val);
+                            }
+                            if (stripos($key, 'balance') !== false || stripos($key, 'remaining') !== false) {
+                                $remainingBalance = (float) preg_replace('/[^0-9.]/', '', $val);
+                            }
+                        }
+
+                        if ($depositAmount === 0.0 && isset($node['totalPrice'])) {
+                            $depositAmount = (float) $node['totalPrice'];
+                        }
+                        if ($originalPrice === 0.0) {
+                            $pct = (float) ($settings->deposit_percentage ?? 10) / 100;
+                            if ($pct > 0) {
+                                $originalPrice = $depositAmount / $pct;
+                            } else {
+                                $originalPrice = $depositAmount;
+                            }
+                        }
+                        if ($remainingBalance === 0.0) {
+                            $remainingBalance = $originalPrice - $depositAmount;
+                        }
+
+                        $booking = Booking::create([
+                            'shop_id' => $shop->id,
+                            'token' => $token,
+                            'customer_name' => $customerName,
+                            'email' => $email,
+                            'product_title' => $productTitle,
+                            'product_price' => $originalPrice,
+                            'deposit_amount' => $depositAmount,
+                            'remaining_balance' => $remainingBalance,
+                            'status' => 'pending',
+                        ]);
+                        \Illuminate\Support\Facades\Log::info("Sync: Auto-created Booking ID {$booking->id} from Draft Order {$node['name']}");
                     }
                 }
 
