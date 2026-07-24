@@ -1187,7 +1187,7 @@ class DashboardController extends Controller
             $draftRes = $shop->api()->graph($gqlDraftOrdersQuery);
             $draftOrders = [];
             if ($draftRes && !empty($draftRes['body']['data']['draftOrders']['edges'])) {
-                $draftOrders = $draftRes['body']['data']['draftOrders']['edges'];
+                $draftOrders = json_decode(json_encode($draftRes['body']['data']['draftOrders']['edges']), true) ?? [];
             }
 
             // 2. Fetch latest orders matching our app tags/notes
@@ -1233,7 +1233,7 @@ class DashboardController extends Controller
             $orderRes = $shop->api()->graph($gqlOrdersQuery);
             $orders = [];
             if ($orderRes && !empty($orderRes['body']['data']['orders']['edges'])) {
-                $orders = $orderRes['body']['data']['orders']['edges'];
+                $orders = json_decode(json_encode($orderRes['body']['data']['orders']['edges']), true) ?? [];
             }
 
             $settings = Setting::where('shop_id', $shop->id)->first();
