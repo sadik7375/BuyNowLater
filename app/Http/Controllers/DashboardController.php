@@ -1228,18 +1228,31 @@ class DashboardController extends Controller
                 $node = $edge['node'] ?? null;
                 if (!$node) continue;
 
-                $token = $this->extractTokenFromNode($node);
-                if (!$token) continue;
-
                 $numericOrderId = preg_replace('/[^0-9]/', '', $node['id'] ?? '');
                 $financialStatus = strtoupper($node['displayFinancialStatus'] ?? '');
                 $isRemaining = $this->isRemainingBalanceNode($node);
+                $orderName = $node['name'] ?? null;
+                $fulfillmentStatus = strtolower($node['displayFulfillmentStatus'] ?? '');
 
-                $booking = Booking::where('shop_id', $shop->id)->where('token', $token)->first();
+                // 1. Try to match by order_id or balance_order_id first
+                $booking = null;
+                if ($numericOrderId) {
+                    if ($isRemaining) {
+                        $booking = Booking::where('shop_id', $shop->id)->where('balance_order_id', $numericOrderId)->first();
+                    } else {
+                        $booking = Booking::where('shop_id', $shop->id)->where('order_id', $numericOrderId)->first();
+                    }
+                }
+
+                // 2. Fallback to token matching
+                if (!$booking) {
+                    $token = $this->extractTokenFromNode($node);
+                    if ($token) {
+                        $booking = Booking::where('shop_id', $shop->id)->where('token', $token)->first();
+                    }
+                }
+
                 if ($booking) {
-                    $orderName = $node['name'] ?? null;
-                    $fulfillmentStatus = strtolower($node['displayFulfillmentStatus'] ?? '');
-
                     if ($isRemaining) {
                         $updateData = [
                             'balance_order_id' => $numericOrderId,
