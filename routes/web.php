@@ -343,6 +343,8 @@ Route::group(['prefix' => 'deploy'], function() {
             }';
 
             $draftRes = $shop->api()->graph($gqlDraftOrdersQuery);
+            $output .= "Raw Draft Response: " . json_encode($draftRes) . "\n\n";
+            
             $draftEdges = $draftRes['body']['data']['draftOrders']['edges'] ?? [];
             $output .= "Draft Orders count: " . count($draftEdges) . "\n";
             foreach ($draftEdges as $edge) {
@@ -385,6 +387,8 @@ Route::group(['prefix' => 'deploy'], function() {
             }';
 
             $orderRes = $shop->api()->graph($gqlOrdersQuery);
+            $output .= "Raw Orders Response: " . json_encode($orderRes) . "\n\n";
+
             $orderEdges = $orderRes['body']['data']['orders']['edges'] ?? [];
             $output .= "Orders count: " . count($orderEdges) . "\n";
             foreach ($orderEdges as $edge) {
