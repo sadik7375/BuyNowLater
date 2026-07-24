@@ -80,16 +80,6 @@ class SellingPlanService
                                 'fulfillmentTrigger' => 'UNKNOWN',
                             ],
                         ],
-                        'pricingPolicies' => [
-                            [
-                                'fixed' => [
-                                    'adjustmentType' => 'PERCENTAGE',
-                                    'adjustmentValue' => [
-                                        'percentage' => (float) $depositPercentage,
-                                    ],
-                                ],
-                            ],
-                        ],
                     ],
                 ],
             ],
