@@ -52,24 +52,24 @@ class DashboardController extends Controller
                 'show_reminders'           => true,
                 'show_alerts'              => true,
                 'hold_duration_days'       => 14,
-                'use_selling_plan'         => true,
+                'use_selling_plan'         => false,
             ]
         );
 
-        // Auto-initialize Selling Plan Group if not set up
-        if (!$settings->selling_plan_group_id || !$settings->use_selling_plan) {
+        // Auto-delete Selling Plan Group if it exists or is active to clean up
+        if ($settings->selling_plan_group_id || $settings->use_selling_plan) {
             try {
                 $sellingPlanService = app(\App\Services\SellingPlanService::class);
-                $res = $sellingPlanService->createOrUpdatePlanGroup($shop, (int) $settings->deposit_percentage, (int) $settings->hold_duration_days);
-                if ($res && !empty($res['group_id'])) {
-                    $settings->update([
-                        'selling_plan_group_id' => $res['group_id'],
-                        'selling_plan_id' => $res['plan_id'] ?? null,
-                        'use_selling_plan' => true,
-                    ]);
+                if ($settings->selling_plan_group_id) {
+                    $sellingPlanService->deletePlanGroup($shop, $settings->selling_plan_group_id);
                 }
+                $settings->update([
+                    'selling_plan_group_id' => null,
+                    'selling_plan_id' => null,
+                    'use_selling_plan' => false,
+                ]);
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error("DashboardController: Auto selling plan group setup failed: " . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error("DashboardController: Auto-cleanup of selling plan group failed: " . $e->getMessage());
             }
         }
 

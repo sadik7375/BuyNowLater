@@ -380,7 +380,7 @@ class AppProxyController extends Controller
         $holdDurationDays = $settings ? (int) ($settings->hold_duration_days ?? 14) : 14;
 
         // Use provided token or generate a unique token
-        $token = strtolower($request->input('token') ?: Str::random(32));
+        $token = strtolower($request->input('token') ?: \Illuminate\Support\Str::random(32));
 
         $variantId = $request->input('variant_id');
         if ($variantId && str_contains($variantId, '/')) {
@@ -388,7 +388,140 @@ class AppProxyController extends Controller
             $variantId = end($parts);
         }
 
-        Log::info('AppProxy: Creating selling_plan booking without draft order.');
+        $lineItems = [[
+            'title' => 'Deposit — ' . $request->input('product_title'),
+            'price' => number_format($depositAmount, 2, '.', ''),
+            'quantity' => 1,
+            'requires_shipping' => false,
+            'properties' => [
+                ['name' => '_token', 'value' => $token],
+                ['name' => 'Original Price', 'value' => number_format($productPrice, 2) . ' ' . $currency],
+                ['name' => 'Remaining Balance', 'value' => number_format($remainingBalance, 2) . ' ' . $currency],
+                ['name' => 'product_id', 'value' => (string) $request->input('product_id')],
+                ['name' => 'variant_id', 'value' => (string) $variantId],
+            ]
+        ]];
+
+        $draftOrderId = null;
+        $checkoutUrl = null;
+
+        try {
+            $gqlLineItems = [];
+            foreach ($lineItems as $item) {
+                $customAttributes = [];
+                if (isset($item['properties'])) {
+                    foreach ($item['properties'] as $prop) {
+                        $customAttributes[] = [
+                            'key' => $prop['name'],
+                            'value' => (string) $prop['value']
+                        ];
+                    }
+                }
+                $gqlLineItems[] = [
+                    'title' => $item['title'],
+                    'originalUnitPrice' => (string) $item['price'],
+                    'quantity' => (int) $item['quantity'],
+                    'customAttributes' => $customAttributes,
+                ];
+            }
+
+            $variables = [
+                'input' => [
+                    'email' => $request->input('email'),
+                    'note' => 'BuyLater deposit — do not fulfill',
+                    'tags' => ['buylater-deposit'],
+                    'lineItems' => $gqlLineItems,
+                ]
+            ];
+
+            Log::info('Deposit draft order: sending GraphQL request to Shopify', [
+                'api_version' => config('shopify-app.api_version'),
+                'shop' => $shopDomain,
+            ]);
+
+            $createMutation = 'mutation draftOrderCreate($input: DraftOrderInput!) {
+                draftOrderCreate(input: $input) {
+                    draftOrder {
+                        id
+                        invoiceUrl
+                        status
+                    }
+                    userErrors {
+                        field
+                        message
+                    }
+                }
+            }';
+
+            $createRes = $shop->api()->graph($createMutation, $variables);
+
+            Log::info('Deposit draft order create response', [
+                'errors' => $createRes['errors'],
+                'body' => $createRes['body'] ?? null,
+            ]);
+
+            if ($createRes['errors'] === false && isset($createRes['body']['data']['draftOrderCreate']['draftOrder'])) {
+                $draftOrder = $createRes['body']['data']['draftOrderCreate']['draftOrder'];
+                $gqlId = $draftOrder['id'] ?? null;
+                $checkoutUrl = $draftOrder['invoiceUrl'] ?? null;
+
+                if ($gqlId && preg_match('/DraftOrder\/(\d+)/', $gqlId, $matches)) {
+                    $draftOrderId = $matches[1];
+                }
+
+                // If invoiceUrl is missing, try to get it by sending an invoice
+                if (empty($checkoutUrl) && $gqlId) {
+                    Log::info('invoiceUrl missing, attempting to send invoice via GraphQL to generate it');
+                    try {
+                        $sendInvoiceMutation = 'mutation draftOrderSendInvoice($id: ID!, $email: DraftOrderEmailInput) {
+                            draftOrderSendInvoice(id: $id, email: $email) {
+                                draftOrder {
+                                    id
+                                    invoiceUrl
+                                }
+                                userErrors {
+                                    field
+                                    message
+                                }
+                            }
+                        }';
+
+                        $invoiceRes = $shop->api()->graph($sendInvoiceMutation, [
+                            'id' => $gqlId,
+                            'email' => ['to' => $request->input('email')]
+                        ]);
+
+                        if ($invoiceRes['errors'] === false && isset($invoiceRes['body']['data']['draftOrderSendInvoice']['draftOrder'])) {
+                            $refetchedOrder = $invoiceRes['body']['data']['draftOrderSendInvoice']['draftOrder'];
+                            $checkoutUrl = $refetchedOrder['invoiceUrl'] ?? null;
+                            Log::info('Re-fetched draft order invoiceUrl via sendInvoice', ['checkout_url' => $checkoutUrl]);
+                        }
+                    } catch (\Exception $invoiceEx) {
+                        Log::error('Failed to send invoice for draft order', ['error' => $invoiceEx->getMessage()]);
+                    }
+                }
+
+                Log::info('Deposit draft order created, invoice URL generated', [
+                    'draft_order_id' => $draftOrderId,
+                    'checkout_url'   => $checkoutUrl,
+                ]);
+            } else {
+                $userErrors = $createRes['body']['data']['draftOrderCreate']['userErrors'] ?? [];
+                Log::error('Shopify deposit draft order creation failed', [
+                    'errors' => $createRes['errors'],
+                    'userErrors' => $userErrors,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Exception creating deposit draft order', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
+
+        Log::info('AppProxy: Creating draft order booking in database.');
         $booking = Booking::create([
             'shop_id' => $shop->id,
             'email' => $request->input('email'),
@@ -401,17 +534,25 @@ class AppProxyController extends Controller
             'deposit_amount' => $depositAmount,
             'remaining_balance' => $remainingBalance,
             'currency' => $currency,
+            'draft_order_id' => $draftOrderId,
+            'checkout_url' => $checkoutUrl,
             'status' => 'pending',
             'token' => $token,
-            'payment_type' => 'selling_plan',
-            'checkout_url' => '/checkout',
             'customer_name' => $request->input('customer_name') ?: ($request->input('name') ?: null),
         ]);
 
+        if (!$checkoutUrl) {
+            return response()->json([
+                'message'      => 'Booking saved but checkout URL could not be generated. Please try again.',
+                'booking'      => $booking,
+                'checkout_url' => null,
+            ], 422);
+        }
+
         return response()->json([
-            'message' => 'Selling Plan booking created successfully.',
-            'booking' => $booking,
-            'checkout_url' => '/checkout',
+            'message'      => 'Booking created successfully.',
+            'booking'      => $booking,
+            'checkout_url' => $checkoutUrl,
         ], 201);
     }
 
@@ -474,24 +615,6 @@ class AppProxyController extends Controller
             }
         }
 
-        $sellingPlanId = $settings ? $settings->selling_plan_id : null;
-        if ($sellingPlanId && preg_match('/SellingPlan\/(\d+)/', $sellingPlanId, $m)) {
-            $sellingPlanId = $m[1];
-        }
-
-        $currentProductId = $request->query('product_id') ?: $request->input('product_id');
-        if ($shop && $settings && $settings->selling_plan_group_id && $currentProductId) {
-            $cleanId = preg_replace('/[^0-9]/', '', $currentProductId);
-            if (!empty($cleanId)) {
-                try {
-                    $sellingPlanService = app(\App\Services\SellingPlanService::class);
-                    $sellingPlanService->attachProducts($shop, $settings->selling_plan_group_id, ["gid://shopify/Product/{$cleanId}"]);
-                } catch (\Exception $ex) {
-                    Log::warn('Auto attach product exception in getSettings: ' . $ex->getMessage());
-                }
-            }
-        }
-
         return response()->json([
             'enabled' => $isWidgetEnabled,
             'deposit_percentage' => $settings ? (int) $settings->deposit_percentage : 10,
@@ -500,9 +623,9 @@ class AppProxyController extends Controller
             'show_alerts' => $settings ? (bool) ($settings->show_alerts ?? true) : true,
             'hold_duration_days' => $settings ? (int) ($settings->hold_duration_days ?? 14) : 14,
             'button_text' => $settings ? $settings->button_text : null,
-            'use_selling_plan' => $settings ? (bool) ($settings->use_selling_plan ?? false) : false,
-            'selling_plan_group_id' => $settings ? $settings->selling_plan_group_id : null,
-            'selling_plan_id' => $sellingPlanId,
+            'use_selling_plan' => false,
+            'selling_plan_group_id' => null,
+            'selling_plan_id' => null,
         ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
           ->header('Pragma', 'no-cache');
     }

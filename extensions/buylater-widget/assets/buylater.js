@@ -1,7 +1,7 @@
 function initBuyLaterWidget() {
   if (window.buylaterInitialized) return;
   window.buylaterInitialized = true;
-  window.buylaterUseSellingPlan = true;
+  window.buylaterUseSellingPlan = false;
 
   const triggerBtn = document.getElementById('buylater-trigger');
   const modal = document.getElementById('buylater-modal');
@@ -92,13 +92,6 @@ function initBuyLaterWidget() {
           btnWrapper.style.setProperty('display', 'flex', 'important');
         } else {
           triggerBtn.style.display = 'inline-block';
-        }
-      }
-      if (data.use_selling_plan || data.selling_plan_id) {
-        window.buylaterUseSellingPlan = true;
-        window.buylaterSellingPlanGroupId = data.selling_plan_group_id;
-        if (data.selling_plan_id) {
-          window.buylaterSellingPlanId = data.selling_plan_id;
         }
       }
       if (data.deposit_percentage) {
@@ -430,56 +423,6 @@ function initBuyLaterWidget() {
       email: email,
       deposit_percentage: depositPercentage
     };
-
-    if (window.buylaterUseSellingPlan) {
-      showMessage('Success! Adding deposit option to cart & redirecting to checkout...', 'success');
-      const token = Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('');
-      const item = {
-        id: payload.variant_id || payload.product_id,
-        quantity: 1,
-        properties: {
-          _token: token,
-          buylater_token: token
-        }
-      };
-      if (window.buylaterSellingPlanId) {
-        let planId = String(window.buylaterSellingPlanId);
-        if (planId.includes('/')) {
-          planId = planId.split('/').pop();
-        }
-        item.selling_plan = parseInt(planId, 10) || planId;
-      }
-      const cartBody = {
-        items: [item]
-      };
-      fetch('/cart/clear.js', { method: 'POST' })
-      .then(() => fetch('/cart/add.js', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(cartBody)
-      }))
-      .then(res => res.json())
-      .then(cartData => {
-        // Record pending booking in app database asynchronously
-        fetch('/apps/buylater-proxy/bookings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({ ...payload, token: token, payment_type: 'selling_plan' })
-        }).catch(e => console.warn('Background booking record log error:', e));
-
-        setTimeout(() => {
-          window.top.location.href = '/checkout';
-        }, 1000);
-      })
-      .catch(err => {
-        console.warn('Native cart/add.js failed, falling back to standard proxy booking:', err);
-        executeProxyBooking(payload);
-      });
-      return;
-    }
 
     executeProxyBooking(payload);
 
