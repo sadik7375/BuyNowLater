@@ -25,8 +25,8 @@ class SellingPlanService
         $groupName = "Buy Now Later ({$depositPercentage}% Deposit)";
 
         if ($existingGroupId) {
-            // Update existing group
-            return $this->updatePlanGroup($shop, $existingGroupId, $depositPercentage, $holdDurationDays, $planName, $groupName);
+            // Delete existing group first to ensure stale policies or missing plan IDs are cleanly purged
+            $this->deletePlanGroup($shop, $existingGroupId);
         }
 
         // Create new Selling Plan Group

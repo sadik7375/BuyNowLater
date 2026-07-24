@@ -444,14 +444,15 @@ function initBuyLaterWidget() {
         }
         cartBody.selling_plan = parseInt(planId, 10) || planId;
       }
-      fetch('/cart/add.js', {
+      fetch('/cart/clear.js', { method: 'POST' })
+      .then(() => fetch('/cart/add.js', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         body: JSON.stringify(cartBody)
-      })
+      }))
       .then(res => res.json())
       .then(cartData => {
         // Record pending booking in app database asynchronously
