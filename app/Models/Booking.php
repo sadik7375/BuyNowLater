@@ -35,12 +35,14 @@ class Booking extends Model
         'selling_plan_group_id',
         'subscription_contract_id',
         'payment_type',
+        'invoice_sent',
     ];
 
     protected $casts = [
         'expires_at' => 'datetime',
         'deposit_paid_at' => 'datetime',
         'completed_at' => 'datetime',
+        'invoice_sent' => 'boolean',
     ];
 
     /**

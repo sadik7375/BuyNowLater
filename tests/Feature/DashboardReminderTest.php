@@ -113,6 +113,7 @@ class DashboardReminderTest extends TestCase
         $this->assertEquals('pending', $booking->status);
         $this->assertEquals(999111, $booking->draft_order_id);
         $this->assertEquals('https://test-shop.myshopify.com/checkout/999111', $booking->checkout_url);
+        $this->assertTrue($booking->invoice_sent);
     }
 
     public function test_send_reminder_deposit_paid_booking_creates_remaining_balance_draft_order_and_sends_email()
@@ -237,6 +238,7 @@ class DashboardReminderTest extends TestCase
         $this->assertEquals('deposit_paid', $booking->status);
         $this->assertEquals(77777, $booking->draft_order_id);
         $this->assertEquals('https://test-shop.myshopify.com/checkout/77777', $booking->checkout_url);
+        $this->assertTrue($booking->invoice_sent);
     }
 
     public function test_send_reminder_deposit_paid_booking_transitions_to_completed_when_remaining_balance_is_paid()
@@ -411,6 +413,7 @@ class DashboardReminderTest extends TestCase
 
         $booking->refresh();
         $this->assertEquals(999222, $booking->draft_order_id);
+        $this->assertTrue($booking->invoice_sent);
     }
 
     public function test_send_reminder_deposit_paid_booking_with_variant_id_creates_remaining_balance_draft_order()
@@ -535,5 +538,6 @@ class DashboardReminderTest extends TestCase
 
         $booking->refresh();
         $this->assertEquals(88888, $booking->draft_order_id);
+        $this->assertTrue($booking->invoice_sent);
     }
 }

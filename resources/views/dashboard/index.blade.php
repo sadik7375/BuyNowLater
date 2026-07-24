@@ -2196,7 +2196,7 @@
                                             <form action="{{ route('bookings.send_reminder', array_merge(['id' => $booking->id], request()->query())) }}" method="POST" style="margin:0;">
                                                 @csrf
                                                 <button type="submit" class="btn-action-secondary" style="padding: 4px 8px; font-size: 11.5px;">
-                                                    Send Reminder
+                                                    {{ $booking->invoice_sent ? 'Resend Invoice' : 'Send Invoice' }}
                                                 </button>
                                             </form>
                                         </div>
@@ -2225,7 +2225,7 @@
                                             <form action="{{ route('bookings.send_reminder', array_merge(['id' => $booking->id], request()->query())) }}" method="POST" style="margin:0;">
                                                 @csrf
                                                 <button type="submit" class="btn-action-secondary" style="padding: 4px 8px; font-size: 11.5px;">
-                                                    Send Reminder
+                                                    {{ $booking->invoice_sent ? 'Resend Invoice' : 'Send Invoice' }}
                                                 </button>
                                             </form>
                                         </div>
@@ -2254,7 +2254,7 @@
                                             <form action="{{ route('bookings.send_reminder', array_merge(['id' => $booking->id], request()->query())) }}" method="POST" style="margin:0;">
                                                 @csrf
                                                 <button type="submit" class="btn-action-secondary" style="padding: 4px 8px; font-size: 11.5px;">
-                                                    Send Reminder
+                                                    {{ $booking->invoice_sent ? 'Resend Invoice' : 'Send Invoice' }}
                                                 </button>
                                             </form>
                                         </div>
@@ -2412,7 +2412,7 @@
                                             @if($booking->status !== 'completed' && $booking->status !== 'expired')
                                                 <form action="{{ route('bookings.send_reminder', array_merge(['id' => $booking->id], request()->query())) }}" method="POST" style="margin:0;">
                                                     @csrf
-                                                    <button type="submit" class="btn-action-secondary">Send Reminder</button>
+                                                    <button type="submit" class="btn-action-secondary">{{ $booking->invoice_sent ? 'Resend Invoice' : 'Send Invoice' }}</button>
                                                 </form>
                                             @endif
                                         </div>

@@ -586,6 +586,7 @@ class DashboardController extends Controller
                 if ($booking->draft_order_id) {
                     $sent = $this->sendShopifyDraftOrderInvoice($shop, $booking->draft_order_id, $booking->email);
                     if ($sent) {
+                        $booking->update(['invoice_sent' => true]);
                         return back()->with('success', 'Shopify remaining balance invoice sent successfully to ' . $booking->email);
                     }
                     return back()->with('error', 'Failed to send Shopify remaining balance invoice.');
@@ -692,6 +693,7 @@ class DashboardController extends Controller
             if ($booking->draft_order_id) {
                 $sent = $this->sendShopifyDraftOrderInvoice($shop, $booking->draft_order_id, $booking->email);
                 if ($sent) {
+                    $booking->update(['invoice_sent' => true]);
                     return back()->with('success', 'Shopify deposit invoice sent successfully to ' . $booking->email);
                 }
                 return back()->with('error', 'Failed to send Shopify deposit invoice.');
@@ -967,6 +969,7 @@ class DashboardController extends Controller
             if ($booking->draft_order_id) {
                 $sent = $this->sendShopifyDraftOrderInvoice($shop, $booking->draft_order_id, $booking->email);
                 if ($sent) {
+                    $booking->update(['invoice_sent' => true]);
                     return back()->with('success', 'Shopify remaining balance invoice sent successfully to ' . $booking->email);
                 }
                 return back()->with('error', 'Failed to send Shopify remaining balance invoice.');
