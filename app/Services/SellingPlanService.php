@@ -72,12 +72,12 @@ class SellingPlanService
                                         'percentage' => (float) $depositPercentage,
                                     ],
                                 ],
-                                'remainingBalanceCharge' => [
-                                    'timeAfterCheckout' => [
-                                        'amount' => $holdDurationDays,
-                                        'unit' => 'DAY',
-                                    ],
-                                ],
+                                'remainingBalanceChargeTrigger' => 'NO_TRIGGER',
+                            ],
+                        ],
+                        'deliveryPolicy' => [
+                            'fixed' => [
+                                'fulfillmentTrigger' => 'UNKNOWN',
                             ],
                         ],
                         'pricingPolicies' => [
