@@ -71,92 +71,9 @@ class DashboardController extends Controller
         // ---------- Self-Healing: Sync Status of Active Bookings ----------
         $syncCacheKey = "shop_{$shop->id}_sync_lock";
         if (!\Illuminate\Support\Facades\Cache::has($syncCacheKey)) {
-            $activeBookingsWithDraft = Booking::where('shop_id', $shop->id)
-                ->whereIn('status', ['pending', 'deposit_paid'])
-                ->whereNotNull('draft_order_id')
-                ->get();
-
-            if ($activeBookingsWithDraft->isNotEmpty()) {
-                $draftOrderIds = $activeBookingsWithDraft->pluck('draft_order_id')->filter()->toArray();
-                if (!empty($draftOrderIds)) {
-                    try {
-                        $idsQuery = implode(' OR ', array_map(function($id) {
-                            return 'id:' . $id;
-                        }, $draftOrderIds));
-
-                        $gqlQuery = 'query getDraftOrders($query: String!) {
-                            draftOrders(first: 100, query: $query) {
-                                edges {
-                                    node {
-                                        id
-                                        status
-                                        invoiceUrl
-                                        order {
-                                            id
-                                        }
-                                        lineItems(first: 50) {
-                                            edges {
-                                                node {
-                                                    title
-                                                    appliedDiscount {
-                                                        description
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }';
-
-                        $response = $shop->api()->graph($gqlQuery, ['query' => $idsQuery]);
-
-                        if (!$response['errors']) {
-                            $edges = $response['body']['data']['draftOrders']['edges'] ?? [];
-                            $draftOrdersMap = [];
-                            foreach ($edges as $edge) {
-                                $doArray = $this->normalizeGqlDraftOrder($edge['node'] ?? null);
-                                if ($doArray && isset($doArray['id'])) {
-                                    $draftOrdersMap[$doArray['id']] = $doArray;
-                                }
-                            }
-
-                            foreach ($activeBookingsWithDraft as $booking) {
-                                if (isset($draftOrdersMap[$booking->draft_order_id])) {
-                                    $draftOrder = $draftOrdersMap[$booking->draft_order_id];
-                                    $shopifyStatus = $draftOrder['status'] ?? '';
-                                    
-                                    if ($shopifyStatus === 'completed') {
-                                        $isRemaining = $this->isRemainingBalanceDraftOrder($draftOrder);
-                                        if ($booking->status === 'pending' && !$isRemaining) {
-                                            $holdDurationDays = $settings->hold_duration_days ?? 14;
-                                            $booking->update([
-                                                'status' => 'deposit_paid',
-                                                'expires_at' => now()->addDays($holdDurationDays),
-                                                'deposit_paid_at' => now(),
-                                                'draft_order_id' => null,
-                                                'checkout_url' => null,
-                                            ]);
-                                            \Illuminate\Support\Facades\Log::info("Sync index: Booking ID {$booking->id} deposit paid on Shopify. Status updated to deposit_paid.");
-                                        } elseif ($booking->status === 'deposit_paid' && $isRemaining) {
-                                            $booking->update([
-                                                'status' => 'completed',
-                                                'completed_at' => now(),
-                                                'balance_order_id' => $draftOrder['order_id'] ?? null,
-                                            ]);
-                                            \Illuminate\Support\Facades\Log::info("Sync index: Booking ID {$booking->id} balance paid on Shopify. Status updated to completed.");
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } catch (\Exception $e) {
-                        \Illuminate\Support\Facades\Log::error("Failed to sync Shopify draft orders in index(): " . $e->getMessage());
-                    }
-                }
-            }
-            // Put a lock for 5 minutes (300 seconds) to avoid redundant heavy API requests
-            \Illuminate\Support\Facades\Cache::put($syncCacheKey, true, now()->addMinutes(5));
+            $this->syncBookingsWithShopify($shop);
+            // Put a lock for 10 seconds to avoid redundant heavy API requests on rapid clicks/reloads
+            \Illuminate\Support\Facades\Cache::put($syncCacheKey, true, now()->addSeconds(10));
         }
 
         // ---------- Date Filter Handling ----------
@@ -1211,5 +1128,251 @@ class DashboardController extends Controller
             \Illuminate\Support\Facades\Log::error("sendShopifyDraftOrderInvoice exception: " . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Sync local bookings status and details with Shopify draft orders and orders.
+     */
+    private function syncBookingsWithShopify($shop)
+    {
+        if (app()->environment() === 'testing') {
+            return;
+        }
+
+        try {
+            // 1. Fetch latest draft orders matching our app tags/notes
+            $gqlDraftOrdersQuery = 'query {
+                draftOrders(first: 50, reverse: true, query: "tag:buylater-deposit OR tag:buylater-balance OR note:buylater_token OR note:BuyLater") {
+                    edges {
+                        node {
+                            id
+                            name
+                            status
+                            invoiceUrl
+                            order {
+                                id
+                            }
+                            note
+                            customAttributes {
+                                key
+                                value
+                            }
+                            lineItems(first: 10) {
+                                edges {
+                                    node {
+                                        title
+                                        quantity
+                                        customAttributes {
+                                            key
+                                            value
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }';
+
+            $draftRes = $shop->api()->graph($gqlDraftOrdersQuery);
+            $draftOrders = [];
+            if ($draftRes && !empty($draftRes['body']['data']['draftOrders']['edges'])) {
+                $draftOrders = $draftRes['body']['data']['draftOrders']['edges'];
+            }
+
+            // 2. Fetch latest orders matching our app tags/notes
+            $gqlOrdersQuery = 'query {
+                orders(first: 50, reverse: true, query: "tag:buylater-deposit OR tag:buylater-balance OR note:buylater_token") {
+                    edges {
+                        node {
+                            id
+                            name
+                            displayFinancialStatus
+                            note
+                            customAttributes {
+                                key
+                                value
+                            }
+                            lineItems(first: 10) {
+                                edges {
+                                    node {
+                                        title
+                                        quantity
+                                        customAttributes {
+                                            key
+                                            value
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }';
+
+            $orderRes = $shop->api()->graph($gqlOrdersQuery);
+            $orders = [];
+            if ($orderRes && !empty($orderRes['body']['data']['orders']['edges'])) {
+                $orders = $orderRes['body']['data']['orders']['edges'];
+            }
+
+            $settings = Setting::where('shop_id', $shop->id)->first();
+            $holdDurationDays = $settings ? (int) ($settings->hold_duration_days ?? 14) : 14;
+
+            // A. Process Orders (Paid orders are definitive proof of payment)
+            foreach ($orders as $edge) {
+                $node = $edge['node'] ?? null;
+                if (!$node) continue;
+
+                $token = $this->extractTokenFromNode($node);
+                if (!$token) continue;
+
+                $numericOrderId = preg_replace('/[^0-9]/', '', $node['id'] ?? '');
+                $financialStatus = strtoupper($node['displayFinancialStatus'] ?? '');
+                $isRemaining = $this->isRemainingBalanceNode($node);
+
+                $booking = Booking::where('shop_id', $shop->id)->where('token', $token)->first();
+                if ($booking) {
+                    if ($isRemaining) {
+                        if ($booking->status !== 'completed' && ($financialStatus === 'PAID' || $financialStatus === 'PARTIALLY_PAID')) {
+                            $booking->update([
+                                'status' => 'completed',
+                                'completed_at' => now(),
+                                'balance_order_id' => $numericOrderId,
+                            ]);
+                            \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} marked completed via final Order payment.");
+                        }
+                    } else {
+                        if ($booking->status === 'pending' && ($financialStatus === 'PAID' || $financialStatus === 'PARTIALLY_PAID')) {
+                            $booking->update([
+                                'status' => 'deposit_paid',
+                                'order_id' => $numericOrderId,
+                                'expires_at' => now()->addDays($holdDurationDays),
+                                'deposit_paid_at' => now(),
+                                'draft_order_id' => null,
+                                'checkout_url' => null,
+                            ]);
+                            \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} marked deposit_paid via deposit Order payment.");
+                        }
+                    }
+                }
+            }
+
+            // B. Process Draft Orders
+            foreach ($draftOrders as $edge) {
+                $node = $edge['node'] ?? null;
+                if (!$node) continue;
+
+                $token = $this->extractTokenFromNode($node);
+                if (!$token) continue;
+
+                $draftStatus = strtoupper($node['status'] ?? '');
+                $numericDraftId = preg_replace('/[^0-9]/', '', $node['id'] ?? '');
+                $isRemaining = $this->isRemainingBalanceNode($node);
+                $checkoutUrl = $node['invoiceUrl'] ?? null;
+
+                $booking = Booking::where('shop_id', $shop->id)->where('token', $token)->first();
+                if ($booking) {
+                    if ($draftStatus === 'COMPLETED') {
+                        $orderId = !empty($node['order']['id']) ? preg_replace('/[^0-9]/', '', $node['order']['id']) : null;
+                        if ($isRemaining) {
+                            if ($booking->status !== 'completed') {
+                                $booking->update([
+                                    'status' => 'completed',
+                                    'completed_at' => now(),
+                                    'balance_order_id' => $orderId,
+                                ]);
+                                \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} marked completed via Draft Order completion.");
+                            }
+                        } else {
+                            if ($booking->status === 'pending') {
+                                $booking->update([
+                                    'status' => 'deposit_paid',
+                                    'order_id' => $orderId,
+                                    'expires_at' => now()->addDays($holdDurationDays),
+                                    'deposit_paid_at' => now(),
+                                    'draft_order_id' => null,
+                                    'checkout_url' => null,
+                                ]);
+                                \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} marked deposit_paid via Draft Order completion.");
+                            }
+                        }
+                    } else if ($draftStatus === 'OPEN') {
+                        if ($isRemaining) {
+                            if ($booking->status === 'deposit_paid') {
+                                $booking->update([
+                                    'draft_order_id' => $numericDraftId,
+                                    'checkout_url' => $checkoutUrl,
+                                ]);
+                            }
+                        } else {
+                            if ($booking->status === 'pending') {
+                                $booking->update([
+                                    'draft_order_id' => $numericDraftId,
+                                    'checkout_url' => $checkoutUrl,
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to sync bookings with Shopify: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Extract token from customAttributes or lineItem customAttributes
+     */
+    private function extractTokenFromNode($node): ?string
+    {
+        $attrs = $node['customAttributes'] ?? [];
+        foreach ($attrs as $attr) {
+            $key = strtolower($attr['key'] ?? '');
+            if ($key === 'buylater_token' || $key === '_token') {
+                return strtolower($attr['value'] ?? '');
+            }
+        }
+
+        $lineItems = $node['lineItems']['edges'] ?? [];
+        foreach ($lineItems as $edge) {
+            $li = $edge['node'] ?? [];
+            $liAttrs = $li['customAttributes'] ?? [];
+            foreach ($liAttrs as $attr) {
+                $key = strtolower($attr['key'] ?? '');
+                if ($key === 'buylater_token' || $key === '_token') {
+                    return strtolower($attr['value'] ?? '');
+                }
+            }
+        }
+
+        $note = $node['note'] ?? '';
+        if (preg_match('/buylater_token\s*:\s*([a-zA-Z0-9]+)/i', $note, $matches)) {
+            return strtolower($matches[1]);
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if the node is a remaining balance node
+     */
+    private function isRemainingBalanceNode($node): bool
+    {
+        $note = $node['note'] ?? '';
+        if (stripos($note, 'Remaining balance payment') !== false) {
+            return true;
+        }
+
+        $lineItems = $node['lineItems']['edges'] ?? [];
+        foreach ($lineItems as $edge) {
+            $li = $edge['node'] ?? [];
+            $title = $li['title'] ?? '';
+            if (stripos($title, 'Remaining Balance') !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

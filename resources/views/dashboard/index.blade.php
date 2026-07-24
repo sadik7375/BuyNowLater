@@ -2370,9 +2370,27 @@
                                     </s-table-cell>
                                     <s-table-cell>
                                         <div style="font-size: 13.5px;">
-                                            Deposit paid: <span style="font-weight:600; color:var(--secondary-color);">${{ number_format($booking->deposit_amount, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
-                                            Remaining balance: <span style="font-weight:600; color:var(--accent-blue);">${{ number_format($booking->remaining_balance, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
-                                            <span style="font-size:11.5px; color: var(--text-muted);">Total: ${{ number_format($booking->product_price, 2) }} {{ $booking->currency ?: 'USD' }}</span>
+                                            @if($booking->status === 'completed')
+                                                Deposit paid: <span style="font-weight:600; color:var(--secondary-color);">${{ number_format($booking->deposit_amount, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
+                                                Remaining balance paid: <span style="font-weight:600; color:#108043;">${{ number_format($booking->remaining_balance, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
+                                                <span style="font-size:11.5px; color: var(--text-muted);">Total paid: ${{ number_format($booking->product_price, 2) }} {{ $booking->currency ?: 'USD' }}</span>
+                                            @elseif($booking->status === 'deposit_paid')
+                                                Deposit paid: <span style="font-weight:600; color:var(--secondary-color);">${{ number_format($booking->deposit_amount, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
+                                                Remaining balance (Due): <span style="font-weight:600; color:var(--accent-blue);">${{ number_format($booking->remaining_balance, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
+                                                <span style="font-size:11.5px; color: var(--text-muted);">Total: ${{ number_format($booking->product_price, 2) }} {{ $booking->currency ?: 'USD' }}</span>
+                                            @elseif($booking->status === 'expired')
+                                                @if($booking->deposit_paid_at)
+                                                    Deposit paid: <span style="font-weight:600; color:var(--secondary-color);">${{ number_format($booking->deposit_amount, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
+                                                @else
+                                                    Deposit unpaid: <span style="font-weight:600; color:var(--text-muted);">${{ number_format($booking->deposit_amount, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
+                                                @endif
+                                                Remaining balance (Cancelled): <span style="font-weight:600; color:var(--text-muted);">${{ number_format($booking->remaining_balance, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
+                                                <span style="font-size:11.5px; color: var(--text-muted);">Total: ${{ number_format($booking->product_price, 2) }} {{ $booking->currency ?: 'USD' }}</span>
+                                            @else
+                                                Deposit to pay: <span style="font-weight:600; color:var(--secondary-color);">${{ number_format($booking->deposit_amount, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
+                                                Remaining balance: <span style="font-weight:600; color:var(--accent-blue);">${{ number_format($booking->remaining_balance, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
+                                                <span style="font-size:11.5px; color: var(--text-muted);">Total: ${{ number_format($booking->product_price, 2) }} {{ $booking->currency ?: 'USD' }}</span>
+                                            @endif
                                         </div>
                                     </s-table-cell>
                                     <s-table-cell>
