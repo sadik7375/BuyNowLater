@@ -1188,6 +1188,7 @@ class DashboardController extends Controller
                             id
                             name
                             displayFinancialStatus
+                            displayFulfillmentStatus
                             note
                             customAttributes {
                                 key
@@ -1233,27 +1234,38 @@ class DashboardController extends Controller
 
                 $booking = Booking::where('shop_id', $shop->id)->where('token', $token)->first();
                 if ($booking) {
+                    $orderName = $node['name'] ?? null;
+                    $fulfillmentStatus = strtolower($node['displayFulfillmentStatus'] ?? '');
+
                     if ($isRemaining) {
+                        $updateData = [
+                            'balance_order_id' => $numericOrderId,
+                            'balance_order_name' => $orderName,
+                            'payment_status' => strtolower($financialStatus),
+                            'fulfillment_status' => $fulfillmentStatus,
+                        ];
                         if ($booking->status !== 'completed' && ($financialStatus === 'PAID' || $financialStatus === 'PARTIALLY_PAID')) {
-                            $booking->update([
-                                'status' => 'completed',
-                                'completed_at' => now(),
-                                'balance_order_id' => $numericOrderId,
-                            ]);
+                            $updateData['status'] = 'completed';
+                            $updateData['completed_at'] = now();
                             \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} marked completed via final Order payment.");
                         }
+                        $booking->update($updateData);
                     } else {
+                        $updateData = [
+                            'order_id' => $numericOrderId,
+                            'order_name' => $orderName,
+                            'payment_status' => strtolower($financialStatus),
+                            'fulfillment_status' => $fulfillmentStatus,
+                        ];
                         if ($booking->status === 'pending' && ($financialStatus === 'PAID' || $financialStatus === 'PARTIALLY_PAID')) {
-                            $booking->update([
-                                'status' => 'deposit_paid',
-                                'order_id' => $numericOrderId,
-                                'expires_at' => now()->addDays($holdDurationDays),
-                                'deposit_paid_at' => now(),
-                                'draft_order_id' => null,
-                                'checkout_url' => null,
-                            ]);
+                            $updateData['status'] = 'deposit_paid';
+                            $updateData['expires_at'] = now()->addDays($holdDurationDays);
+                            $updateData['deposit_paid_at'] = now();
+                            $updateData['draft_order_id'] = null;
+                            $updateData['checkout_url'] = null;
                             \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} marked deposit_paid via deposit Order payment.");
                         }
+                        $booking->update($updateData);
                     }
                 }
             }

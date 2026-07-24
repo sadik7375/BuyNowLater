@@ -165,11 +165,14 @@ class OrdersPaidJob implements ShouldQueue
                         $booking->update([
                             'status'        => 'deposit_paid',
                             'order_id'      => $orderId,
+                            'order_name'    => $orderName,
                             'customer_name' => $customerName,
                             'expires_at'    => now()->addDays($holdDurationDays),
                             'deposit_paid_at' => now(),
                             'draft_order_id'=> null,
                             'checkout_url'  => null,
+                            'payment_status'=> $this->data->financial_status ?? 'partially_paid',
+                            'fulfillment_status' => $this->data->fulfillment_status ?? 'unfulfilled',
                         ]);
                         Log::info('OrdersPaidJob: Booking updated to deposit_paid', ['booking_id' => $booking->id]);
                     } else {
@@ -182,6 +185,9 @@ class OrdersPaidJob implements ShouldQueue
                             'status' => 'completed',
                             'completed_at' => now(),
                             'balance_order_id' => $orderId,
+                            'balance_order_name' => $orderName,
+                            'payment_status' => $this->data->financial_status ?? 'paid',
+                            'fulfillment_status' => $this->data->fulfillment_status ?? 'fulfilled',
                         ]);
                         Log::info('OrdersPaidJob: Booking marked completed (balance paid)', ['booking_id' => $booking->id]);
                         // No need to hold fulfillment for the final balance order

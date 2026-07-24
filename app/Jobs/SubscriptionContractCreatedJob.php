@@ -109,6 +109,8 @@ class SubscriptionContractCreatedJob implements ShouldQueue
                 'customer_name' => $customerName ?: $booking->customer_name,
                 'deposit_paid_at' => now(),
                 'expires_at' => now()->addDays($holdDurationDays),
+                'payment_status' => $booking->payment_status ?? 'partially_paid',
+                'fulfillment_status' => $booking->fulfillment_status ?? 'unfulfilled',
             ]);
             Log::info("SubscriptionContractCreatedJob: Updated pending booking ID {$booking->id} to deposit_paid via contract {$contractId}");
         } else {
@@ -133,6 +135,8 @@ class SubscriptionContractCreatedJob implements ShouldQueue
                 'token' => strtolower(\Illuminate\Support\Str::random(32)),
                 'deposit_paid_at' => now(),
                 'expires_at' => now()->addDays($holdDurationDays),
+                'payment_status' => 'partially_paid',
+                'fulfillment_status' => 'unfulfilled',
             ]);
             Log::info("SubscriptionContractCreatedJob: Created new deposit_paid booking ID {$booking->id} via contract {$contractId}");
         }

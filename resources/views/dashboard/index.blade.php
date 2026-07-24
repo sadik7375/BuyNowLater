@@ -2337,20 +2337,126 @@
                 <div class="table-responsive">
                     <s-table>
                         <s-table-header-row>
-                            <s-table-header listSlot="primary">Customer Info</s-table-header>
-                            <s-table-header>Product Details</s-table-header>
-                            <s-table-header>Financials (Deposit + Remaining)</s-table-header>
-                            <s-table-header>Status</s-table-header>
-                            <s-table-header>Expiry Date</s-table-header>
+                            <s-table-header listSlot="primary">Order</s-table-header>
+                            <s-table-header>Date</s-table-header>
+                            <s-table-header>Customer</s-table-header>
+                            <s-table-header>Product</s-table-header>
+                            <s-table-header>Payment Status</s-table-header>
+                            <s-table-header>Fulfillment Status</s-table-header>
+                            <s-table-header>Financials</s-table-header>
                             <s-table-header>Actions</s-table-header>
                         </s-table-header-row>
                         <s-table-body>
                             @foreach($bookings as $booking)
                                 @php
-                                    $searchText = strtolower(($booking->customer_name ?? '') . ' ' . $booking->email . ' ' . $booking->product_title);
+                                    $searchText = strtolower(
+                                        ($booking->customer_name ?? '') . ' ' . 
+                                        $booking->email . ' ' . 
+                                        $booking->product_title . ' ' . 
+                                        ($booking->order_name ?? '') . ' ' . 
+                                        ($booking->balance_order_name ?? '')
+                                    );
                                     $createdAtTimestamp = $booking->created_at ? $booking->created_at->timestamp : 0;
+                                    $shopHandle = str_replace('.myshopify.com', '', $shop->name);
+
+                                    // Payment Status Logic
+                                    $paymentStatusText = 'Pending deposit';
+                                    $paymentTone = 'warning';
+                                    if ($booking->payment_status) {
+                                        $statusLower = strtolower($booking->payment_status);
+                                        if ($statusLower === 'paid') {
+                                            $paymentStatusText = 'Paid';
+                                            $paymentTone = 'success';
+                                        } elseif ($statusLower === 'partially_paid') {
+                                            $paymentStatusText = 'Partially paid';
+                                            $paymentTone = 'info';
+                                        } elseif ($statusLower === 'pending') {
+                                            $paymentStatusText = 'Pending';
+                                            $paymentTone = 'warning';
+                                        } elseif ($statusLower === 'refunded') {
+                                            $paymentStatusText = 'Refunded';
+                                            $paymentTone = 'critical';
+                                        } elseif ($statusLower === 'voided') {
+                                            $paymentStatusText = 'Voided';
+                                            $paymentTone = 'critical';
+                                        } else {
+                                            $paymentStatusText = ucfirst(str_replace('_', ' ', $booking->payment_status));
+                                            $paymentTone = 'info';
+                                        }
+                                    } else {
+                                        if ($booking->status === 'completed') {
+                                            $paymentStatusText = 'Paid';
+                                            $paymentTone = 'success';
+                                        } elseif ($booking->status === 'deposit_paid') {
+                                            $paymentStatusText = 'Partially paid';
+                                            $paymentTone = 'info';
+                                        } elseif ($booking->status === 'expired') {
+                                            $paymentStatusText = 'Expired / Voided';
+                                            $paymentTone = 'critical';
+                                        }
+                                    }
+
+                                    // Fulfillment Status Logic
+                                    $fulfillmentStatusText = 'Unfulfilled';
+                                    $fulfillmentTone = 'warning';
+                                    if ($booking->status === 'deposit_paid') {
+                                        $fulfillmentStatusText = 'On hold';
+                                        $fulfillmentTone = 'warning';
+                                    } elseif ($booking->status === 'completed') {
+                                        if ($booking->fulfillment_status) {
+                                            $fulfillmentLower = strtolower($booking->fulfillment_status);
+                                            if ($fulfillmentLower === 'fulfilled') {
+                                                $fulfillmentStatusText = 'Fulfilled';
+                                                $fulfillmentTone = 'success';
+                                            } elseif ($fulfillmentLower === 'unfulfilled') {
+                                                $fulfillmentStatusText = 'Unfulfilled';
+                                                $fulfillmentTone = 'warning';
+                                            } elseif ($fulfillmentLower === 'partial') {
+                                                $fulfillmentStatusText = 'Partially fulfilled';
+                                                $fulfillmentTone = 'info';
+                                            } elseif ($fulfillmentLower === 'on_hold') {
+                                                $fulfillmentStatusText = 'On hold';
+                                                $fulfillmentTone = 'warning';
+                                            } else {
+                                                $fulfillmentStatusText = ucfirst(str_replace('_', ' ', $booking->fulfillment_status));
+                                                $fulfillmentTone = 'info';
+                                            }
+                                        } else {
+                                            $fulfillmentStatusText = 'Unfulfilled';
+                                            $fulfillmentTone = 'warning';
+                                        }
+                                    } elseif ($booking->status === 'expired') {
+                                        $fulfillmentStatusText = 'Restocked';
+                                        $fulfillmentTone = 'critical';
+                                    } elseif ($booking->status === 'pending') {
+                                        $fulfillmentStatusText = '-';
+                                        $fulfillmentTone = '';
+                                    }
                                 @endphp
                                 <s-table-row data-search-text="{{ $searchText }}" data-status="{{ $booking->status }}" data-created-at="{{ $createdAtTimestamp }}" data-balance="{{ $booking->remaining_balance }}" data-price="{{ $booking->product_price }}">
+                                    <s-table-cell>
+                                        @if($booking->order_id)
+                                            <a href="https://admin.shopify.com/store/{{ $shopHandle }}/orders/{{ $booking->order_id }}" target="_top" style="color: #005c9e; text-decoration: none; font-weight: 600; transition: text-decoration 0.15s ease;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+                                                {{ $booking->order_name ?: '#'.$booking->order_id }}
+                                            </a>
+                                            @if($booking->balance_order_id)
+                                                <div style="font-size: 11px; margin-top: 4px;">
+                                                    <a href="https://admin.shopify.com/store/{{ $shopHandle }}/orders/{{ $booking->balance_order_id }}" target="_top" style="color: #005c9e; text-decoration: none; transition: text-decoration 0.15s ease;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+                                                        Balance: {{ $booking->balance_order_name ?: '#'.$booking->balance_order_id }}
+                                                    </a>
+                                                </div>
+                                            @endif
+                                        @elseif($booking->draft_order_id)
+                                            <span style="color: var(--text-muted); font-size: 13px;">Draft: {{ $booking->draft_order_id }}</span>
+                                        @else
+                                            <span style="color: var(--text-muted); font-style: italic; font-size: 13px;">No Order</span>
+                                        @endif
+                                    </s-table-cell>
+                                    <s-table-cell>
+                                        <span style="font-size: 13px;">
+                                            {{ $booking->created_at ? $booking->created_at->format('M j, Y') : 'N/A' }}
+                                        </span>
+                                    </s-table-cell>
                                     <s-table-cell>
                                         @if($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null' && strtolower($booking->customer_name) !== strtolower($booking->email))
                                             <strong>{{ $booking->customer_name }}</strong><br>
@@ -2369,59 +2475,21 @@
                                         </a>
                                     </s-table-cell>
                                     <s-table-cell>
-                                        <div style="font-size: 13.5px;">
-                                            @if($booking->status === 'completed')
-                                                Deposit paid: <span style="font-weight:600; color:var(--secondary-color);">${{ number_format($booking->deposit_amount, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
-                                                Remaining balance paid: <span style="font-weight:600; color:#108043;">${{ number_format($booking->remaining_balance, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
-                                                <span style="font-size:11.5px; color: var(--text-muted);">Total paid: ${{ number_format($booking->product_price, 2) }} {{ $booking->currency ?: 'USD' }}</span>
-                                            @elseif($booking->status === 'deposit_paid')
-                                                Deposit paid: <span style="font-weight:600; color:var(--secondary-color);">${{ number_format($booking->deposit_amount, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
-                                                Remaining balance (Due): <span style="font-weight:600; color:var(--accent-blue);">${{ number_format($booking->remaining_balance, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
-                                                <span style="font-size:11.5px; color: var(--text-muted);">Total: ${{ number_format($booking->product_price, 2) }} {{ $booking->currency ?: 'USD' }}</span>
-                                            @elseif($booking->status === 'expired')
-                                                @if($booking->deposit_paid_at)
-                                                    Deposit paid: <span style="font-weight:600; color:var(--secondary-color);">${{ number_format($booking->deposit_amount, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
-                                                @else
-                                                    Deposit unpaid: <span style="font-weight:600; color:var(--text-muted);">${{ number_format($booking->deposit_amount, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
-                                                @endif
-                                                Remaining balance (Cancelled): <span style="font-weight:600; color:var(--text-muted);">${{ number_format($booking->remaining_balance, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
-                                                <span style="font-size:11.5px; color: var(--text-muted);">Total: ${{ number_format($booking->product_price, 2) }} {{ $booking->currency ?: 'USD' }}</span>
-                                            @else
-                                                Deposit to pay: <span style="font-weight:600; color:var(--secondary-color);">${{ number_format($booking->deposit_amount, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
-                                                Remaining balance: <span style="font-weight:600; color:var(--accent-blue);">${{ number_format($booking->remaining_balance, 2) }} {{ $booking->currency ?: 'USD' }}</span><br>
-                                                <span style="font-size:11.5px; color: var(--text-muted);">Total: ${{ number_format($booking->product_price, 2) }} {{ $booking->currency ?: 'USD' }}</span>
-                                            @endif
+                                        <s-badge tone="{{ $paymentTone }}">{{ $paymentStatusText }}</s-badge>
+                                    </s-table-cell>
+                                    <s-table-cell>
+                                        @if($fulfillmentStatusText === '-')
+                                            <span style="color: var(--text-muted); font-size: 13px;">-</span>
+                                        @else
+                                            <s-badge tone="{{ $fulfillmentTone }}">{{ $fulfillmentStatusText }}</s-badge>
+                                        @endif
+                                    </s-table-cell>
+                                    <s-table-cell>
+                                        <div style="font-size: 13px; line-height: 1.4;">
+                                            Total: <strong>${{ number_format($booking->product_price, 2) }}</strong> {{ $booking->currency ?: 'USD' }}<br>
+                                            Deposit: <span style="color:var(--secondary-color); font-weight:500;">${{ number_format($booking->deposit_amount, 2) }}</span><br>
+                                            Balance: <span style="color:var(--accent-blue); font-weight:500;">${{ number_format($booking->remaining_balance, 2) }}</span>
                                         </div>
-                                    </s-table-cell>
-                                    <s-table-cell>
-                                        @if($booking->status === 'completed')
-                                            <s-badge tone="success">Full Paid</s-badge>
-                                        @elseif($booking->status === 'deposit_paid')
-                                            <s-badge tone="info">Partial Paid</s-badge>
-                                        @elseif($booking->status === 'pending')
-                                            <s-badge tone="warning">Pending Deposit</s-badge>
-                                        @elseif($booking->status === 'expired')
-                                            <s-badge tone="critical">Expired</s-badge>
-                                        @else
-                                            <s-badge>{{ str_replace('_', ' ', $booking->status) }}</s-badge>
-                                        @endif
-                                    </s-table-cell>
-                                    <s-table-cell>
-                                        @if($booking->expires_at)
-                                            @php
-                                                $expiresAt = \Carbon\Carbon::parse($booking->expires_at);
-                                                $daysLeft = \Carbon\Carbon::now()->diffInDays($expiresAt, false);
-                                                $isUrgent = ($daysLeft >= 0 && $daysLeft < 3) && !in_array($booking->status, ['completed', 'expired']);
-                                            @endphp
-                                            <span style="@if($isUrgent) color: var(--danger-color); font-weight:700; @endif">
-                                                {{ $expiresAt->format('M j, Y') }}
-                                                @if($isUrgent)
-                                                    <br><small>🚨 ({{ round($daysLeft) }} days left)</small>
-                                                @endif
-                                            </span>
-                                        @else
-                                            <span style="color: var(--text-muted);">No expiry</span>
-                                        @endif
                                     </s-table-cell>
                                     <s-table-cell>
                                         <div class="actions-cell" style="display: flex; gap: 8px;">
@@ -2438,7 +2506,7 @@
                                 </s-table-row>
                             @endforeach
                             <s-table-row id="bookings-no-results" style="display: none;">
-                                <s-table-cell colspan="6" style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
+                                <s-table-cell colspan="8" style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
                                     No bookings match your search/filter criteria.
                                 </s-table-cell>
                             </s-table-row>
@@ -3321,7 +3389,8 @@ function openBookingDetails(booking) {
         const urlParams = new URLSearchParams(window.location.search);
         const shopDomain = urlParams.get('shop') || 'canny-apps.myshopify.com';
         const adminUrl = `https://admin.shopify.com/store/${shopDomain.replace('.myshopify.com', '')}/orders/${booking.order_id}`;
-        depositLinkContainer.innerHTML = `<a href="${adminUrl}" class="shopify-link" target="_blank">Order #${booking.order_id} ↗</a>`;
+        const displayName = booking.order_name || `#${booking.order_id}`;
+        depositLinkContainer.innerHTML = `<a href="${adminUrl}" class="shopify-link" target="_blank">${displayName} ↗</a>`;
     } else {
         depositLinkContainer.innerHTML = `<span style="color: var(--text-muted);">Not created yet</span>`;
     }
@@ -3331,7 +3400,8 @@ function openBookingDetails(booking) {
         const urlParams = new URLSearchParams(window.location.search);
         const shopDomain = urlParams.get('shop') || 'canny-apps.myshopify.com';
         const adminUrl = `https://admin.shopify.com/store/${shopDomain.replace('.myshopify.com', '')}/orders/${booking.balance_order_id}`;
-        balanceLinkContainer.innerHTML = `<a href="${adminUrl}" class="shopify-link" target="_blank">Order #${booking.balance_order_id} ↗</a>`;
+        const displayName = booking.balance_order_name || `#${booking.balance_order_id}`;
+        balanceLinkContainer.innerHTML = `<a href="${adminUrl}" class="shopify-link" target="_blank">${displayName} ↗</a>`;
     } else {
         balanceLinkContainer.innerHTML = `<span style="color: var(--text-muted);">-</span>`;
     }
