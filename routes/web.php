@@ -301,6 +301,16 @@ Route::group(['prefix' => 'deploy'], function() {
         }
     });
 
+    Route::get('/wipe-bookings', function() {
+        try {
+            $count = \App\Models\Booking::count();
+            \App\Models\Booking::truncate();
+            return "Successfully deleted {$count} booking records from database. Please reload your Shopify admin dashboard to sync fresh orders.";
+        } catch (\Exception $e) {
+            return "Error truncating bookings: " . $e->getMessage();
+        }
+    });
+
     Route::get('/key-generate', function() {
         try {
             \Illuminate\Support\Facades\Artisan::call('key:generate', ['--force' => true]);
