@@ -115,6 +115,7 @@ class SellingPlanService
                         'selling_plan_id' => $planId,
                         'use_selling_plan' => true,
                     ]);
+                    $this->syncShopMetafields($shop, $planId);
                 }
 
                 Log::info("SellingPlanService: Successfully created SellingPlanGroup {$groupId} with plan {$planId}");
@@ -322,5 +323,49 @@ class SellingPlanService
         }
 
         return false;
+    }
+
+    /**
+     * Sync shop metafields so Liquid templates can instantly read shop.metafields.buylater.selling_plan_id
+     */
+    public function syncShopMetafields(User $shop, ?string $planId): void
+    {
+        if (empty($planId)) return;
+        try {
+            $mutation = '
+            mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+                metafieldsSet(metafields: $metafields) {
+                    metafields { id }
+                    userErrors { field message }
+                }
+            }
+            ';
+            $shopQuery = '{ shop { id } }';
+            $res = $shop->api()->graph($shopQuery);
+            $shopGqlId = $res['body']['data']['shop']['id'] ?? null;
+            if ($shopGqlId) {
+                $shop->api()->graph($mutation, [
+                    'metafields' => [
+                        [
+                            'ownerId' => $shopGqlId,
+                            'namespace' => 'buylater',
+                            'key' => 'selling_plan_id',
+                            'value' => (string) $planId,
+                            'type' => 'single_line_text_field',
+                        ],
+                        [
+                            'ownerId' => $shopGqlId,
+                            'namespace' => 'buylater',
+                            'key' => 'use_selling_plan',
+                            'value' => 'true',
+                            'type' => 'single_line_text_field',
+                        ],
+                    ],
+                ]);
+                Log::info("SellingPlanService: Synced shop metafields for plan {$planId}");
+            }
+        } catch (\Exception $ex) {
+            Log::warn("SellingPlanService: Failed to sync shop metafields: " . $ex->getMessage());
+        }
     }
 }

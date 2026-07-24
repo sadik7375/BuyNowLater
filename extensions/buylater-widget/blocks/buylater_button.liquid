@@ -238,6 +238,8 @@
   window.buylaterCurrencySymbol = "{{ cart.currency.symbol }}";
   window.buylaterCurrencyCode = "{{ cart.currency.iso_code }}";
   window.buylaterCustomerEmail = "{% if customer %}{{ customer.email }}{% endif %}";
+  window.buylaterUseSellingPlan = {{ shop.metafields.buylater.use_selling_plan.value | default: true | json }};
+  window.buylaterSellingPlanId = {{ shop.metafields.buylater.selling_plan_id.value | default: '' | json }};
 </script>
 <script src="{{ 'buylater.js' | asset_url }}" defer></script>
 <script>

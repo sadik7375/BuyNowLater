@@ -34,31 +34,43 @@ class SellingPlanServiceTest extends TestCase
 
         $apiMock = Mockery::mock(\Gnikyt\BasicShopifyAPI\BasicShopifyAPI::class);
         $apiMock->shouldReceive('graph')
-            ->once()
-            ->andReturn([
-                'errors' => false,
-                'body' => [
-                    'data' => [
-                        'sellingPlanGroupCreate' => [
-                            'sellingPlanGroup' => [
-                                'id' => 'gid://shopify/SellingPlanGroup/1001',
-                                'name' => 'Buy Now Later (15% Deposit)',
-                                'sellingPlans' => [
-                                    'edges' => [
-                                        [
-                                            'node' => [
-                                                'id' => 'gid://shopify/SellingPlan/2001',
-                                                'name' => '15% Deposit — Pay Remaining Later',
+            ->andReturnUsing(function($query, $vars = []) {
+                if (str_contains($query, 'sellingPlanGroupCreate')) {
+                    return [
+                        'errors' => false,
+                        'body' => [
+                            'data' => [
+                                'sellingPlanGroupCreate' => [
+                                    'sellingPlanGroup' => [
+                                        'id' => 'gid://shopify/SellingPlanGroup/1001',
+                                        'name' => 'Buy Now Later (15% Deposit)',
+                                        'sellingPlans' => [
+                                            'edges' => [
+                                                [
+                                                    'node' => [
+                                                        'id' => 'gid://shopify/SellingPlan/2001',
+                                                        'name' => '15% Deposit — Pay Remaining Later',
+                                                    ]
+                                                ]
                                             ]
                                         ]
-                                    ]
+                                    ],
+                                    'userErrors' => []
                                 ]
-                            ],
-                            'userErrors' => []
+                            ]
+                        ]
+                    ];
+                }
+                return [
+                    'errors' => false,
+                    'body' => [
+                        'data' => [
+                            'shop' => ['id' => 'gid://shopify/Shop/123'],
+                            'metafieldsSet' => ['metafields' => [['id' => '1']], 'userErrors' => []]
                         ]
                     ]
-                ]
-            ]);
+                ];
+            });
 
         $userMock = Mockery::mock($user)->makePartial();
         $userMock->shouldReceive('api')->andReturn($apiMock);
