@@ -2337,6 +2337,7 @@
                 <div class="table-responsive">
                     <s-table>
                         <s-table-header-row>
+                            <s-table-header style="width: 40px; text-align: center;"><input type="checkbox" id="select-all-bookings" onchange="toggleSelectAll(this)" style="cursor: pointer;"></s-table-header>
                             <s-table-header listSlot="primary">Order</s-table-header>
                             <s-table-header>Date</s-table-header>
                             <s-table-header>Customer</s-table-header>
@@ -2434,6 +2435,9 @@
                                     }
                                 @endphp
                                 <s-table-row data-search-text="{{ $searchText }}" data-status="{{ $booking->status }}" data-created-at="{{ $createdAtTimestamp }}" data-balance="{{ $booking->remaining_balance }}" data-price="{{ $booking->product_price }}">
+                                    <s-table-cell style="text-align: center; width: 40px; vertical-align: middle;">
+                                        <input type="checkbox" class="booking-checkbox" data-id="{{ $booking->id }}" style="cursor: pointer;">
+                                    </s-table-cell>
                                     <s-table-cell>
                                         @if($booking->order_id)
                                             <a href="https://admin.shopify.com/store/{{ $shopHandle }}/orders/{{ $booking->order_id }}" target="_top" style="color: #005c9e; text-decoration: none; font-weight: 600; transition: text-decoration 0.15s ease;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
@@ -4863,6 +4867,13 @@ function filterSubscribers() {
             el.style.display = 'none';
         });
     }
+
+    window.toggleSelectAll = function(master) {
+        const checkboxes = document.querySelectorAll('.booking-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = master.checked;
+        });
+    };
 </script>
 
 <!-- Crisp Live Chat Integration -->
