@@ -425,18 +425,6 @@ return [
             'address' => env('APP_URL') . '/webhook/app-uninstalled',
         ],
         [
-            'topic' => 'CUSTOMERS_DATA_REQUEST',
-            'address' => env('APP_URL') . '/webhook/customers-data-request',
-        ],
-        [
-            'topic' => 'CUSTOMERS_REDACT',
-            'address' => env('APP_URL') . '/webhook/customers-redact',
-        ],
-        [
-            'topic' => 'SHOP_REDACT',
-            'address' => env('APP_URL') . '/webhook/shop-redact',
-        ],
-        [
             'topic' => 'SUBSCRIPTION_CONTRACTS_CREATE',
             'address' => env('APP_URL') . '/webhook/subscription-contract-create',
         ],

@@ -433,9 +433,14 @@ function initBuyLaterWidget() {
 
     if (window.buylaterUseSellingPlan) {
       showMessage('Success! Adding deposit option to cart & redirecting to checkout...', 'success');
+      const token = Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('');
       const item = {
         id: payload.variant_id || payload.product_id,
-        quantity: 1
+        quantity: 1,
+        properties: {
+          _token: token,
+          buylater_token: token
+        }
       };
       if (window.buylaterSellingPlanId) {
         let planId = String(window.buylaterSellingPlanId);
@@ -462,7 +467,7 @@ function initBuyLaterWidget() {
         fetch('/apps/buylater-proxy/bookings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({ ...payload, payment_type: 'selling_plan' })
+          body: JSON.stringify({ ...payload, token: token, payment_type: 'selling_plan' })
         }).catch(e => console.warn('Background booking record log error:', e));
 
         setTimeout(() => {

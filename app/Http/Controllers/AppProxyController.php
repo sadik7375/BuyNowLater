@@ -379,8 +379,8 @@ class AppProxyController extends Controller
         $remainingBalance = $productPrice - $depositAmount;
         $holdDurationDays = $settings ? (int) ($settings->hold_duration_days ?? 14) : 14;
 
-        // Generate a unique token
-        $token = strtolower(Str::random(32));
+        // Use provided token or generate a unique token
+        $token = strtolower($request->input('token') ?: Str::random(32));
 
         $variantId = $request->input('variant_id');
         if ($variantId && str_contains($variantId, '/')) {
