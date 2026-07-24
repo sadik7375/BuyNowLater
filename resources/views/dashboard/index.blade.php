@@ -312,7 +312,7 @@
     /* Quick stats cards (Shopify Polaris style) */
     .stats-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 16px;
         margin-bottom: 24px;
     }
@@ -1755,7 +1755,6 @@
 <ui-nav-menu>
     <a href="/" rel="home">Overview</a>
     <a href="/bookings">Bookings & Deposits</a>
-    <a href="/reminders">Reminders</a>
     <a href="/price-alerts">Price Alerts</a>
     <a href="/app-settings">Settings</a>
     <a href="/how-it-works">Support</a>
@@ -1778,9 +1777,6 @@
         </button>
         <button class="sidebar-btn {{ $activeTab === 'tab-bookings-list' ? 'active' : '' }}" onclick="switchTab(event, 'tab-bookings-list')">
             <span class="icon">💰</span> Bookings &amp; Deposits
-        </button>
-        <button class="sidebar-btn {{ $activeTab === 'tab-reminders-list' ? 'active' : '' }}" onclick="switchTab(event, 'tab-reminders-list')">
-            <span class="icon">⏰</span> Reminders
         </button>
         <button class="sidebar-btn {{ $activeTab === 'tab-subscribers-list' ? 'active' : '' }}" onclick="switchTab(event, 'tab-subscribers-list')">
             <span class="icon">🔔</span> Price Alerts
@@ -1970,20 +1966,7 @@
                 </svg>
             </div>
         </div>
-        <div class="stat-card">
-            <div class="stat-info">
-                <div class="stat-label" title="Automatic reminders scheduled to be sent to customers today">Scheduled Reminders</div>
-                <div class="stat-value">{{ $todayRemindersCount }}</div>
-                <div class="stat-change @if($todayRemindersCount > 0) change-up @else change-down @endif">
-                    <span>{{ $todayRemindersCount > 0 ? 'Pending send today' : 'No alerts scheduled today' }}</span>
-                </div>
-            </div>
-            <div class="stat-visual">
-                <svg width="64" height="28" viewBox="0 0 64 28" fill="none" stroke="#6d7175" stroke-dasharray="3 3" stroke-width="1.5" stroke-linecap="round">
-                    <path d="M4 14 H60" />
-                </svg>
-            </div>
-        </div>
+
         <div class="stat-card">
             <div class="stat-info">
                 <div class="stat-label" title="Customers signed up to receive alerts when prices drop">Alert Subscribers</div>
@@ -2449,7 +2432,7 @@
     </div>
 
     <!-- Tab 3: Reminders List -->
-    <div id="tab-reminders-list" class="tab-content" style="display: {{ $activeTab === 'tab-reminders-list' ? 'block' : 'none' }};">
+    <div id="tab-reminders-list" class="tab-content" style="display: none !important;">
         <div class="panel-card-table">
             <h3>Scheduled Reminders</h3>
             @if($reminders->isEmpty())
@@ -2669,10 +2652,7 @@
                             <input type="checkbox" name="show_deposit" value="1" {{ ($settings->show_deposit ?? true) ? 'checked' : '' }} style="width: 16px; height: 16px; accent-color: var(--primary-color);">
                             Book Now (Deposit Hold)
                         </label>
-                        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13.5px; font-weight: 500; color: var(--text-main);">
-                            <input type="checkbox" name="show_reminders" value="1" {{ ($settings->show_reminders ?? true) ? 'checked' : '' }} style="width: 16px; height: 16px; accent-color: var(--primary-color);">
-                            Remind Me Later
-                        </label>
+                        <input type="hidden" name="show_reminders" value="0">
                         <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13.5px; font-weight: 500; color: var(--text-main);">
                             <input type="checkbox" name="show_alerts" value="1" {{ ($settings->show_alerts ?? true) ? 'checked' : '' }} style="width: 16px; height: 16px; accent-color: var(--primary-color);">
                             Discount Alerts
@@ -2761,13 +2741,13 @@
                     <label for="sender_display_name">Sender Display Name</label>
                     <input type="text" id="sender_display_name" name="sender_display_name" value="{{ $settings->sender_display_name ?? ($settings->shop->name ?? 'Your Store') . ' via BuyLater' }}" required>
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="display: none !important;">
                     <label for="reminder_email_subject">Reminder Email Subject</label>
                     <input type="text" id="reminder_email_subject" name="reminder_email_subject" value="{{ $settings->reminder_email_subject }}" required>
                 </div>
 
                 {{-- ── REMINDER EMAIL BUILDER ── --}}
-                <div class="form-group">
+                <div class="form-group" style="display: none !important;">
                     <label style="margin-bottom:8px;">Reminder Email Template</label>
                     <div class="email-editor-container" id="reminder_editor_container">
                         <div class="editor-tabs">
