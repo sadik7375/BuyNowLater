@@ -1142,7 +1142,7 @@ class DashboardController extends Controller
         try {
             // 1. Fetch latest draft orders matching our app tags/notes
             $gqlDraftOrdersQuery = 'query {
-                draftOrders(first: 50, reverse: true, query: "tag:buylater-deposit OR tag:buylater-balance OR note:buylater_token OR note:BuyLater OR note:\'Remaining balance\'") {
+                draftOrders(first: 100, reverse: true) {
                     edges {
                         node {
                             id
@@ -1192,7 +1192,7 @@ class DashboardController extends Controller
 
             // 2. Fetch latest orders matching our app tags/notes
             $gqlOrdersQuery = 'query {
-                orders(first: 50, reverse: true, query: "tag:buylater-deposit OR tag:buylater-balance OR note:buylater_token OR note:\'Remaining balance\'") {
+                orders(first: 100, reverse: true) {
                     edges {
                         node {
                             id
@@ -1546,10 +1546,13 @@ class DashboardController extends Controller
     {
         // Check tags
         $tags = $node['tags'] ?? [];
+        if ($tags instanceof \Gnikyt\BasicShopifyAPI\ResponseAccess) {
+            $tags = json_decode(json_encode($tags), true) ?? [];
+        }
         if (is_string($tags)) {
             $tags = array_map('trim', explode(',', $tags));
         }
-        if (in_array('buylater-balance', $tags)) {
+        if (is_array($tags) && in_array('buylater-balance', $tags)) {
             return true;
         }
 
