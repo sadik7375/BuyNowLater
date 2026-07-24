@@ -1150,7 +1150,7 @@ class DashboardController extends Controller
                             status
                             invoiceUrl
                             tags
-                            note
+                            notes
                             totalPrice
                             currencyCode
                             createdAt
@@ -1531,7 +1531,7 @@ class DashboardController extends Controller
             }
         }
 
-        $note = $node['note'] ?? '';
+        $note = $node['note'] ?? $node['notes'] ?? '';
         if (preg_match('/buylater_token\s*:\s*([a-zA-Z0-9]+)/i', $note, $matches)) {
             return strtolower($matches[1]);
         }
@@ -1556,7 +1556,7 @@ class DashboardController extends Controller
             return true;
         }
 
-        $note = $node['note'] ?? '';
+        $note = $node['note'] ?? $node['notes'] ?? '';
         if (stripos($note, 'Remaining balance payment') !== false) {
             return true;
         }

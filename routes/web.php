@@ -325,7 +325,7 @@ Route::group(['prefix' => 'deploy'], function() {
                             name
                             status
                             tags
-                            note
+                            notes
                             lineItems(first: 5) {
                                 edges {
                                     node {
@@ -349,7 +349,7 @@ Route::group(['prefix' => 'deploy'], function() {
             $output .= "Draft Orders count: " . count($draftEdges) . "\n";
             foreach ($draftEdges as $edge) {
                 $node = $edge['node'] ?? [];
-                $output .= " - Draft: " . ($node['name'] ?? 'N/A') . " (ID: " . ($node['id'] ?? 'N/A') . "), Status: " . ($node['status'] ?? 'N/A') . ", Tags: " . json_encode($node['tags'] ?? []) . ", Note: " . json_encode($node['note'] ?? '') . "\n";
+                $output .= " - Draft: " . ($node['name'] ?? 'N/A') . " (ID: " . ($node['id'] ?? 'N/A') . "), Status: " . ($node['status'] ?? 'N/A') . ", Tags: " . json_encode($node['tags'] ?? []) . ", Notes: " . json_encode($node['notes'] ?? '') . "\n";
                 $lineItems = $node['lineItems']['edges'] ?? [];
                 foreach ($lineItems as $liEdge) {
                     $li = $liEdge['node'] ?? [];
