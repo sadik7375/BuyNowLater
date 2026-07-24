@@ -936,8 +936,8 @@ class DashboardController extends Controller
                     // If invoiceUrl is missing, try to generate it by sending invoice
                     if (empty($checkoutUrl) && $gqlId) {
                         try {
-                            $sendInvoiceMutation = 'mutation draftOrderSendInvoice($id: ID!, $email: DraftOrderEmailInput) {
-                                draftOrderSendInvoice(id: $id, email: $email) {
+                            $sendInvoiceMutation = 'mutation draftOrderInvoiceSend($id: ID!, $email: EmailInput) {
+                                draftOrderInvoiceSend(id: $id, email: $email) {
                                     draftOrder {
                                         id
                                         invoiceUrl
@@ -950,8 +950,8 @@ class DashboardController extends Controller
                                 'email' => ['to' => $booking->email]
                             ]);
 
-                            if ($invoiceRes['errors'] === false && isset($invoiceRes['body']['data']['draftOrderSendInvoice']['draftOrder'])) {
-                                $refetchedOrder = $invoiceRes['body']['data']['draftOrderSendInvoice']['draftOrder'];
+                            if ($invoiceRes['errors'] === false && isset($invoiceRes['body']['data']['draftOrderInvoiceSend']['draftOrder'])) {
+                                $refetchedOrder = $invoiceRes['body']['data']['draftOrderInvoiceSend']['draftOrder'];
                                 $checkoutUrl = $refetchedOrder['invoiceUrl'] ?? null;
                             }
                         } catch (\Exception $invoiceEx) {
@@ -1178,8 +1178,8 @@ class DashboardController extends Controller
     {
         try {
             $gqlId = 'gid://shopify/DraftOrder/' . $draftOrderId;
-            $sendInvoiceMutation = 'mutation draftOrderSendInvoice($id: ID!, $email: DraftOrderEmailInput) {
-                draftOrderSendInvoice(id: $id, email: $email) {
+            $sendInvoiceMutation = 'mutation draftOrderInvoiceSend($id: ID!, $email: EmailInput) {
+                draftOrderInvoiceSend(id: $id, email: $email) {
                     draftOrder {
                         id
                     }
@@ -1200,7 +1200,7 @@ class DashboardController extends Controller
                 return false;
             }
 
-            $userErrors = $response['body']['data']['draftOrderSendInvoice']['userErrors'] ?? [];
+            $userErrors = $response['body']['data']['draftOrderInvoiceSend']['userErrors'] ?? [];
             if (!empty($userErrors)) {
                 \Illuminate\Support\Facades\Log::error("sendShopifyDraftOrderInvoice User errors: " . json_encode($userErrors));
                 return false;

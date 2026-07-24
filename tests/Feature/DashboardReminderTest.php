@@ -81,7 +81,7 @@ class DashboardReminderTest extends TestCase
         $apiMock->shouldReceive('graph')
             ->once()
             ->with(\Mockery::on(function ($gqlQuery) {
-                return str_contains($gqlQuery, 'mutation draftOrderSendInvoice');
+                return str_contains($gqlQuery, 'mutation draftOrderInvoiceSend');
             }), \Mockery::on(function ($variables) {
                 return $variables['id'] === 'gid://shopify/DraftOrder/999111' && $variables['email']['to'] === 'customer@example.com';
             }))
@@ -89,7 +89,7 @@ class DashboardReminderTest extends TestCase
                 'errors' => false,
                 'body' => [
                     'data' => [
-                        'draftOrderSendInvoice' => [
+                        'draftOrderInvoiceSend' => [
                             'draftOrder' => [
                                 'id' => 'gid://shopify/DraftOrder/999111'
                             ],
@@ -204,7 +204,7 @@ class DashboardReminderTest extends TestCase
         $apiMock->shouldReceive('graph')
             ->once()
             ->with(\Mockery::on(function ($gqlQuery) {
-                return str_contains($gqlQuery, 'mutation draftOrderSendInvoice');
+                return str_contains($gqlQuery, 'mutation draftOrderInvoiceSend');
             }), \Mockery::on(function ($variables) {
                 return $variables['id'] === 'gid://shopify/DraftOrder/77777' && $variables['email']['to'] === 'customer@example.com';
             }))
@@ -212,7 +212,7 @@ class DashboardReminderTest extends TestCase
                 'errors' => false,
                 'body' => [
                     'data' => [
-                        'draftOrderSendInvoice' => [
+                        'draftOrderInvoiceSend' => [
                             'draftOrder' => [
                                 'id' => 'gid://shopify/DraftOrder/77777'
                             ],
@@ -385,7 +385,7 @@ class DashboardReminderTest extends TestCase
         $apiMock->shouldReceive('graph')
             ->once()
             ->with(\Mockery::on(function ($gqlQuery) {
-                return str_contains($gqlQuery, 'mutation draftOrderSendInvoice');
+                return str_contains($gqlQuery, 'mutation draftOrderInvoiceSend');
             }), \Mockery::on(function ($variables) {
                 return $variables['id'] === 'gid://shopify/DraftOrder/999222' && $variables['email']['to'] === 'customer@example.com';
             }))
@@ -393,7 +393,7 @@ class DashboardReminderTest extends TestCase
                 'errors' => false,
                 'body' => [
                     'data' => [
-                        'draftOrderSendInvoice' => [
+                        'draftOrderInvoiceSend' => [
                             'draftOrder' => [
                                 'id' => 'gid://shopify/DraftOrder/999222'
                             ],
@@ -508,7 +508,7 @@ class DashboardReminderTest extends TestCase
         $apiMock->shouldReceive('graph')
             ->once()
             ->with(\Mockery::on(function ($gqlQuery) {
-                return str_contains($gqlQuery, 'mutation draftOrderSendInvoice');
+                return str_contains($gqlQuery, 'mutation draftOrderInvoiceSend');
             }), \Mockery::on(function ($variables) {
                 return $variables['id'] === 'gid://shopify/DraftOrder/88888' && $variables['email']['to'] === 'customer@example.com';
             }))
@@ -516,7 +516,7 @@ class DashboardReminderTest extends TestCase
                 'errors' => false,
                 'body' => [
                     'data' => [
-                        'draftOrderSendInvoice' => [
+                        'draftOrderInvoiceSend' => [
                             'draftOrder' => [
                                 'id' => 'gid://shopify/DraftOrder/88888'
                             ],
