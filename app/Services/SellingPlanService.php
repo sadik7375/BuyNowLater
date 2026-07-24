@@ -85,7 +85,7 @@ class SellingPlanService
                                 'fixed' => [
                                     'adjustmentType' => 'PERCENTAGE',
                                     'adjustmentValue' => [
-                                        'percentage' => (float) (100 - $depositPercentage),
+                                        'percentage' => (float) $depositPercentage,
                                     ],
                                 ],
                             ],
