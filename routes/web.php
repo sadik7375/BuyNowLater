@@ -403,6 +403,14 @@ Route::group(['prefix' => 'deploy'], function() {
         }
     });
 
+    Route::get('/list-shops', function() {
+        try {
+            return response()->json(\App\Models\User::pluck('name'));
+        } catch (\Exception $e) {
+            return 'Error: ' . $e->getMessage();
+        }
+    });
+
     Route::get('/wipe-bookings', function() {
         try {
             $count = \App\Models\Booking::count();
