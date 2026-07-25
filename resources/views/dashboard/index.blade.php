@@ -2340,7 +2340,6 @@
                             <s-table-header style="width: 40px; text-align: center;"><input type="checkbox" id="select-all-bookings" onchange="toggleSelectAll(this)" style="cursor: pointer;"></s-table-header>
                             <s-table-header listSlot="primary">Order</s-table-header>
                             <s-table-header>Date</s-table-header>
-                            <s-table-header>Customer</s-table-header>
                             <s-table-header>Product</s-table-header>
                             <s-table-header>Payment Status</s-table-header>
                             <s-table-header>Fulfillment Status</s-table-header>
@@ -2462,13 +2461,6 @@
                                         </span>
                                     </s-table-cell>
                                     <s-table-cell>
-                                        @if($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null')
-                                            <strong>{{ $booking->customer_name }}</strong>
-                                        @else
-                                            <span style="font-size: 13.5px; font-weight: 500; color: var(--text-muted);">Guest Customer</span>
-                                        @endif
-                                    </s-table-cell>
-                                    <s-table-cell>
                                         @php
                                             $parts = explode('/', $booking->product_id);
                                             $bookingProdId = end($parts);
@@ -2509,7 +2501,7 @@
                                 </s-table-row>
                             @endforeach
                             <s-table-row id="bookings-no-results" style="display: none;">
-                                <s-table-cell colspan="8" style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
+                                <s-table-cell colspan="7" style="text-align: center; color: var(--text-muted); padding: 40px 20px;">
                                     No bookings match your search/filter criteria.
                                 </s-table-cell>
                             </s-table-row>
