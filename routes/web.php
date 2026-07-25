@@ -660,6 +660,77 @@ Route::group(['prefix' => 'deploy'], function() {
         }
     });
 
+    Route::get('/inspect-orders-raw', function() {
+        try {
+            $shopName = request('shop') ?: 'canny-apps.myshopify.com';
+            $shop = \App\Models\User::where('name', $shopName)->first();
+            if (!$shop) {
+                return 'Shop not found.';
+            }
+            
+            $limit = (int) (request('limit') ?: 20);
+            $gqlOrdersQuery = 'query {
+                orders(first: ' . $limit . ', reverse: true) {
+                    edges {
+                        node {
+                            id
+                            name
+                            displayFinancialStatus
+                            displayFulfillmentStatus
+                            tags
+                            note
+                            totalPriceSet {
+                                shopMoney {
+                                    amount
+                                }
+                            }
+                            netPaymentSet {
+                                shopMoney {
+                                    amount
+                                }
+                            }
+                            currencyCode
+                            createdAt
+                            email
+                            customer {
+                                firstName
+                                lastName
+                                email
+                            }
+                            customAttributes {
+                                key
+                                value
+                            }
+                            lineItems(first: 10) {
+                                edges {
+                                    node {
+                                        title
+                                        quantity
+                                        variant {
+                                            id
+                                            product {
+                                                id
+                                            }
+                                        }
+                                        customAttributes {
+                                            key
+                                            value
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }';
+            
+            $res = $shop->api()->graph($gqlOrdersQuery);
+            return response()->json($res);
+        } catch (\Exception $e) {
+            return 'Failed: ' . $e->getMessage();
+        }
+    });
+
     Route::get('/inspect-db-booking', function() {
         try {
             $orderName = request('order') ?: '#1046';
