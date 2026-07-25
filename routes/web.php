@@ -443,6 +443,77 @@ Route::group(['prefix' => 'deploy'], function() {
         }
     });
 
+    Route::get('/activate-selling-plans', function() {
+        try {
+            $shopName = request('shop') ?: 'canny-apps.myshopify.com';
+            $shop = \App\Models\User::where('name', $shopName)->first();
+            if (!$shop) {
+                $shop = \App\Models\User::first();
+            }
+            if (!$shop) {
+                return 'No shop user found in DB.';
+            }
+
+            $settings = \App\Models\Setting::firstOrCreate(
+                ['shop_id' => $shop->id],
+                [
+                    'deposit_percentage' => 21,
+                    'hold_duration_days' => 18,
+                ]
+            );
+
+            $settings->use_selling_plan = true;
+            $settings->save();
+
+            $depositPercentage = (int) ($settings->deposit_percentage ?? 21);
+            $holdDurationDays = (int) ($settings->hold_duration_days ?? 18);
+
+            $sellingPlanService = app(\App\Services\SellingPlanService::class);
+            $result = $sellingPlanService->createOrUpdatePlanGroup($shop, $depositPercentage, $holdDurationDays);
+
+            if (!$result || empty($result['group_id'])) {
+                return 'Failed to create/update Shopify Selling Plan Group. Check logs for details.';
+            }
+
+            $groupId = $result['group_id'];
+            $planId = $result['plan_id'] ?? null;
+
+            $productGqlIds = [];
+            $gqlQuery = 'query getProducts($first: Int!) {
+                products(first: $first) {
+                    edges {
+                        node {
+                            id
+                        }
+                    }
+                }
+            }';
+
+            $response = $shop->api()->graph($gqlQuery, ['first' => 250]);
+            if ($response['errors'] === false && isset($response['body']['data']['products']['edges'])) {
+                foreach ($response['body']['data']['products']['edges'] as $edge) {
+                    if (isset($edge['node']['id'])) {
+                        $productGqlIds[] = $edge['node']['id'];
+                    }
+                }
+            }
+
+            if (!empty($productGqlIds)) {
+                $sellingPlanService->attachProducts($shop, $groupId, $productGqlIds);
+            }
+
+            $settings->update([
+                'selling_plan_group_id' => $groupId,
+                'selling_plan_id' => $planId,
+                'use_selling_plan' => true,
+            ]);
+
+            return "Success! Selling Plan group created and products attached for shop {$shop->name}.<br>Group ID: {$groupId}<br>Plan ID: {$planId}";
+        } catch (\Exception $e) {
+            return 'Failed to activate selling plans: ' . $e->getMessage() . '<br><pre>' . $e->getTraceAsString() . '</pre>';
+        }
+    });
+
     Route::get('/register-webhooks', function() {
         try {
             $shops = \App\Models\User::all();
