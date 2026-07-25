@@ -92,9 +92,13 @@ class DashboardController extends Controller
         $subscribers = Subscriber::where('shop_id', $shop->id)
             ->orderBy('created_at', 'desc')
             ->get();
-        $bookings    = Booking::where('shop_id', $shop->id)
+        $allBookings = Booking::where('shop_id', $shop->id)
             ->orderBy('created_at', 'desc')
             ->get();
+
+        $bookings = $allBookings->filter(function($b) {
+            return in_array($b->status, ['deposit_paid', 'completed']);
+        });
 
         // --- Expiring Soon (Next 7 days, independent of date filter) ---
         $todayStart = Carbon::today()->startOfDay();
@@ -119,10 +123,10 @@ class DashboardController extends Controller
 
         // --- Status Counts (100% Dynamic from Database) ---
         $statusCounts = [
-            'pending'      => $bookings->where('status', 'pending')->count(),
-            'deposit_paid' => $bookings->where('status', 'deposit_paid')->count(),
-            'completed'    => $bookings->where('status', 'completed')->count(),
-            'expired'      => $bookings->where('status', 'expired')->count(),
+            'pending'      => $allBookings->where('status', 'pending')->count(),
+            'deposit_paid' => $allBookings->where('status', 'deposit_paid')->count(),
+            'completed'    => $allBookings->where('status', 'completed')->count(),
+            'expired'      => $allBookings->where('status', 'expired')->count(),
         ];
         $isMockStatus = false; // Always dynamic
 
