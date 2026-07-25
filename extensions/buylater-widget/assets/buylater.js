@@ -326,14 +326,14 @@ function initBuyLaterWidget() {
     messageDiv.className = 'buylater-message';
     
     // Reset steps
-    stepOptions.classList.add('active');
-    stepBook.classList.remove('active');
+    stepOptions.classList.remove('active');
+    stepBook.classList.add('active');
     stepRemind.classList.remove('active');
     stepDiscount.classList.remove('active');
     
     // Reset cards selection
     optionCards.forEach(card => card.classList.remove('selected'));
-    selectedOption = null;
+    selectedOption = 'book';
     continueBtn.disabled = true;
     continueBtn.classList.remove('enabled');
   }

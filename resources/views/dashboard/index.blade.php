@@ -1755,7 +1755,6 @@
 <ui-nav-menu>
     <a href="/" rel="home">Overview</a>
     <a href="/bookings">Bookings & Deposits</a>
-    <a href="/price-alerts">Price Alerts</a>
     <a href="/app-settings">Settings</a>
     <a href="/how-it-works">Support</a>
     <a href="/price-plan">Price Plan</a>
@@ -1777,9 +1776,6 @@
         </button>
         <button class="sidebar-btn {{ $activeTab === 'tab-bookings-list' ? 'active' : '' }}" onclick="switchTab(event, 'tab-bookings-list')">
             <span class="icon">💰</span> Bookings &amp; Deposits
-        </button>
-        <button class="sidebar-btn {{ $activeTab === 'tab-subscribers-list' ? 'active' : '' }}" onclick="switchTab(event, 'tab-subscribers-list')">
-            <span class="icon">🔔</span> Price Alerts
         </button>
 
         <hr class="sidebar-divider">
@@ -1936,7 +1932,7 @@
         </div>
     @endif
 
-    <!-- 4 Stats Cards Grid (Updated Card 3 with Scheduled Reminders Count) -->
+    <!-- Stats Cards Grid -->
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-info">
@@ -1963,21 +1959,6 @@
             <div class="stat-visual">
                 <svg width="64" height="28" viewBox="0 0 64 28" fill="none" stroke="#298dff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M4 24 Q16 18 28 20 T60 8" />
-                </svg>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-info">
-                <div class="stat-label" title="Customers signed up to receive alerts when prices drop">Alert Subscribers</div>
-                <div class="stat-value" id="stat_alert_subscribers">{{ number_format($alertSubscribersCount) }}</div>
-                <div class="stat-change">
-                    <span id="stat_subscribers_change_text">Total alert subscribers</span>
-                </div>
-            </div>
-            <div class="stat-visual">
-                <svg width="64" height="28" viewBox="0 0 64 28" fill="none" stroke="#298dff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 24 L20 18 L40 10 L60 4" />
                 </svg>
             </div>
         </div>
@@ -2735,20 +2716,9 @@
                         <!-- Spacer for 2-column layout grid -->
                     </div>
                 </div>
-                <div class="form-group" style="margin-top: 16px;">
-                    <label style="font-weight: 600; margin-bottom: 8px; display: block;">Enabled Storefront Widget Options</label>
-                    <div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap; margin-top: 8px;">
-                        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13.5px; font-weight: 500; color: var(--text-main);">
-                            <input type="checkbox" name="show_deposit" value="1" {{ ($settings->show_deposit ?? true) ? 'checked' : '' }} style="width: 16px; height: 16px; accent-color: var(--primary-color);">
-                            Book Now (Deposit Hold)
-                        </label>
-                        <input type="hidden" name="show_reminders" value="0">
-                        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13.5px; font-weight: 500; color: var(--text-main);">
-                            <input type="checkbox" name="show_alerts" value="1" {{ ($settings->show_alerts ?? true) ? 'checked' : '' }} style="width: 16px; height: 16px; accent-color: var(--primary-color);">
-                            Discount Alerts
-                        </label>
-                    </div>
-                </div>
+                <input type="hidden" name="show_deposit" value="1">
+                <input type="hidden" name="show_reminders" value="0">
+                <input type="hidden" name="show_alerts" value="0">
             </div>
 
             <!-- Card 1.5: Product Targeting -->
