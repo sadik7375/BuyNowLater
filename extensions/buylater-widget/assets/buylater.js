@@ -537,9 +537,10 @@ function initBuyLaterWidget() {
   bookForm.addEventListener('submit', function(e) {
     e.preventDefault();
     if (isBookSubmitting) return;
-    const email = document.getElementById('book-email').value;
-    
-    if (!email) return;
+    let email = document.getElementById('book-email') ? document.getElementById('book-email').value : '';
+    if (!email) {
+      email = window.buylaterCustomerEmail || 'guest@example.com';
+    }
 
     const submitBtn = bookForm.querySelector('.buylater-primary-btn');
     const originalBtnText = submitBtn.querySelector('span').textContent;
