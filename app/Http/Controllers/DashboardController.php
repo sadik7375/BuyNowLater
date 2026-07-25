@@ -1633,10 +1633,11 @@ class DashboardController extends Controller
      */
     private function extractTokenFromNode($node): ?string
     {
+        // 1. Check for specific unique keys first (buylater_token, _buylater_token)
         $attrs = $node['customAttributes'] ?? [];
         foreach ($attrs as $attr) {
             $key = strtolower($attr['key'] ?? '');
-            if ($key === 'buylater_token' || $key === '_token') {
+            if ($key === 'buylater_token' || $key === '_buylater_token') {
                 return strtolower($attr['value'] ?? '');
             }
         }
@@ -1647,13 +1648,52 @@ class DashboardController extends Controller
             $liAttrs = $li['customAttributes'] ?? [];
             foreach ($liAttrs as $attr) {
                 $key = strtolower($attr['key'] ?? '');
-                if ($key === 'buylater_token' || $key === '_token') {
+                if ($key === 'buylater_token' || $key === '_buylater_token') {
                     return strtolower($attr['value'] ?? '');
                 }
             }
         }
 
+        // 2. Only check for generic "_token" if the order has BuyNowLater tags or notes
+        $tags = $node['tags'] ?? [];
+        if ($tags instanceof \Gnikyt\BasicShopifyAPI\ResponseAccess) {
+            $tags = json_decode(json_encode($tags), true) ?? [];
+        }
+        if (is_string($tags)) {
+            $tags = array_map('trim', explode(',', $tags));
+        }
+        $hasAppTag = false;
+        if (is_array($tags)) {
+            foreach ($tags as $tag) {
+                if (stripos($tag, 'buylater') !== false) {
+                    $hasAppTag = true;
+                    break;
+                }
+            }
+        }
+
         $note = $node['note'] ?? $node['notes'] ?? '';
+        $hasAppNote = (stripos($note, 'buylater') !== false);
+
+        if ($hasAppTag || $hasAppNote) {
+            foreach ($attrs as $attr) {
+                $key = strtolower($attr['key'] ?? '');
+                if ($key === '_token') {
+                    return strtolower($attr['value'] ?? '');
+                }
+            }
+            foreach ($lineItems as $edge) {
+                $li = $edge['node'] ?? [];
+                $liAttrs = $li['customAttributes'] ?? [];
+                foreach ($liAttrs as $attr) {
+                    $key = strtolower($attr['key'] ?? '');
+                    if ($key === '_token') {
+                        return strtolower($attr['value'] ?? '');
+                    }
+                }
+            }
+        }
+
         if (preg_match('/buylater_token\s*:\s*([a-zA-Z0-9]+)/i', $note, $matches)) {
             return strtolower($matches[1]);
         }
