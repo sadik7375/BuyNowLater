@@ -425,7 +425,6 @@ class AppProxyController extends Controller
             'requires_shipping' => false,
             'properties' => [
                 ['name' => '_token', 'value' => $token],
-                ['name' => '_buylater_token', 'value' => $token],
                 ['name' => 'Original Price', 'value' => number_format($productPrice, 2) . ' ' . $currency],
                 ['name' => 'Remaining Balance', 'value' => number_format($remainingBalance, 2) . ' ' . $currency],
                 ['name' => 'product_id', 'value' => (string) $request->input('product_id')],
