@@ -1139,6 +1139,10 @@ class DashboardController extends Controller
                             totalPrice
                             currencyCode
                             createdAt
+                            email
+                            billingAddress {
+                                name
+                            }
                             customer {
                                 firstName
                                 lastName
@@ -1198,6 +1202,10 @@ class DashboardController extends Controller
                             outstandingAmount
                             currencyCode
                             createdAt
+                            email
+                            billingAddress {
+                                name
+                            }
                             customer {
                                 firstName
                                 lastName
@@ -1270,15 +1278,23 @@ class DashboardController extends Controller
                     }
                 }
 
+                $customer = $node['customer'] ?? null;
+                $customerName = $customer ? trim(($customer['firstName'] ?? '') . ' ' . ($customer['lastName'] ?? '')) : '';
+                if (empty($customerName) && !empty($node['billingAddress']['name'])) {
+                    $customerName = $node['billingAddress']['name'];
+                }
+                if (empty($customerName)) {
+                    $customerName = 'N/A';
+                }
+
+                $email = $customer && !empty($customer['email']) ? $customer['email'] : ($node['email'] ?? 'N/A');
+
                 // 3. Auto-create booking if it doesn't exist but has a token
                 if (!$booking) {
                     if (!$token) {
                         $token = $this->extractTokenFromNode($node);
                     }
                     if ($token) {
-                        $customer = $node['customer'] ?? null;
-                        $customerName = $customer ? trim(($customer['firstName'] ?? '') . ' ' . ($customer['lastName'] ?? '')) : 'N/A';
-                        $email = $customer ? ($customer['email'] ?? 'N/A') : 'N/A';
 
                         $lineItemsNode = $node['lineItems']['edges'] ?? [];
                         $productTitle = !empty($lineItemsNode[0]['node']['title']) ? $lineItemsNode[0]['node']['title'] : 'N/A';
@@ -1388,6 +1404,13 @@ class DashboardController extends Controller
                             'fulfillment_status' => $fulfillmentStatus,
                         ];
 
+                        if (empty($booking->customer_name) || $booking->customer_name === 'N/A') {
+                            $updateData['customer_name'] = $customerName;
+                        }
+                        if (empty($booking->email) || $booking->email === 'N/A') {
+                            $updateData['email'] = $email;
+                        }
+
                         $outstandingAmount = isset($node['outstandingAmount']) ? (float) $node['outstandingAmount'] : 0.0;
                         if ($outstandingAmount > 0.0) {
                             $totalPrice = isset($node['totalPrice']) ? (float) $node['totalPrice'] : 0.0;
@@ -1436,15 +1459,23 @@ class DashboardController extends Controller
                     }
                 }
 
+                $customer = $node['customer'] ?? null;
+                $customerName = $customer ? trim(($customer['firstName'] ?? '') . ' ' . ($customer['lastName'] ?? '')) : '';
+                if (empty($customerName) && !empty($node['billingAddress']['name'])) {
+                    $customerName = $node['billingAddress']['name'];
+                }
+                if (empty($customerName)) {
+                    $customerName = 'N/A';
+                }
+
+                $email = $customer && !empty($customer['email']) ? $customer['email'] : ($node['email'] ?? 'N/A');
+
                 // 3. Auto-create booking if it doesn't exist but has a token
                 if (!$booking) {
                     if (!$token) {
                         $token = $this->extractTokenFromNode($node);
                     }
                     if ($token) {
-                        $customer = $node['customer'] ?? null;
-                        $customerName = $customer ? trim(($customer['firstName'] ?? '') . ' ' . ($customer['lastName'] ?? '')) : 'N/A';
-                        $email = $customer ? ($customer['email'] ?? 'N/A') : 'N/A';
 
                         $lineItemsNode = $node['lineItems']['edges'] ?? [];
                         $productTitle = !empty($lineItemsNode[0]['node']['title']) ? $lineItemsNode[0]['node']['title'] : 'N/A';
@@ -1518,6 +1549,17 @@ class DashboardController extends Controller
                 }
 
                 if ($booking) {
+                    $updateData = [];
+                    if (empty($booking->customer_name) || $booking->customer_name === 'N/A') {
+                        $updateData['customer_name'] = $customerName;
+                    }
+                    if (empty($booking->email) || $booking->email === 'N/A') {
+                        $updateData['email'] = $email;
+                    }
+                    if (!empty($updateData)) {
+                        $booking->update($updateData);
+                    }
+
                     if ($draftStatus === 'COMPLETED') {
                         $orderId = !empty($node['order']['id']) ? preg_replace('/[^0-9]/', '', $node['order']['id']) : null;
                         $orderName = !empty($node['order']['name']) ? $node['order']['name'] : null;
