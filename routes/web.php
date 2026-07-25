@@ -516,17 +516,37 @@ Route::group(['prefix' => 'deploy'], function() {
 
     Route::get('/register-webhooks', function() {
         try {
-            $shops = \App\Models\User::all();
+            $shopName = request('shop');
+            if ($shopName) {
+                $shops = \App\Models\User::where('name', $shopName)->get();
+            } else {
+                $shops = \App\Models\User::all();
+            }
+
             $webhooksConfig = config('shopify-app.webhooks');
             $action = app(\Osiset\ShopifyApp\Actions\CreateWebhooks::class);
             $results = [];
 
             foreach ($shops as $shop) {
-                // Ensure the shop model actually has a token/api helper
                 if ($shop->password) {
-                    $shopId = \Osiset\ShopifyApp\Objects\Values\ShopId::fromNative($shop->id);
-                    $res = $action($shopId, $webhooksConfig);
-                    $results[$shop->name] = $res;
+                    try {
+                        $shopId = \Osiset\ShopifyApp\Objects\Values\ShopId::fromNative($shop->id);
+                        $res = $action($shopId, $webhooksConfig);
+                        $results[$shop->name] = [
+                            'status' => 'success',
+                            'response' => $res
+                        ];
+                    } catch (\Exception $ex) {
+                        $results[$shop->name] = [
+                            'status' => 'failed',
+                            'error' => $ex->getMessage()
+                        ];
+                    }
+                } else {
+                    $results[$shop->name] = [
+                        'status' => 'ignored',
+                        'reason' => 'No password/token set'
+                    ];
                 }
             }
 
