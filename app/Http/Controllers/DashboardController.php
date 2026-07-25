@@ -1353,8 +1353,14 @@ class DashboardController extends Controller
                                 }
                             }
 
-                            if ($depositAmount === 0.0 && isset($node['totalPrice'])) {
-                                $depositAmount = (float) $node['totalPrice'];
+                            if ($depositAmount === 0.0) {
+                                if ($calcOutstanding === 0.0 || $financialStatus === 'PAID') {
+                                    $depositAmount = $totalPrice;
+                                    $originalPrice = $totalPrice;
+                                    $remainingBalance = 0.0;
+                                } else {
+                                    $depositAmount = $totalPrice;
+                                }
                             }
                             if ($originalPrice === 0.0) {
                                 $pct = (float) ($settings->deposit_percentage ?? 10) / 100;
@@ -1426,7 +1432,13 @@ class DashboardController extends Controller
                             $updateData['remaining_balance'] = $calcOutstanding;
                         }
 
-                        if ($booking->status === 'pending' && ($financialStatus === 'PAID' || $financialStatus === 'PARTIALLY_PAID')) {
+                        if ($calcOutstanding === 0.0 && ($financialStatus === 'PAID' || $financialStatus === 'PARTIALLY_PAID')) {
+                            if ($booking->status !== 'completed') {
+                                $updateData['status'] = 'completed';
+                                $updateData['completed_at'] = now();
+                                \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} marked completed via full Order payment.");
+                            }
+                        } elseif ($booking->status === 'pending' && ($financialStatus === 'PAID' || $financialStatus === 'PARTIALLY_PAID')) {
                             $updateData['status'] = 'deposit_paid';
                             $updateData['expires_at'] = now()->addDays($holdDurationDays);
                             $updateData['deposit_paid_at'] = now();

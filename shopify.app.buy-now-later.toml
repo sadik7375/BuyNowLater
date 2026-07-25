@@ -7,7 +7,7 @@ name = "Buy Now Later"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_draft_orders,read_products,read_themes,write_draft_orders,write_products"
+scopes = "read_draft_orders,read_products,read_themes,write_draft_orders,write_products,read_customers"
 
 [auth]
 redirect_urls = [
