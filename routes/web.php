@@ -676,7 +676,7 @@ Route::group(['prefix' => 'deploy'], function() {
             $status = null;
             exec('git checkout main 2>&1', $output, $status);
             exec('git fetch origin main 2>&1', $output, $status);
-            exec('git reset --hard origin/main 2>&1', $output, $status);
+            exec('git reset --hard FETCH_HEAD 2>&1', $output, $status);
             
             // Clear OPcache if enabled to force PHP file reloading
             if (function_exists('opcache_reset')) {
