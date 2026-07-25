@@ -73,8 +73,7 @@ function initBuyLaterWidget() {
   setupHidingObserver();
 
   let selectedOption = null;
-  const rawPrice = (triggerBtn.getAttribute('data-product-price') || '0').replace(/,/g, '');
-  const productPrice = parseFloat(rawPrice);
+  let dynamicProductPrice = parseFloat((triggerBtn.getAttribute('data-product-price') || '0').replace(/,/g, ''));
   const currencySymbol = window.buylaterCurrencySymbol || '$';
   let depositPercentage = window.buylaterDepositPercentage || 10; // Default fallback
 
@@ -84,7 +83,7 @@ function initBuyLaterWidget() {
   const breakdownRemaining = document.getElementById('book-breakdown-remaining');
 
   function updateDepositDisplay() {
-    const depositVal = (productPrice * (depositPercentage / 100)).toFixed(2);
+    const depositVal = (dynamicProductPrice * (depositPercentage / 100)).toFixed(2);
     const depositText = document.getElementById('buylater-deposit-amount');
     if (depositText) {
       depositText.textContent = `From ${currencySymbol}${depositVal} deposit`;
@@ -95,9 +94,9 @@ function initBuyLaterWidget() {
       depositLabel.textContent = `Required Deposit (${depositPercentage}%):`;
     }
     if (breakdownPrice && breakdownDeposit && breakdownRemaining) {
-      breakdownPrice.textContent = `${currencySymbol}${productPrice.toFixed(2)}`;
+      breakdownPrice.textContent = `${currencySymbol}${dynamicProductPrice.toFixed(2)}`;
       breakdownDeposit.textContent = `${currencySymbol}${depositVal}`;
-      breakdownRemaining.textContent = `${currencySymbol}${(productPrice - parseFloat(depositVal)).toFixed(2)}`;
+      breakdownRemaining.textContent = `${currencySymbol}${(dynamicProductPrice - parseFloat(depositVal)).toFixed(2)}`;
     }
   }
 
@@ -115,6 +114,7 @@ function initBuyLaterWidget() {
   // Fetch settings dynamically from the app proxy
   const shopDomain = window.buylaterShopDomain || new URL(window.location.href).hostname;
   const productId = triggerBtn.getAttribute('data-product-id') || '';
+  
   fetch(`/apps/buylater-proxy/settings?shop=${encodeURIComponent(shopDomain)}&product_id=${encodeURIComponent(productId)}&t=${Date.now()}`, {
     headers: {
       'Accept': 'application/json'
@@ -146,12 +146,14 @@ function initBuyLaterWidget() {
         depositPercentage = parseInt(data.deposit_percentage, 10);
         updateDepositDisplay();
       }
-      if (data.use_selling_plan || data.selling_plan_id) {
+      if (data.use_selling_plan && data.selling_plan_id) {
         window.buylaterUseSellingPlan = true;
         window.buylaterSellingPlanGroupId = data.selling_plan_group_id;
-        if (data.selling_plan_id) {
-          window.buylaterSellingPlanId = data.selling_plan_id;
-        }
+        window.buylaterSellingPlanId = data.selling_plan_id;
+      } else {
+        window.buylaterUseSellingPlan = false;
+        window.buylaterSellingPlanGroupId = null;
+        window.buylaterSellingPlanId = null;
       }
       if (data.hold_duration_days) {
         const holdDaysSpan = document.getElementById('buylater-hold-days-display');
@@ -214,10 +216,96 @@ function initBuyLaterWidget() {
     if (discountEmailInput) discountEmailInput.value = customerEmail;
   }
 
+  // Robust Variant Detection & Syncing function
+  window.syncSelectedVariant = function(callback) {
+    const urlParams = new URLSearchParams(window.location.search);
+    let variantId = urlParams.get('variant');
+
+    if (!variantId) {
+      const variantInput = document.querySelector('form[action*="/cart/add"] input[name="id"], form[action*="/cart/add"] select[name="id"], input[name="id"]');
+      if (variantInput) {
+        variantId = variantInput.value;
+      }
+    }
+
+    if (!variantId) {
+      variantId = triggerBtn.getAttribute('data-variant-id');
+    }
+
+    if (variantId && String(variantId).includes('/')) {
+      variantId = String(variantId).split('/').pop();
+    }
+
+    const productHandle = triggerBtn.getAttribute('data-product-handle');
+    if (!productHandle) {
+      if (callback) callback();
+      return;
+    }
+
+    fetch(`/products/${productHandle}.js`)
+      .then(res => res.json())
+      .then(product => {
+        const variant = product.variants.find(v => String(v.id) === String(variantId)) || product.variants[0];
+        if (variant) {
+          triggerBtn.setAttribute('data-variant-id', variant.id);
+          
+          const newPrice = (variant.price / 100.0);
+          dynamicProductPrice = newPrice;
+          triggerBtn.setAttribute('data-product-price', newPrice.toFixed(2));
+          
+          if (variant.compare_at_price) {
+            const comparePrice = (variant.compare_at_price / 100.0);
+            triggerBtn.setAttribute('data-product-compare-price', comparePrice.toFixed(2));
+          } else {
+            triggerBtn.removeAttribute('data-product-compare-price');
+          }
+
+          if (variant.featured_image && variant.featured_image.src) {
+            triggerBtn.setAttribute('data-product-image', variant.featured_image.src);
+          }
+
+          // Update modal UI elements
+          const previewImg = document.getElementById('buylater-preview-img');
+          const previewTitle = document.getElementById('buylater-preview-title');
+          const previewPrice = document.getElementById('buylater-preview-price');
+          const previewCompare = document.getElementById('buylater-preview-compare');
+
+          if (previewImg && variant.featured_image && variant.featured_image.src) {
+            previewImg.src = variant.featured_image.src;
+          }
+          if (previewTitle) {
+            previewTitle.textContent = variant.title !== 'Default Title' ? `${product.title} - ${variant.title}` : product.title;
+          }
+
+          if (previewPrice) {
+            previewPrice.textContent = `${currencySymbol}${newPrice.toFixed(2)}`;
+          }
+          if (previewCompare) {
+            if (variant.compare_at_price) {
+              const comparePrice = (variant.compare_at_price / 100.0);
+              previewCompare.textContent = `${currencySymbol}${comparePrice.toFixed(2)}`;
+              previewCompare.style.display = 'inline';
+            } else {
+              previewCompare.style.display = 'none';
+            }
+          }
+
+          updateDepositDisplay();
+        }
+        if (callback) callback();
+      })
+      .catch(err => {
+        console.error('Error fetching product JSON for variant sync:', err);
+        if (callback) callback();
+      });
+  };
+
   // Open modal
   triggerBtn.addEventListener('click', function() {
-    modal.style.display = 'flex';
-    resetModal();
+    window.syncSelectedVariant(function() {
+      modal.style.display = 'flex';
+      resetModal();
+    });
   });
 
   // Close modal
@@ -291,19 +379,9 @@ function initBuyLaterWidget() {
 
   // Get current product data payload
   function getProductData() {
-    // Try to find the selected variant ID dynamically
-    const urlParams = new URLSearchParams(window.location.search);
-    let variantId = urlParams.get('variant');
-
-    if (!variantId) {
-      const variantInput = document.querySelector('form[action*="/cart/add"] input[name="id"], form[action*="/cart/add"] select[name="id"]');
-      if (variantInput) {
-        variantId = variantInput.value;
-      }
-    }
-
-    if (!variantId) {
-      variantId = triggerBtn.getAttribute('data-variant-id');
+    let variantId = triggerBtn.getAttribute('data-variant-id');
+    if (variantId && String(variantId).includes('/')) {
+      variantId = String(variantId).split('/').pop();
     }
 
     return {
@@ -323,7 +401,6 @@ function initBuyLaterWidget() {
     messageDiv.textContent = text;
     messageDiv.style.display = 'block';
     messageDiv.className = `buylater-message ${type}`;
-    // Scroll to the message
     messageDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
@@ -482,8 +559,14 @@ function initBuyLaterWidget() {
     if (window.buylaterUseSellingPlan) {
       showMessage('Success! Adding deposit option to cart & redirecting to checkout...', 'success');
       const token = Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+      
+      let cleanVariantId = payload.variant_id || payload.product_id;
+      if (cleanVariantId && String(cleanVariantId).includes('/')) {
+        cleanVariantId = String(cleanVariantId).split('/').pop();
+      }
+
       const item = {
-        id: payload.variant_id || payload.product_id,
+        id: parseInt(cleanVariantId, 10) || cleanVariantId,
         quantity: 1,
         properties: {
           _token: token,
@@ -534,7 +617,7 @@ function initBuyLaterWidget() {
       })
       .catch(err => {
         console.warn('Native cart/add.js failed, falling back to standard proxy booking:', err);
-        executeProxyBooking(payload);
+        executeProxyBooking({ ...payload, payment_type: 'draft_order' });
       });
     } else {
       executeProxyBooking(payload);
@@ -583,12 +666,23 @@ document.addEventListener('click', function(e) {
   const btn = e.target.closest('#buylater-trigger, .buylater-btn');
   if (btn) {
     const modal = document.getElementById('buylater-modal');
-    const stepOptions = document.getElementById('buylater-step-options');
     if (modal) {
-      modal.style.display = 'flex';
-      if (stepOptions) {
-        stepOptions.classList.add('active');
+      if (typeof window.syncSelectedVariant === 'function') {
+        window.syncSelectedVariant(function() {
+          modal.style.display = 'flex';
+          const stepOptions = document.getElementById('buylater-step-options');
+          if (stepOptions) {
+            stepOptions.classList.add('active');
+          }
+        });
+      } else {
+        modal.style.display = 'flex';
+        const stepOptions = document.getElementById('buylater-step-options');
+        if (stepOptions) {
+          stepOptions.classList.add('active');
+        }
       }
     }
   }
 });
+
