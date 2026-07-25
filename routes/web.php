@@ -627,9 +627,16 @@ Route::group(['prefix' => 'deploy'], function() {
                             displayFulfillmentStatus
                             tags
                             note
-                            totalPrice
-                            totalPaid
-                            outstandingAmount
+                            totalPriceSet {
+                                shopMoney {
+                                    amount
+                                }
+                            }
+                            netPaymentSet {
+                                shopMoney {
+                                    amount
+                                }
+                            }
                             currencyCode
                             createdAt
                             customer {

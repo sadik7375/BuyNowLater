@@ -1197,9 +1197,16 @@ class DashboardController extends Controller
                             displayFulfillmentStatus
                             tags
                             note
-                            totalPrice
-                            totalPaid
-                            outstandingAmount
+                            totalPriceSet {
+                                shopMoney {
+                                    amount
+                                }
+                            }
+                            netPaymentSet {
+                                shopMoney {
+                                    amount
+                                }
+                            }
                             currencyCode
                             createdAt
                             email
@@ -1319,18 +1326,16 @@ class DashboardController extends Controller
                         $depositAmount = 0.0;
                         $remainingBalance = 0.0;
 
-                        $outstandingAmount = isset($node['outstandingAmount']) ? (float) $node['outstandingAmount'] : 0.0;
-                        $totalPaid = isset($node['totalPaid']) ? (float) $node['totalPaid'] : 0.0;
-                        $totalPrice = isset($node['totalPrice']) ? (float) $node['totalPrice'] : 0.0;
+                        $totalPrice = isset($node['totalPriceSet']['shopMoney']['amount']) ? (float) $node['totalPriceSet']['shopMoney']['amount'] : 0.0;
+                        $netPayment = isset($node['netPaymentSet']['shopMoney']['amount']) ? (float) $node['netPaymentSet']['shopMoney']['amount'] : 0.0;
+                        $calcOutstanding = round($totalPrice - $netPayment, 2);
 
-                        if ($outstandingAmount > 0.0) {
+                        // If order is partially paid or outstanding balance exists
+                        if ($calcOutstanding > 0.0 && ($financialStatus === 'PARTIALLY_PAID' || $financialStatus === 'PENDING' || $financialStatus === 'PARTIALLY_REFUNDED')) {
                             // Native Purchase Option (Selling Plan) Order handling:
-                            // totalPrice is the full product price.
-                            // totalPaid is the deposit paid.
-                            // outstandingAmount is the remaining balance.
                             $originalPrice = $totalPrice;
-                            $depositAmount = $totalPaid > 0.0 ? $totalPaid : round($totalPrice - $outstandingAmount, 2);
-                            $remainingBalance = $outstandingAmount;
+                            $depositAmount = $netPayment > 0.0 ? $netPayment : 0.0;
+                            $remainingBalance = $calcOutstanding;
                         } else {
                             // Fallback to Draft Order flow customAttributes check
                             $attrs = array_merge($node['customAttributes'] ?? [], !empty($lineItemsNode[0]['node']['customAttributes']) ? $lineItemsNode[0]['node']['customAttributes'] : []);
@@ -1411,14 +1416,14 @@ class DashboardController extends Controller
                             $updateData['email'] = $email;
                         }
 
-                        $outstandingAmount = isset($node['outstandingAmount']) ? (float) $node['outstandingAmount'] : 0.0;
-                        if ($outstandingAmount > 0.0) {
-                            $totalPrice = isset($node['totalPrice']) ? (float) $node['totalPrice'] : 0.0;
-                            $totalPaid = isset($node['totalPaid']) ? (float) $node['totalPaid'] : 0.0;
+                        $totalPrice = isset($node['totalPriceSet']['shopMoney']['amount']) ? (float) $node['totalPriceSet']['shopMoney']['amount'] : 0.0;
+                        $netPayment = isset($node['netPaymentSet']['shopMoney']['amount']) ? (float) $node['netPaymentSet']['shopMoney']['amount'] : 0.0;
+                        $calcOutstanding = round($totalPrice - $netPayment, 2);
 
+                        if ($calcOutstanding > 0.0 && ($financialStatus === 'PARTIALLY_PAID' || $financialStatus === 'PENDING' || $financialStatus === 'PARTIALLY_REFUNDED')) {
                             $updateData['product_price'] = $totalPrice;
-                            $updateData['deposit_amount'] = $totalPaid > 0.0 ? $totalPaid : round($totalPrice - $outstandingAmount, 2);
-                            $updateData['remaining_balance'] = $outstandingAmount;
+                            $updateData['deposit_amount'] = $netPayment;
+                            $updateData['remaining_balance'] = $calcOutstanding;
                         }
 
                         if ($booking->status === 'pending' && ($financialStatus === 'PAID' || $financialStatus === 'PARTIALLY_PAID')) {
