@@ -23,6 +23,15 @@ Log::info('Web Route Match:', [
 ]);
 
 
+Route::get('/run-migrate-force', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        return 'Migration successfully executed! Output: <br>' . nl2br(\Illuminate\Support\Facades\Artisan::output());
+    } catch (\Exception $e) {
+        return 'Error executing migration: ' . $e->getMessage();
+    }
+});
+
 // Embedded App Dashboard Routes (Admin Area)
 Route::group(['middleware' => ['verify.shopify']], function () {
     Route::match(['get', 'post'], '/', [DashboardController::class, 'index'])->name('home');
