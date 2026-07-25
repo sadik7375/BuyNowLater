@@ -2082,13 +2082,24 @@
                     @else
                         @foreach($bookings as $booking)
                             @php
-                                $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : 'Guest Customer';
+                                $shopHandle = str_replace('.myshopify.com', '', $shop->name);
+                                $orderName = $booking->order_name ?: ($booking->order_id ? '#'.$booking->order_id : ($booking->draft_order_id ? 'Draft: '.$booking->draft_order_id : 'No Order'));
                             @endphp
                             <div class="booking-item" data-created-at="{{ $booking->created_at->timestamp }}">
                                 <div class="user-avatar-info">
-                                    <div class="avatar-circle">{{ strtoupper(substr($displayName, 0, 2)) }}</div>
+                                    <div class="avatar-circle">#</div>
                                     <div class="user-meta">
-                                        <h4>{{ $displayName }}</h4>
+                                        <h4>
+                                            @if($booking->order_id)
+                                                <a href="https://admin.shopify.com/store/{{ $shopHandle }}/orders/{{ $booking->order_id }}" target="_top" style="color: #005c9e; text-decoration: none; font-weight: 600; transition: text-decoration 0.15s ease;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+                                                    {{ $orderName }}
+                                                </a>
+                                            @elseif($booking->draft_order_id)
+                                                <span style="color: var(--text-muted); font-size: 13px;">{{ $orderName }}</span>
+                                            @else
+                                                <span style="color: var(--text-muted); font-style: italic; font-size: 13px;">{{ $orderName }}</span>
+                                            @endif
+                                        </h4>
                                         <p>{{ $booking->product_title }}</p>
                                     </div>
                                 </div>
