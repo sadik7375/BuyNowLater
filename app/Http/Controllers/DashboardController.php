@@ -1194,6 +1194,8 @@ class DashboardController extends Controller
                             tags
                             note
                             totalPrice
+                            totalPaid
+                            outstandingAmount
                             currencyCode
                             createdAt
                             customer {
@@ -1301,34 +1303,49 @@ class DashboardController extends Controller
                         $depositAmount = 0.0;
                         $remainingBalance = 0.0;
 
-                        $attrs = array_merge($node['customAttributes'] ?? [], !empty($lineItemsNode[0]['node']['customAttributes']) ? $lineItemsNode[0]['node']['customAttributes'] : []);
-                        foreach ($attrs as $attr) {
-                            $key = strtolower($attr['key'] ?? '');
-                            $val = $attr['value'] ?? '';
-                            if (stripos($key, 'original price') !== false || stripos($key, 'product price') !== false) {
-                                $originalPrice = (float) preg_replace('/[^0-9.]/', '', $val);
-                            }
-                            if (stripos($key, 'deposit') !== false) {
-                                $depositAmount = (float) preg_replace('/[^0-9.]/', '', $val);
-                            }
-                            if (stripos($key, 'balance') !== false || stripos($key, 'remaining') !== false) {
-                                $remainingBalance = (float) preg_replace('/[^0-9.]/', '', $val);
-                            }
-                        }
+                        $outstandingAmount = isset($node['outstandingAmount']) ? (float) $node['outstandingAmount'] : 0.0;
+                        $totalPaid = isset($node['totalPaid']) ? (float) $node['totalPaid'] : 0.0;
+                        $totalPrice = isset($node['totalPrice']) ? (float) $node['totalPrice'] : 0.0;
 
-                        if ($depositAmount === 0.0 && isset($node['totalPrice'])) {
-                            $depositAmount = (float) $node['totalPrice'];
-                        }
-                        if ($originalPrice === 0.0) {
-                            $pct = (float) ($settings->deposit_percentage ?? 10) / 100;
-                            if ($pct > 0) {
-                                $originalPrice = $depositAmount / $pct;
-                            } else {
-                                $originalPrice = $depositAmount;
+                        if ($outstandingAmount > 0.0) {
+                            // Native Purchase Option (Selling Plan) Order handling:
+                            // totalPrice is the full product price.
+                            // totalPaid is the deposit paid.
+                            // outstandingAmount is the remaining balance.
+                            $originalPrice = $totalPrice;
+                            $depositAmount = $totalPaid > 0.0 ? $totalPaid : round($totalPrice - $outstandingAmount, 2);
+                            $remainingBalance = $outstandingAmount;
+                        } else {
+                            // Fallback to Draft Order flow customAttributes check
+                            $attrs = array_merge($node['customAttributes'] ?? [], !empty($lineItemsNode[0]['node']['customAttributes']) ? $lineItemsNode[0]['node']['customAttributes'] : []);
+                            foreach ($attrs as $attr) {
+                                $key = strtolower($attr['key'] ?? '');
+                                $val = $attr['value'] ?? '';
+                                if (stripos($key, 'original price') !== false || stripos($key, 'product price') !== false) {
+                                    $originalPrice = (float) preg_replace('/[^0-9.]/', '', $val);
+                                }
+                                if (stripos($key, 'deposit') !== false) {
+                                    $depositAmount = (float) preg_replace('/[^0-9.]/', '', $val);
+                                }
+                                if (stripos($key, 'balance') !== false || stripos($key, 'remaining') !== false) {
+                                    $remainingBalance = (float) preg_replace('/[^0-9.]/', '', $val);
+                                }
                             }
-                        }
-                        if ($remainingBalance === 0.0) {
-                            $remainingBalance = $originalPrice - $depositAmount;
+
+                            if ($depositAmount === 0.0 && isset($node['totalPrice'])) {
+                                $depositAmount = (float) $node['totalPrice'];
+                            }
+                            if ($originalPrice === 0.0) {
+                                $pct = (float) ($settings->deposit_percentage ?? 10) / 100;
+                                if ($pct > 0) {
+                                    $originalPrice = $depositAmount / $pct;
+                                } else {
+                                    $originalPrice = $depositAmount;
+                                }
+                            }
+                            if ($remainingBalance === 0.0) {
+                                $remainingBalance = $originalPrice - $depositAmount;
+                            }
                         }
 
                         $booking = Booking::create([
@@ -1370,6 +1387,17 @@ class DashboardController extends Controller
                             'payment_status' => strtolower($financialStatus),
                             'fulfillment_status' => $fulfillmentStatus,
                         ];
+
+                        $outstandingAmount = isset($node['outstandingAmount']) ? (float) $node['outstandingAmount'] : 0.0;
+                        if ($outstandingAmount > 0.0) {
+                            $totalPrice = isset($node['totalPrice']) ? (float) $node['totalPrice'] : 0.0;
+                            $totalPaid = isset($node['totalPaid']) ? (float) $node['totalPaid'] : 0.0;
+
+                            $updateData['product_price'] = $totalPrice;
+                            $updateData['deposit_amount'] = $totalPaid > 0.0 ? $totalPaid : round($totalPrice - $outstandingAmount, 2);
+                            $updateData['remaining_balance'] = $outstandingAmount;
+                        }
+
                         if ($booking->status === 'pending' && ($financialStatus === 'PAID' || $financialStatus === 'PARTIALLY_PAID')) {
                             $updateData['status'] = 'deposit_paid';
                             $updateData['expires_at'] = now()->addDays($holdDurationDays);
