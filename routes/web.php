@@ -608,6 +608,61 @@ Route::group(['prefix' => 'deploy'], function() {
         }
     });
 
+    Route::get('/inspect-order', function() {
+        try {
+            $shopName = request('shop') ?: 'canny-apps.myshopify.com';
+            $shop = \App\Models\User::where('name', $shopName)->first();
+            if (!$shop) {
+                return 'Shop not found.';
+            }
+            
+            $orderName = request('order') ?: '#1046';
+            $gqlOrdersQuery = 'query {
+                orders(first: 10, query: "name:\'' . $orderName . '\'") {
+                    edges {
+                        node {
+                            id
+                            name
+                            displayFinancialStatus
+                            displayFulfillmentStatus
+                            tags
+                            note
+                            totalPrice
+                            totalPaid
+                            outstandingAmount
+                            currencyCode
+                            createdAt
+                            customer {
+                                firstName
+                                lastName
+                                email
+                            }
+                            customAttributes {
+                                key
+                                value
+                            }
+                        }
+                    }
+                }
+            }';
+            
+            $res = $shop->api()->graph($gqlOrdersQuery);
+            return response()->json($res);
+        } catch (\Exception $e) {
+            return 'Failed: ' . $e->getMessage();
+        }
+    });
+
+    Route::get('/inspect-db-booking', function() {
+        try {
+            $orderName = request('order') ?: '#1046';
+            $bookings = \App\Models\Booking::where('order_name', $orderName)->get();
+            return response()->json($bookings);
+        } catch (\Exception $e) {
+            return 'Failed: ' . $e->getMessage();
+        }
+    });
+
     Route::get('/debug-settings', function() {
         try {
             $shops = \App\Models\User::all();
