@@ -139,7 +139,7 @@ function initBuyLaterWidget() {
         if (btnWrapper) {
           btnWrapper.style.setProperty('display', 'flex', 'important');
         } else {
-          triggerBtn.style.display = 'inline-block';
+          triggerBtn.style.display = 'inline-flex';
         }
       }
       if (data.deposit_percentage) {

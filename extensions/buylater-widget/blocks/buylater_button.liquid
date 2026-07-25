@@ -3,10 +3,37 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 {{ 'buylater.css' | asset_url | stylesheet_tag }}
 
-<div class="buylater-btn-wrapper" style="display: flex; justify-content: {{ block.settings.button_alignment }}; width: 100%;">
+{% assign bg_color = block.settings.button_bg_color %}
+{% assign text_color = block.settings.button_text_color | default: '#2563eb' %}
+
+<div class="buylater-btn-wrapper" style="display: flex; justify-content: {{ block.settings.button_alignment | default: 'center' }}; width: 100%; margin-top: 10px; margin-bottom: 10px;">
   <button type="button" 
-          class="buylater-btn" 
-          style="font-size: {{ block.settings.button_font_size }}px; font-weight: {{ block.settings.button_font_weight }}; width: {% if block.settings.button_width_mode == 'full' %}100%{% elsif block.settings.button_width_mode == 'auto' %}auto{% else %}{{ block.settings.button_custom_width }}px{% endif %};"
+          class="buylater-btn-link" 
+          style="
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.25s ease-in-out;
+            font-size: {{ block.settings.button_font_size | default: 15 }}px;
+            font-weight: {{ block.settings.button_font_weight | default: '500' }};
+            color: {{ text_color }};
+            {% if bg_color != blank and bg_color != 'transparent' and bg_color != 'rgba(0,0,0,0)' %}
+              background-color: {{ bg_color }};
+              padding: 8px 18px;
+              border-radius: 30px;
+              text-decoration: none;
+            {% else %}
+              background-color: transparent;
+              padding: 0;
+              text-decoration: underline;
+              text-underline-offset: 4px;
+            {% endif %}
+            width: {% if block.settings.button_width_mode == 'full' %}100%{% elsif block.settings.button_width_mode == 'auto' %}auto{% else %}{{ block.settings.button_custom_width }}px{% endif %};
+          "
           id="buylater-trigger"
           data-product-id="{{ product.id }}"
           data-variant-id="{{ product.selected_or_first_available_variant.id }}"
@@ -354,7 +381,7 @@
       if (btnWrapper) {
         btnWrapper.style.setProperty('display', 'flex', 'important');
       } else {
-        triggerBtn.style.display = 'inline-block';
+        triggerBtn.style.display = 'inline-flex';
       }
     });
   })();
@@ -365,7 +392,9 @@
   "name": "Buy Later Button",
   "target": "section",
   "settings": [
-    { "type": "text", "id": "button_text", "label": "Button Text", "default": "Buy Later — not ready yet?" },
+    { "type": "text", "id": "button_text", "label": "Button Text", "default": "Not ready to buy? Reserve with a deposit" },
+    { "type": "color", "id": "button_text_color", "label": "Button Text Color", "default": "#2563eb" },
+    { "type": "color", "id": "button_bg_color", "label": "Button Background Color" },
     { "type": "range", "id": "button_font_size", "min": 12, "max": 24, "step": 1, "unit": "px", "label": "Button Font Size", "default": 15 },
     {
       "type": "select",
@@ -377,7 +406,7 @@
         { "value": "600", "label": "Semi-Bold (600)" },
         { "value": "700", "label": "Bold (700)" }
       ],
-      "default": "600"
+      "default": "500"
     },
     {
       "type": "select",
@@ -388,7 +417,7 @@
         { "value": "auto", "label": "Fit Content (Auto)" },
         { "value": "custom", "label": "Custom Width" }
       ],
-      "default": "full"
+      "default": "auto"
     },
     { "type": "range", "id": "button_custom_width", "min": 100, "max": 500, "step": 10, "unit": "px", "label": "Custom Width (if Custom selected)", "default": 200 },
     {
