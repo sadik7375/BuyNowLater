@@ -2794,6 +2794,40 @@
 
 
 
+
+            <!-- Card 1.6: Native Checkout & Selling Plan API -->
+            <div class="panel-card" style="margin-bottom: 20px; background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 100%); border: 1px solid #b3d7ff;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+                    <div>
+                        <h3 style="color: #004085; display: flex; align-items: center; gap: 8px;">
+                            ⚡ Native Checkout Deposit (Shopify Selling Plan API)
+                            @if($settings->use_selling_plan)
+                                <span class="badge" style="background-color: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px;">Active</span>
+                            @else
+                                <span class="badge" style="background-color: #ffc107; color: black; padding: 4px 8px; border-radius: 4px; font-size: 11px;">Standard Draft Order</span>
+                            @endif
+                        </h3>
+                        <p style="font-size: 13px; color: #495057; margin-top: -5px; max-width: 650px;">
+                            Enable native Shopify checkout for deposits! When enabled, customers pay deposits directly inside Shopify's native checkout without email invoice links, complying 100% with Shopify App Store Purchase Option requirements.
+                        </p>
+                    </div>
+                    <div>
+                        @if($settings->use_selling_plan)
+                            <form action="{{ route('selling_plans.destroy', request()->query()) }}" method="POST" style="margin:0;">
+                                @csrf
+                                <button type="submit" class="btn btn-secondary" style="background-color: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Deactivate Native Checkout</button>
+                            </form>
+                        @else
+                            <form action="{{ route('selling_plans.setup', request()->query()) }}" method="POST" style="margin:0;">
+                                @csrf
+                                <button type="submit" class="btn btn-primary" style="background-color: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Activate Native Checkout (Selling Plan API)</button>
+                            </form>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+
             <!-- Card 2: Email Templates -->
             <div class="panel-card">
                 <h3>Email Templates & Sender Display</h3>

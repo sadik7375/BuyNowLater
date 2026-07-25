@@ -388,6 +388,36 @@ class AppProxyController extends Controller
             $variantId = end($parts);
         }
 
+        $paymentType = $request->input('payment_type') ?: ($settings && $settings->use_selling_plan ? 'selling_plan' : 'draft_order');
+
+        if ($paymentType === 'selling_plan') {
+            Log::info('AppProxy: Creating selling_plan booking without draft order.');
+            $booking = Booking::create([
+                'shop_id' => $shop->id,
+                'email' => $request->input('email'),
+                'product_id' => $request->input('product_id'),
+                'variant_id' => $variantId,
+                'product_title' => $request->input('product_title'),
+                'product_handle' => $request->input('product_handle'),
+                'product_image' => $request->input('product_image'),
+                'product_price' => $productPrice,
+                'deposit_amount' => $depositAmount,
+                'remaining_balance' => $remainingBalance,
+                'currency' => $currency,
+                'status' => 'pending',
+                'token' => $token,
+                'payment_type' => 'selling_plan',
+                'checkout_url' => '/checkout',
+                'customer_name' => $request->input('customer_name') ?: ($request->input('name') ?: null),
+            ]);
+
+            return response()->json([
+                'message' => 'Selling Plan booking created successfully.',
+                'booking' => $booking,
+                'checkout_url' => '/checkout',
+            ], 201);
+        }
+
         $lineItems = [[
             'title' => 'Deposit — ' . $request->input('product_title'),
             'price' => number_format($depositAmount, 2, '.', ''),
@@ -615,6 +645,24 @@ class AppProxyController extends Controller
             }
         }
 
+        $sellingPlanId = $settings ? $settings->selling_plan_id : null;
+        if ($sellingPlanId && preg_match('/SellingPlan\/(\d+)/', $sellingPlanId, $m)) {
+            $sellingPlanId = $m[1];
+        }
+
+        $currentProductId = $request->query('product_id') ?: $request->input('product_id');
+        if ($shop && $settings && $settings->use_selling_plan && $settings->selling_plan_group_id && $currentProductId) {
+            $cleanId = preg_replace('/[^0-9]/', '', $currentProductId);
+            if (!empty($cleanId)) {
+                try {
+                    $sellingPlanService = app(\App\Services\SellingPlanService::class);
+                    $sellingPlanService->attachProducts($shop, $settings->selling_plan_group_id, ["gid://shopify/Product/{$cleanId}"]);
+                } catch (\Exception $ex) {
+                    Log::warning('Auto attach product exception in getSettings: ' . $ex->getMessage());
+                }
+            }
+        }
+
         return response()->json([
             'enabled' => $isWidgetEnabled,
             'deposit_percentage' => $settings ? (int) $settings->deposit_percentage : 10,
@@ -623,9 +671,9 @@ class AppProxyController extends Controller
             'show_alerts' => $settings ? (bool) ($settings->show_alerts ?? true) : true,
             'hold_duration_days' => $settings ? (int) ($settings->hold_duration_days ?? 14) : 14,
             'button_text' => $settings ? $settings->button_text : null,
-            'use_selling_plan' => false,
-            'selling_plan_group_id' => null,
-            'selling_plan_id' => null,
+            'use_selling_plan' => $settings ? (bool) $settings->use_selling_plan : false,
+            'selling_plan_group_id' => $settings ? $settings->selling_plan_group_id : null,
+            'selling_plan_id' => $sellingPlanId,
         ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
           ->header('Pragma', 'no-cache');
     }

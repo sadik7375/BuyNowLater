@@ -559,3 +559,18 @@
   from { transform: translateY(12px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+/* Hide standard Shopify theme Selling Plan selector controls on the product page */
+fieldset.product-form__input--selling-plan-group,
+.product-form__input--selling-plan-group,
+.selling-plan-allocation,
+.selling-plan-selector,
+[name="selling_plan"],
+.product-form__selling-plan,
+.shopify-selling-plans,
+.selling-plans,
+.product-option-selling-plan,
+.selling-plan-group-selector,
+.selling-plan-selector-container {
+  display: none !important;
+}

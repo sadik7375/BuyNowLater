@@ -56,22 +56,7 @@ class DashboardController extends Controller
             ]
         );
 
-        // Auto-delete Selling Plan Group if it exists or is active to clean up
-        if ($settings->selling_plan_group_id || $settings->use_selling_plan) {
-            try {
-                $sellingPlanService = app(\App\Services\SellingPlanService::class);
-                if ($settings->selling_plan_group_id) {
-                    $sellingPlanService->deletePlanGroup($shop, $settings->selling_plan_group_id);
-                }
-                $settings->update([
-                    'selling_plan_group_id' => null,
-                    'selling_plan_id' => null,
-                    'use_selling_plan' => false,
-                ]);
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error("DashboardController: Auto-cleanup of selling plan group failed: " . $e->getMessage());
-            }
-        }
+
 
         // ---------- Self-Healing: Sync Status of Active Bookings ----------
         $this->syncBookingsWithShopify($shop);

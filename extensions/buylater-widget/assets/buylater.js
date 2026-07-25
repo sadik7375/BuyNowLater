@@ -1,7 +1,53 @@
 function initBuyLaterWidget() {
   if (window.buylaterInitialized) return;
   window.buylaterInitialized = true;
-  window.buylaterUseSellingPlan = false;
+  window.buylaterUseSellingPlan = window.buylaterUseSellingPlan || false;
+
+  // Hiding default theme selling plan selectors
+  function hideDefaultSellingPlanSelectors() {
+    const selectors = [
+      'fieldset.product-form__input--selling-plan-group',
+      '.product-form__input--selling-plan-group',
+      '.selling-plan-allocation',
+      '.selling-plan-selector',
+      '[name="selling_plan"]',
+      '.product-form__selling-plan',
+      '.shopify-selling-plans',
+      '.selling-plans',
+      '.product-option-selling-plan',
+      '.selling-plan-group-selector',
+      '.selling-plan-selector-container'
+    ];
+    selectors.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => {
+        el.style.setProperty('display', 'none', 'important');
+      });
+    });
+
+    document.querySelectorAll('select, input, fieldset, div, span').forEach(el => {
+      const name = el.getAttribute('name') || '';
+      const id = el.getAttribute('id') || '';
+      const className = el.className || '';
+      if (
+        name.includes('selling_plan') || 
+        id.includes('selling_plan') || 
+        (typeof className === 'string' && className.includes('selling-plan'))
+      ) {
+        el.style.setProperty('display', 'none', 'important');
+      }
+    });
+  }
+
+  function setupHidingObserver() {
+    hideDefaultSellingPlanSelectors();
+    const observer = new MutationObserver(() => {
+      hideDefaultSellingPlanSelectors();
+    });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  }
 
   const triggerBtn = document.getElementById('buylater-trigger');
   const modal = document.getElementById('buylater-modal');
@@ -23,6 +69,8 @@ function initBuyLaterWidget() {
   const backBtns = document.querySelectorAll('.buylater-step-back-btn');
 
   if (!triggerBtn || !modal) return;
+
+  setupHidingObserver();
 
   let selectedOption = null;
   const rawPrice = (triggerBtn.getAttribute('data-product-price') || '0').replace(/,/g, '');
@@ -97,6 +145,13 @@ function initBuyLaterWidget() {
       if (data.deposit_percentage) {
         depositPercentage = parseInt(data.deposit_percentage, 10);
         updateDepositDisplay();
+      }
+      if (data.use_selling_plan || data.selling_plan_id) {
+        window.buylaterUseSellingPlan = true;
+        window.buylaterSellingPlanGroupId = data.selling_plan_group_id;
+        if (data.selling_plan_id) {
+          window.buylaterSellingPlanId = data.selling_plan_id;
+        }
       }
       if (data.hold_duration_days) {
         const holdDaysSpan = document.getElementById('buylater-hold-days-display');
@@ -424,7 +479,56 @@ function initBuyLaterWidget() {
       deposit_percentage: depositPercentage
     };
 
-    executeProxyBooking(payload);
+    if (window.buylaterUseSellingPlan) {
+      showMessage('Success! Adding deposit option to cart & redirecting to checkout...', 'success');
+      const token = Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+      const item = {
+        id: payload.variant_id || payload.product_id,
+        quantity: 1,
+        properties: {
+          _token: token,
+          buylater_token: token
+        }
+      };
+      if (window.buylaterSellingPlanId) {
+        let planId = String(window.buylaterSellingPlanId);
+        if (planId.includes('/')) {
+          planId = planId.split('/').pop();
+        }
+        item.selling_plan = parseInt(planId, 10) || planId;
+      }
+      const cartBody = {
+        items: [item]
+      };
+      
+      fetch('/cart/clear.js', { method: 'POST' })
+      .then(() => fetch('/cart/add.js', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(cartBody)
+      }))
+      .then(res => res.json())
+      .then(cartData => {
+        fetch('/apps/buylater-proxy/bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ ...payload, token: token, payment_type: 'selling_plan' })
+        }).catch(e => console.warn('Background booking record log error:', e));
+
+        setTimeout(() => {
+          window.top.location.href = '/checkout';
+        }, 1500);
+      })
+      .catch(err => {
+        console.warn('Native cart/add.js failed, falling back to standard proxy booking:', err);
+        executeProxyBooking(payload);
+      });
+    } else {
+      executeProxyBooking(payload);
+    }
 
     function executeProxyBooking(bookingPayload) {
       fetch('/apps/buylater-proxy/bookings', {
