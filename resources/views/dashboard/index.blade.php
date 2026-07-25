@@ -1907,7 +1907,7 @@
             <ul class="warning-list">
                 @foreach($expiringToday as $booking)
                     @php
-                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : $booking->email;
+                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : 'Guest Customer';
                     @endphp
                     <li>
                         <strong>{{ $displayName }}</strong>'s reservation for <em>{{ $booking->product_title }}</em> expires today (Deposit: ${{ number_format($booking->deposit_amount, 2) }}).
@@ -1926,7 +1926,7 @@
             <ul class="warning-list">
                 @foreach($expiringTomorrow as $booking)
                     @php
-                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : $booking->email;
+                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : 'Guest Customer';
                     @endphp
                     <li>
                         <strong>{{ $displayName }}</strong>'s reservation for <em>{{ $booking->product_title }}</em> expires tomorrow.
@@ -2082,7 +2082,7 @@
                     @else
                         @foreach($bookings as $booking)
                             @php
-                                $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : $booking->email;
+                                $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : 'Guest Customer';
                             @endphp
                             <div class="booking-item" data-created-at="{{ $booking->created_at->timestamp }}">
                                 <div class="user-avatar-info">
@@ -2184,7 +2184,7 @@
                                 </div>
                                 @foreach($expiringToday as $booking)
                                     @php
-                                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : $booking->email;
+                                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : 'Guest Customer';
                                     @endphp
                                     <div class="expiry-row" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
                                         <div>
@@ -2213,7 +2213,7 @@
                                 </div>
                                 @foreach($expiringTomorrow as $booking)
                                     @php
-                                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : $booking->email;
+                                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : 'Guest Customer';
                                     @endphp
                                     <div class="expiry-row" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
                                         <div>
@@ -2242,7 +2242,7 @@
                                 </div>
                                 @foreach($expiringThisWeek as $booking)
                                     @php
-                                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : $booking->email;
+                                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : 'Guest Customer';
                                     @endphp
                                     <div class="expiry-row" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
                                         <div>
@@ -2462,11 +2462,10 @@
                                         </span>
                                     </s-table-cell>
                                     <s-table-cell>
-                                        @if($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null' && strtolower($booking->customer_name) !== strtolower($booking->email))
-                                            <strong>{{ $booking->customer_name }}</strong><br>
-                                            <span style="font-size: 12px; color: var(--text-muted);">{{ $booking->email }}</span>
+                                        @if($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null')
+                                            <strong>{{ $booking->customer_name }}</strong>
                                         @else
-                                            <span style="font-size: 13.5px; font-weight: 500;">{{ $booking->email }}</span>
+                                            <span style="font-size: 13.5px; font-weight: 500; color: var(--text-muted);">Guest Customer</span>
                                         @endif
                                     </s-table-cell>
                                     <s-table-cell>
