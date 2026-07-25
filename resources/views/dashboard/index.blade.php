@@ -2353,7 +2353,7 @@
                             <s-table-header>Date</s-table-header>
                             <s-table-header>Product</s-table-header>
                             <s-table-header>Payment Status</s-table-header>
-                            <s-table-header>Fulfillment Status</s-table-header>
+                            <s-table-header>Expiry Date</s-table-header>
                             <s-table-header>Financials</s-table-header>
                             <s-table-header>Actions</s-table-header>
                         </s-table-header-row>
@@ -2484,11 +2484,9 @@
                                         <s-badge tone="{{ $paymentTone }}">{{ $paymentStatusText }}</s-badge>
                                     </s-table-cell>
                                     <s-table-cell>
-                                        @if($fulfillmentStatusText === '-')
-                                            <span style="color: var(--text-muted); font-size: 13px;">-</span>
-                                        @else
-                                            <s-badge tone="{{ $fulfillmentTone }}">{{ $fulfillmentStatusText }}</s-badge>
-                                        @endif
+                                        <span style="font-size: 13px;">
+                                            {{ $booking->expires_at ? \Carbon\Carbon::parse($booking->expires_at)->format('M j, Y') : 'N/A' }}
+                                        </span>
                                     </s-table-cell>
                                     <s-table-cell>
                                         <div style="font-size: 13px; line-height: 1.4;">
