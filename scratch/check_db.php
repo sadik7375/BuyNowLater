@@ -1,18 +1,22 @@
 <?php
-require __DIR__ . '/../vendor/autoload.php';
-$app = require_once __DIR__ . '/../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
-$kernel->bootstrap();
+require 'vendor/autoload.php';
+$app = require_once 'bootstrap/app.php';
+$app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
 
-use App\Models\User;
-use App\Models\Setting;
-
-echo "--- Users ---\n";
-foreach (User::all() as $u) {
-    echo "ID: {$u->id}, Name: {$u->name}\n";
+echo "=== USERS (SHOPS) ===\n";
+$users = App\Models\User::all();
+foreach ($users as $u) {
+    echo "ID: {$u->id}, Name: {$u->name}, Created: {$u->created_at}\n";
 }
 
-echo "\n--- Settings ---\n";
-foreach (Setting::all() as $s) {
-    echo "ID: {$s->id}, Shop ID: {$s->shop_id}, Deposit: {$s->deposit_percentage}%, Hold: {$s->hold_duration_days} days, Type: {$s->product_targeting_type}, Targets: {$s->targeted_product_ids}\n";
+echo "\n=== SETTINGS ===\n";
+$settings = App\Models\Setting::all();
+foreach ($settings as $s) {
+    echo "Shop ID: {$s->shop_id}, Use Selling Plan: " . ($s->use_selling_plan ? 'YES' : 'NO') . ", Plan ID: {$s->selling_plan_id}, Plan Group ID: {$s->selling_plan_group_id}\n";
+}
+
+echo "\n=== BOOKINGS ===\n";
+$bookings = App\Models\Booking::orderBy('created_at', 'desc')->take(5)->get();
+foreach ($bookings as $b) {
+    echo "ID: {$b->id}, Email: {$b->email}, Product: {$b->product_title}, Status: {$b->status}, Payment Type: {$b->payment_type}\n";
 }

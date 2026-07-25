@@ -1,26 +1,20 @@
 <?php
 require __DIR__ . '/../vendor/autoload.php';
-$app = require_once __DIR__ . '/../bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
-$kernel->bootstrap();
+$app = require __DIR__ . '/../bootstrap/app.php';
+$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
-use App\Models\User;
 use App\Models\Setting;
+use App\Models\User;
 
-$shops = User::all();
-echo "Total shops in DB: " . $shops->count() . "\n";
-foreach ($shops as $shop) {
-    echo "Shop ID: " . $shop->id . ", Name: " . $shop->name . "\n";
-    $settings = Setting::where('shop_id', $shop->id)->first();
-    if ($settings) {
-        echo "  Settings ID: " . $settings->id . "\n";
-        echo "  deposit_percentage: " . $settings->deposit_percentage . "\n";
-        echo "  hold_duration_days: " . $settings->hold_duration_days . "\n";
-        echo "  show_deposit: " . ($settings->show_deposit ? 'true' : 'false') . "\n";
-        echo "  show_reminders: " . ($settings->show_reminders ? 'true' : 'false') . "\n";
-        echo "  show_alerts: " . ($settings->show_alerts ? 'true' : 'false') . "\n";
+$users = User::all();
+foreach ($users as $user) {
+    echo "Shop: {$user->name} (ID: {$user->id})\n";
+    $setting = Setting::where('shop_id', $user->id)->first();
+    if ($setting) {
+        echo "  use_selling_plan: " . ($setting->use_selling_plan ? 'true' : 'false') . "\n";
+        echo "  selling_plan_group_id: {$setting->selling_plan_group_id}\n";
+        echo "  selling_plan_id: {$setting->selling_plan_id}\n";
     } else {
-        echo "  No settings found!\n";
+        echo "  No settings found.\n";
     }
-    echo "---------------------------\n";
 }
