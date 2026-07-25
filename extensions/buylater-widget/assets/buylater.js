@@ -502,15 +502,25 @@ function initBuyLaterWidget() {
       };
       
       fetch('/cart/clear.js', { method: 'POST' })
-      .then(() => fetch('/cart/add.js', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(cartBody)
-      }))
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Cart clear failed');
+        return fetch('/cart/add.js', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(cartBody)
+        });
+      })
+      .then(res => {
+        if (!res.ok) {
+          return res.json().then(errData => {
+            throw new Error(errData.description || errData.message || 'Cart add failed');
+          });
+        }
+        return res.json();
+      })
       .then(cartData => {
         fetch('/apps/buylater-proxy/bookings', {
           method: 'POST',
