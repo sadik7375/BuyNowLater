@@ -663,6 +663,18 @@ Route::group(['prefix' => 'deploy'], function() {
         }
     });
 
+    Route::get('/git-pull', function() {
+        try {
+            $output = [];
+            $status = null;
+            exec('git fetch --all 2>&1', $output, $status);
+            exec('git reset --hard origin/main 2>&1', $output, $status);
+            return '<pre>' . implode("\n", $output) . '</pre>';
+        } catch (\Exception $e) {
+            return 'Git pull failed: ' . $e->getMessage();
+        }
+    });
+
     Route::get('/debug-settings', function() {
         try {
             $shops = \App\Models\User::all();
