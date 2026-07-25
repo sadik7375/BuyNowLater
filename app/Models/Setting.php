@@ -26,6 +26,7 @@ class Setting extends Model
         'show_reminders',
         'show_alerts',
         'hold_duration_days',
+        'terms_text',
         'product_targeting_type',
         'targeted_product_ids',
         'selling_plan_group_id',

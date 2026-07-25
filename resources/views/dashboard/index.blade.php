@@ -2716,6 +2716,10 @@
                         <!-- Spacer for 2-column layout grid -->
                     </div>
                 </div>
+                <div class="form-group" style="margin-top: 16px;">
+                    <label for="terms_text">Widget Terms & Conditions (Shown in Pop-up Footer)</label>
+                    <textarea id="terms_text" name="terms_text" rows="3" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; font-family: inherit; font-size: 13.5px; box-sizing: border-box; resize: vertical;" placeholder="e.g. By submitting your deposit reservation, you agree to pay the remaining balance within the hold period.">{{ $settings->terms_text ?? 'By reserving, you agree to our deposit terms.' }}</textarea>
+                </div>
                 <input type="hidden" name="show_deposit" value="1">
                 <input type="hidden" name="show_reminders" value="0">
                 <input type="hidden" name="show_alerts" value="0">

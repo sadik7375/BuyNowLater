@@ -328,6 +328,7 @@ class DashboardController extends Controller
             'show_reminders'           => 'nullable|boolean',
             'show_alerts'              => 'nullable|boolean',
             'hold_duration_days'       => 'required|integer|min:1|max:365',
+            'terms_text'               => 'nullable|string',
             'product_targeting_type'   => 'nullable|string|in:all,specific',
             'targeted_product_ids'     => 'nullable|string',
         ]);
@@ -346,6 +347,7 @@ class DashboardController extends Controller
                 'show_reminders'          => $request->has('show_reminders'),
                 'show_alerts'             => $request->has('show_alerts'),
                 'hold_duration_days'      => $request->input('hold_duration_days'),
+                'terms_text'              => $request->input('terms_text'),
                 'product_targeting_type'  => $request->input('product_targeting_type', 'all') ?: 'all',
                 'targeted_product_ids'    => $request->input('targeted_product_ids'),
             ]

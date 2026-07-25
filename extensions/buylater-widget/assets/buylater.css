@@ -121,7 +121,7 @@
 }
 
 .buylater-modal-header h2 {
-  font-size: 1.35rem;
+  font-size: 1.5rem;
   font-weight: 600;
   margin: 0 0 6px 0;
   color: #1a1a1a;
@@ -130,7 +130,7 @@
 }
 
 .buylater-modal-header p {
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   color: #6d7175;
   margin: 0;
   line-height: 1.45;
@@ -391,7 +391,7 @@
   color: #ffffff;
   border: none;
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -514,11 +514,12 @@
 .breakdown-row {
   display: flex;
   justify-content: space-between;
-  font-size: 0.92rem;
+  font-size: 1.02rem;
   color: #6d7175;
 }
 
 .breakdown-row.highlight {
+  font-size: 1.12rem;
   font-weight: 700;
   color: #1a1a1a;
   border-top: 1px solid #e1e3e5;

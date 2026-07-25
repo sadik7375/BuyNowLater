@@ -671,6 +671,7 @@ class AppProxyController extends Controller
             'show_reminders' => $settings ? (bool) ($settings->show_reminders ?? true) : true,
             'show_alerts' => $settings ? (bool) ($settings->show_alerts ?? true) : true,
             'hold_duration_days' => $settings ? (int) ($settings->hold_duration_days ?? 14) : 14,
+            'terms_text' => $settings ? $settings->terms_text : 'By reserving, you agree to our deposit terms.',
             'button_text' => $settings ? $settings->button_text : null,
             'use_selling_plan' => $settings ? (bool) $settings->use_selling_plan : false,
             'selling_plan_group_id' => $settings ? $settings->selling_plan_group_id : null,

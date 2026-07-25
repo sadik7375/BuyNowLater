@@ -161,6 +161,12 @@ function initBuyLaterWidget() {
           holdDaysSpan.textContent = data.hold_duration_days;
         }
       }
+      if (data.terms_text) {
+        const termsNote = document.getElementById('buylater-terms-note');
+        if (termsNote) {
+          termsNote.textContent = data.terms_text;
+        }
+      }
       if (data.button_text) {
         const btnTextSpan = triggerBtn.querySelector('span');
         if (btnTextSpan) {
