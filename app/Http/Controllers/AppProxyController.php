@@ -621,13 +621,17 @@ class AppProxyController extends Controller
             'hold_duration_days' => $settings ? $settings->hold_duration_days : null,
         ]);
 
+        // Pricing limit check: If on Free Plan (no plan_id), limit to 10 total deposit reservations
+        $usage = Booking::getUsageStats($shop->id);
+        $isLimitReached = (!$shop->plan_id && ($usage['total'] ?? 0) >= 10);
+
         $showDeposit = $settings ? (bool) ($settings->show_deposit ?? true) : true;
 
         // Check Product Targeting
         $productTargetingType = $settings ? ($settings->product_targeting_type ?? 'all') : 'all';
-        $isWidgetEnabled = true;
+        $isWidgetEnabled = !$isLimitReached;
 
-        if ($productTargetingType === 'specific') {
+        if ($isWidgetEnabled && $productTargetingType === 'specific') {
             $targetedProductIdsStr = $settings ? $settings->targeted_product_ids : '';
             $targetedProductIds = array_filter(explode(',', $targetedProductIdsStr));
             $currentProductId = $request->query('product_id');
@@ -646,13 +650,13 @@ class AppProxyController extends Controller
             }
         }
 
-        $sellingPlanId = $settings ? $settings->selling_plan_id : null;
+        $sellingPlanId = ($settings && !$isLimitReached) ? $settings->selling_plan_id : null;
         if ($sellingPlanId && preg_match('/SellingPlan\/(\d+)/', $sellingPlanId, $m)) {
             $sellingPlanId = $m[1];
         }
 
         $currentProductId = $request->query('product_id') ?: $request->input('product_id');
-        if ($shop && $settings && $settings->use_selling_plan && $settings->selling_plan_group_id && $currentProductId) {
+        if ($shop && $settings && !$isLimitReached && $settings->use_selling_plan && $settings->selling_plan_group_id && $currentProductId) {
             $cleanId = preg_replace('/[^0-9]/', '', $currentProductId);
             if (!empty($cleanId)) {
                 try {
@@ -666,6 +670,7 @@ class AppProxyController extends Controller
 
         return response()->json([
             'enabled' => $isWidgetEnabled,
+            'limit_reached' => $isLimitReached,
             'deposit_percentage' => $settings ? (int) $settings->deposit_percentage : 10,
             'show_deposit' => $showDeposit,
             'show_reminders' => $settings ? (bool) ($settings->show_reminders ?? true) : true,
@@ -673,8 +678,8 @@ class AppProxyController extends Controller
             'hold_duration_days' => $settings ? (int) ($settings->hold_duration_days ?? 14) : 14,
             'terms_text' => $settings ? $settings->terms_text : 'By reserving, you agree to our deposit terms.',
             'button_text' => $settings ? $settings->button_text : null,
-            'use_selling_plan' => $settings ? (bool) $settings->use_selling_plan : false,
-            'selling_plan_group_id' => $settings ? $settings->selling_plan_group_id : null,
+            'use_selling_plan' => ($settings && !$isLimitReached) ? (bool) $settings->use_selling_plan : false,
+            'selling_plan_group_id' => ($settings && !$isLimitReached) ? $settings->selling_plan_group_id : null,
             'selling_plan_id' => $sellingPlanId,
         ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
           ->header('Pragma', 'no-cache');
