@@ -2761,158 +2761,20 @@
 
                     <input type="hidden" id="targeted_product_ids" name="targeted_product_ids" value="{{ $settings->targeted_product_ids }}">
                 </div>
-            </div>
-
-
-
-
-
-
-
-            <!-- Card 2: Email Templates -->
-            <div class="panel-card">
-                <h3>Email Templates & Sender Display</h3>
-                <div class="form-group" style="margin-bottom: 20px;">
-                    <label for="sender_display_name">Sender Display Name</label>
-                    <input type="text" id="sender_display_name" name="sender_display_name" value="{{ $settings->sender_display_name ?? ($settings->shop->name ?? 'Your Store') . ' via BuyLater' }}" required>
-                </div>
-                <div class="form-group" style="display: none !important;">
-                    <label for="reminder_email_subject">Reminder Email Subject</label>
-                    <input type="text" id="reminder_email_subject" name="reminder_email_subject" value="{{ $settings->reminder_email_subject }}" required>
-                </div>
-
-                {{-- ── REMINDER EMAIL BUILDER ── --}}
-                <div class="form-group" style="display: none !important;">
-                    <label style="margin-bottom:8px;">Reminder Email Template</label>
-                    <div class="email-editor-container" id="reminder_editor_container">
-                        <div class="editor-tabs">
-                            <button type="button" class="editor-tab active" onclick="switchEmailTab('reminder','visual',this)">🎨 Visual Editor</button>
-                            <button type="button" class="editor-tab" onclick="switchEmailTab('reminder','html',this)">💻 HTML Code</button>
-                        </div>
-                        <div class="editor-body">
-                            {{-- VISUAL TAB --}}
-                            <div id="reminder_visual_tab" class="visual-pane">
-                                <div class="editor-form">
-                                    <div class="form-group-sub">
-                                        <label>Brand / Store Name (appears at top of email)</label>
-                                        <input type="text" id="r_header_title" value="{{ $settings->reminder_email_header_title ?? 'BuyLater' }}" oninput="rebuildReminderTemplate()">
-                                    </div>
-                                    <div class="form-group-sub">
-                                        <label>Greeting Message</label>
-                                        <input type="text" id="r_greeting" value="{{ $settings->reminder_email_greeting ?? 'Hi there,' }}" oninput="rebuildReminderTemplate()">
-                                    </div>
-                                    <div class="form-group-sub">
-                                        <label>Email Body Text</label>
-                                        <textarea id="r_body_text" rows="3" oninput="rebuildReminderTemplate()">{{ $settings->reminder_email_body ?? 'You asked us to remind you about the following product on our store. We wanted to let you know it is still waiting for you!' }}</textarea>
-                                    </div>
-                                    <div class="form-group-sub">
-                                        <label>Button Text</label>
-                                        <input type="text" id="r_btn_text" value="{{ $settings->reminder_email_btn_text ?? 'View Product & Buy Now' }}" oninput="rebuildReminderTemplate()">
-                                    </div>
-                                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                                        <div class="form-group-sub" style="flex:1; min-width:120px;">
-                                            <label>Button Color</label>
-                                            <input type="color" id="r_btn_color" value="{{ $settings->reminder_email_btn_color ?? '#000000' }}" style="height:40px; border-radius:6px; border:1px solid var(--border-color); width:100%; cursor:pointer; padding:2px 4px;" oninput="rebuildReminderTemplate()">
-                                        </div>
-                                        <div class="form-group-sub" style="flex:1; min-width:120px;">
-                                            <label>Email Background Color</label>
-                                            <input type="color" id="r_bg_color" value="{{ $settings->reminder_email_bg_color ?? '#f6f6f6' }}" style="height:40px; border-radius:6px; border:1px solid var(--border-color); width:100%; cursor:pointer; padding:2px 4px;" oninput="rebuildReminderTemplate()">
-                                        </div>
-                                    </div>
-                                    <div class="form-group-sub">
-                                        <label>Footer Text</label>
-                                        <input type="text" id="r_footer" value="{{ $settings->reminder_email_footer ?? 'This reminder was sent to you at your request.' }}" oninput="rebuildReminderTemplate()">
-                                    </div>
-                                    <p class="helper-text">📌 Available placeholders: <code>{product_title}</code> <code>{product_price}</code> <code>{product_link}</code> <code>{product_image_tag}</code> <code>{reschedule_link}</code> <code>{cancel_link}</code></p>
-                                </div>
-                                <div class="editor-preview-panel">
-                                    <p style="font-size:12px; color:var(--text-muted); margin:0 0 8px 0; font-weight:500;">📧 LIVE PREVIEW</p>
-                                    <iframe id="reminder_preview_frame" style="width:100%; height:520px; border:1px solid var(--border-color); border-radius:8px; background:#f6f6f6;" frameborder="0"></iframe>
-                                </div>
-                            </div>
-
-                            {{-- HTML CODE TAB --}}
-                            <div id="reminder_html_tab" style="display:none;">
-                                <p class="helper-text" style="margin-bottom:10px;">⚠️ Advanced: Edit raw HTML. Changes here will override the Visual Editor settings when saved.</p>
-                                <textarea id="reminder_email_template_raw" rows="18" style="width:100%; font-family: monospace; font-size:12px; padding:12px; border:1px solid var(--border-color); border-radius:6px; resize:vertical;" oninput="syncReminderHtmlToHidden()">{{ $settings->reminder_email_template }}</textarea>
-                            </div>
-                        </div>
-                    </div>
-                    {{-- Hidden field that actually gets submitted --}}
-                    <textarea id="reminder_email_template" name="reminder_email_template" style="display:none;">{{ $settings->reminder_email_template }}</textarea>
-                </div>
-
-                <hr style="border: none; border-top: 1px solid var(--border-color); margin: 24px 0;">
-                <div class="form-group">
-                    <label for="discount_email_subject">Price Drop Email Subject</label>
-                    <input type="text" id="discount_email_subject" name="discount_email_subject" value="{{ $settings->discount_email_subject }}" required>
-                </div>
-
-                {{-- ── PRICE DROP EMAIL BUILDER ── --}}
-                <div class="form-group">
-                    <label style="margin-bottom:8px;">Price Drop Email Template</label>
-                    <div class="email-editor-container" id="discount_editor_container">
-                        <div class="editor-tabs">
-                            <button type="button" class="editor-tab active" onclick="switchEmailTab('discount','visual',this)">🎨 Visual Editor</button>
-                            <button type="button" class="editor-tab" onclick="switchEmailTab('discount','html',this)">💻 HTML Code</button>
-                        </div>
-                        <div class="editor-body">
-                            {{-- VISUAL TAB --}}
-                            <div id="discount_visual_tab" class="visual-pane">
-                                <div class="editor-form">
-                                    <div class="form-group-sub">
-                                        <label>Brand / Store Name (appears at top of email)</label>
-                                        <input type="text" id="d_header_title" value="{{ $settings->discount_email_header_title ?? 'Price Drop Alert!' }}" oninput="rebuildDiscountTemplate()">
-                                    </div>
-                                    <div class="form-group-sub">
-                                        <label>Greeting Message</label>
-                                        <input type="text" id="d_greeting" value="{{ $settings->discount_email_greeting ?? 'Hi there,' }}" oninput="rebuildDiscountTemplate()">
-                                    </div>
-                                    <div class="form-group-sub">
-                                        <label>Email Body Text</label>
-                                        <textarea id="d_body_text" rows="3" oninput="rebuildDiscountTemplate()">{{ $settings->discount_email_body ?? 'Good news! A product you saved for later is now on sale. Check out the price drop below!' }}</textarea>
-                                    </div>
-                                    <div class="form-group-sub">
-                                        <label>Button Text</label>
-                                        <input type="text" id="d_btn_text" value="{{ $settings->discount_email_btn_text ?? 'Get Discount Now' }}" oninput="rebuildDiscountTemplate()">
-                                    </div>
-                                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                                        <div class="form-group-sub" style="flex:1; min-width:120px;">
-                                            <label>Button Color</label>
-                                            <input type="color" id="d_btn_color" value="{{ $settings->discount_email_btn_color ?? '#d9534f' }}" style="height:40px; border-radius:6px; border:1px solid var(--border-color); width:100%; cursor:pointer; padding:2px 4px;" oninput="rebuildDiscountTemplate()">
-                                        </div>
-                                        <div class="form-group-sub" style="flex:1; min-width:120px;">
-                                            <label>Email Background Color</label>
-                                            <input type="color" id="d_bg_color" value="{{ $settings->discount_email_bg_color ?? '#f6f6f6' }}" style="height:40px; border-radius:6px; border:1px solid var(--border-color); width:100%; cursor:pointer; padding:2px 4px;" oninput="rebuildDiscountTemplate()">
-                                        </div>
-                                    </div>
-                                    <div class="form-group-sub">
-                                        <label>Footer Text</label>
-                                        <input type="text" id="d_footer" value="{{ $settings->discount_email_footer ?? 'You are receiving this because you subscribed to price drop alerts for this product.' }}" oninput="rebuildDiscountTemplate()">
-                                    </div>
-                                    <p class="helper-text">📌 Available placeholders: <code>{product_title}</code> <code>{old_price}</code> <code>{new_price}</code> <code>{product_link}</code> <code>{product_image_tag}</code></p>
-                                </div>
-                                <div class="editor-preview-panel">
-                                    <p style="font-size:12px; color:var(--text-muted); margin:0 0 8px 0; font-weight:500;">📧 LIVE PREVIEW</p>
-                                    <iframe id="discount_preview_frame" style="width:100%; height:520px; border:1px solid var(--border-color); border-radius:8px; background:#f6f6f6;" frameborder="0"></iframe>
-                                </div>
-                            </div>
-
-                            {{-- HTML CODE TAB --}}
-                            <div id="discount_html_tab" style="display:none;">
-                                <p class="helper-text" style="margin-bottom:10px;">⚠️ Advanced: Edit raw HTML. Changes here will override the Visual Editor settings when saved.</p>
-                                <textarea id="discount_email_template_raw" rows="18" style="width:100%; font-family: monospace; font-size:12px; padding:12px; border:1px solid var(--border-color); border-radius:6px; resize:vertical;" oninput="syncDiscountHtmlToHidden()">{{ $settings->discount_email_template }}</textarea>
-                            </div>
-                        </div>
-                    </div>
-                    {{-- Hidden field that actually gets submitted --}}
-                    <textarea id="discount_email_template" name="discount_email_template" style="display:none;">{{ $settings->discount_email_template }}</textarea>
-                </div>
-
-                <div style="text-align: right; margin-top: 20px;">
+                <div style="text-align: right; margin-top: 24px;">
                     <button type="submit" class="btn-save">Save All Settings</button>
                 </div>
             </div>
+        </form>
+    </div>
+
+
+
+
+
+
+
+
         </form>
     </div>
 
