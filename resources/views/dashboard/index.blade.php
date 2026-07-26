@@ -2397,7 +2397,7 @@
                                             $paymentStatusText = 'Partially paid';
                                             $paymentTone = 'info';
                                         } elseif ($booking->status === 'expired') {
-                                            $paymentStatusText = 'Expired / Voided';
+                                            $paymentStatusText = 'Refunded';
                                             $paymentTone = 'critical';
                                         }
                                     }
@@ -2432,7 +2432,7 @@
                                             $fulfillmentTone = 'warning';
                                         }
                                     } elseif ($booking->status === 'expired') {
-                                        $fulfillmentStatusText = 'Restocked';
+                                        $fulfillmentStatusText = 'Refunded';
                                         $fulfillmentTone = 'critical';
                                     } elseif ($booking->status === 'pending') {
                                         $fulfillmentStatusText = '-';

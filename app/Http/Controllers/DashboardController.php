@@ -104,7 +104,7 @@ class DashboardController extends Controller
             ->get();
 
         $bookings = $allBookings->filter(function($b) {
-            return in_array($b->status, ['deposit_paid', 'completed']);
+            return in_array($b->status, ['deposit_paid', 'completed', 'expired']);
         });
 
         // --- Expiring Soon (Next 7 days, independent of date filter) ---
