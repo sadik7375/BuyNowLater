@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
-use Osiset\ShopifyApp\Actions\ActivatePlan;
 use Osiset\ShopifyApp\Actions\GetPlanUrl;
 use Osiset\ShopifyApp\Objects\Values\ChargeReference;
 use Osiset\ShopifyApp\Objects\Values\NullablePlanId;
@@ -178,42 +177,31 @@ class BillingController extends Controller
             }
 
             $apiKey = Util::getShopifyConfig('api_key', ShopDomain::fromNative($shopDomainStr));
-
             Log::info('Redirecting to billing confirmation:', ['url' => $url]);
 
+            // Instant transparent redirect — no visible intermediate page
+            $safeUrl = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
             $html = <<<HTML
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="shopify-api-key" content="{$apiKey}" />
     <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
-    <title>Upgrading to Premium...</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f6f6f7; color: #202223; }
-        .spinner { width: 44px; height: 44px; border: 4px solid #e1e3e5; border-top: 4px solid #008060; border-radius: 50%; animation: spin 0.9s linear infinite; margin-bottom: 20px; }
-        @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
-        h3 { margin: 0 0 8px 0; font-size: 18px; }
-        p { margin: 0 0 20px 0; color: #6d7175; font-size: 14px; }
-        .btn { padding: 12px 28px; background: #008060; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; display: inline-block; }
-        .btn:hover { background: #006e52; }
-    </style>
 </head>
-<body>
-    <div class="spinner"></div>
-    <h3>Redirecting to Approve Subscription...</h3>
-    <p>You'll be taken to Shopify's secure billing approval page.</p>
-    <a href="{$url}" target="_top" class="btn">Approve Premium Plan ($5/mo) &rarr;</a>
+<body style="margin:0;background:#fff;">
+    <a id="br" href="{$safeUrl}" target="_top" style="display:none;"></a>
     <script>
-        (function () {
-            var url = "{$url}";
-            if (typeof shopify !== 'undefined' && shopify.navigation) {
-                shopify.navigation.redirect(url);
-            } else if (window.top && window.top !== window.self) {
-                window.top.location.href = url;
-            } else {
-                window.location.href = url;
+        (function() {
+            var url = "{$safeUrl}";
+            try {
+                if (window.top && window.top !== window.self) {
+                    window.top.location.href = url;
+                } else {
+                    window.location.href = url;
+                }
+            } catch(e) {
+                document.getElementById('br').click();
             }
         })();
     </script>
@@ -261,7 +249,6 @@ HTML;
         if ($chargeId) {
             try {
                 $shop = $shopQuery->getByDomain(ShopDomain::fromNative($shopDomainStr));
-                // Resolve ActivatePlan through the service container (it has a callable dependency)
                 $activatePlan = app(\Osiset\ShopifyApp\Actions\ActivatePlan::class);
                 $activatePlan(
                     $shop->getId(),
