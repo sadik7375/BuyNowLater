@@ -2148,26 +2148,11 @@
 
         <!-- Row 2: Wishes and Recovered Charts -->
         <div class="dashboard-main-grid">
-            <!-- Most Wished Products -->
-            <div class="panel-card">
-                <h3>Most Wished Products</h3>
-                <div class="wishes-container">
-                    @if(empty($wishes))
-                        <p style="color: var(--text-muted); font-size: 13.5px; text-align: center; padding: 40px 0;">No wishes recorded in this period.</p>
-                    @else
-                        @php $idx = 1; @endphp
-                        @foreach($wishes as $product => $count)
-                            <div class="wish-row">
-                                <span class="wish-index">{{ $idx }}</span>
-                                <span class="wish-title">{{ $product }}</span>
-                                <div class="wish-bar-wrapper">
-                                    <div class="wish-bar" style="width: {{ min(100, max(15, ($count / 350) * 100)) }}%;"></div>
-                                </div>
-                                <span class="wish-count">{{ $count }}</span>
-                            </div>
-                            @php $idx++; @endphp
-                        @endforeach
-                    @endif
+            <!-- Downpay Orders Chart -->
+            <div class="panel-card" style="display: flex; flex-direction: column;">
+                <h3 style="text-align: center; margin-bottom: 12px; font-weight: 600; font-size: 15px; color: var(--text-main);">Number of Downpay orders</h3>
+                <div style="position: relative; height: 260px; width: 100%; flex: 1;">
+                    <canvas id="downpayBarChart"></canvas>
                 </div>
             </div>
 
@@ -4279,6 +4264,79 @@ function filterSubscribers() {
                                 return label;
                             }
                         }
+                    }
+                }
+            }
+        });
+
+        // Initialize Downpay Bar Chart
+        const downpayCtx = document.getElementById('downpayBarChart').getContext('2d');
+        const downpayChart = new Chart(downpayCtx, {
+            type: 'bar',
+            data: {
+                labels: {!! json_encode($downpayChartLabels) !!},
+                datasets: [{
+                    label: 'Downpay Orders',
+                    data: {!! json_encode($downpayChartData) !!},
+                    backgroundColor: '#108043',
+                    borderWidth: 0,
+                    borderRadius: 4,
+                    barPercentage: 0.5,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#637381',
+                            font: {
+                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+                                size: 11
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Date',
+                            color: '#637381',
+                            font: {
+                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+                                size: 11,
+                                weight: '500'
+                            }
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: '#f1f2f4'
+                        },
+                        ticks: {
+                            color: '#637381',
+                            font: {
+                                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+                                size: 11
+                            },
+                            stepSize: 2,
+                            beginAtZero: true
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: '#1a1a1a',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff',
+                        padding: 10,
+                        cornerRadius: 6,
+                        displayColors: false
                     }
                 }
             }

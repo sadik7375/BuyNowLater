@@ -260,6 +260,18 @@ class DashboardController extends Controller
             });
         }
 
+        // Count bookings created per day for the last 7 days (Downpay orders)
+        $downpayChartLabels = [];
+        $downpayChartData = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::today()->subDays($i);
+            $downpayChartLabels[] = $date->format('M j');
+            $downpayChartData[] = Booking::where('shop_id', $shop->id)
+                ->whereIn('status', ['deposit_paid', 'completed', 'expired'])
+                ->whereDate('created_at', $date)
+                ->count();
+        }
+
         return view('dashboard.index', compact(
             'settings', 'reminders', 'subscribers', 'bookings',
             'revenueRecovered', 'activeBookings', 'expiringSoonCount', 'alertSubscribersCount',
@@ -267,7 +279,7 @@ class DashboardController extends Controller
             'expiringToday', 'expiringTomorrow', 'expiringThisWeek', 'isMockExpiring',
             'statusCounts', 'isMockStatus', 'todayRemindersCount',
             'dateFilter', 'start', 'end', 'monthlyUsageCount', 'targetedProducts',
-            'activeTab', 'subTab'
+            'activeTab', 'subTab', 'downpayChartLabels', 'downpayChartData'
         ));
     }
 
