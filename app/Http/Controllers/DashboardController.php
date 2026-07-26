@@ -144,6 +144,15 @@ class DashboardController extends Controller
             ->where('status', 'deposit_paid')
             ->count();
 
+        $now = Carbon::now();
+        $twoDaysFromNow = Carbon::now()->addDays(2)->endOfDay();
+        $expiringSoonCount = Booking::where('shop_id', $shop->id)
+            ->where('status', 'deposit_paid')
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '>=', $now)
+            ->where('expires_at', '<=', $twoDaysFromNow)
+            ->count();
+
         $alertSubscribersCount = Subscriber::where('shop_id', $shop->id)
             ->count();
 
@@ -234,7 +243,7 @@ class DashboardController extends Controller
 
         return view('dashboard.index', compact(
             'settings', 'reminders', 'subscribers', 'bookings',
-            'revenueRecovered', 'activeBookings', 'alertSubscribersCount',
+            'revenueRecovered', 'activeBookings', 'expiringSoonCount', 'alertSubscribersCount',
             'conversionRate', 'wishes', 'liveAlerts',
             'expiringToday', 'expiringTomorrow', 'expiringThisWeek', 'isMockExpiring',
             'statusCounts', 'isMockStatus', 'todayRemindersCount',

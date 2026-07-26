@@ -1962,6 +1962,20 @@
                 </svg>
             </div>
         </div>
+        <div class="stat-card">
+            <div class="stat-info">
+                <div class="stat-label" title="Active reservations expiring in 1 or 2 days">Expiring Soon</div>
+                <div class="stat-value" id="stat_expiring_soon">{{ $expiringSoonCount }}</div>
+                <div class="stat-change">
+                    <span id="stat_expiring_change_text">Active holds with 1-2 days left</span>
+                </div>
+            </div>
+            <div class="stat-visual">
+                <svg width="64" height="28" viewBox="0 0 64 28" fill="none" stroke="#d82c0d" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 18 Q16 6 28 22 T60 10" />
+                </svg>
+            </div>
+        </div>
     </div>
 
     <!-- Hidden tab buttons for JS compatibility -->
@@ -2425,7 +2439,7 @@
                                         $fulfillmentTone = '';
                                     }
                                 @endphp
-                                <s-table-row data-search-text="{{ $searchText }}" data-status="{{ $booking->status }}" data-created-at="{{ $createdAtTimestamp }}" data-balance="{{ $booking->remaining_balance }}" data-price="{{ $booking->product_price }}">
+                                <s-table-row data-search-text="{{ $searchText }}" data-status="{{ $booking->status }}" data-created-at="{{ $createdAtTimestamp }}" data-balance="{{ $booking->remaining_balance }}" data-price="{{ $booking->product_price }}" data-expires-at="{{ $booking->expires_at ? $booking->expires_at->timestamp : 0 }}">
                                     <s-table-cell style="text-align: center; width: 40px; vertical-align: middle;">
                                         <input type="checkbox" class="booking-checkbox" data-id="{{ $booking->id }}" style="cursor: pointer;">
                                     </s-table-cell>
@@ -3953,13 +3967,15 @@ function recalculateStatsAndChart() {
     let expiredBookingsCount = 0;
     let completedBookingsCount = 0;
     let depositPaidBookingsCount = 0;
+    let expiringSoonBookingsCount = 0;
     
     rows.forEach(row => {
         const createdAt = parseInt(row.getAttribute('data-created-at')) || 0;
         const matchesDate = !window.currentDateStart || (createdAt >= window.currentDateStart && createdAt <= window.currentDateEnd);
+        const expiresAt = parseInt(row.getAttribute('data-expires-at')) || 0;
+        const status = row.getAttribute('data-status');
         
         if (matchesDate) {
-            const status = row.getAttribute('data-status');
             const price = parseFloat(row.getAttribute('data-price')) || 0;
             
             if (status === 'completed') {
@@ -3970,6 +3986,15 @@ function recalculateStatsAndChart() {
                 depositPaidBookingsCount++;
             } else if (status === 'expired') {
                 expiredBookingsCount++;
+            }
+        }
+
+        // Count expiring soon (next 2 days)
+        if (status === 'deposit_paid' && expiresAt > 0) {
+            const nowTimestamp = Math.floor(Date.now() / 1000);
+            const secondsLeft = expiresAt - nowTimestamp;
+            if (secondsLeft > 0 && secondsLeft <= 172800) { // 2 days in seconds
+                expiringSoonBookingsCount++;
             }
         }
     });
@@ -3994,6 +4019,9 @@ function recalculateStatsAndChart() {
     
     const activeEl = document.getElementById('stat_active_bookings');
     if (activeEl) activeEl.textContent = activeBookingsCount;
+
+    const expiringSoonEl = document.getElementById('stat_expiring_soon');
+    if (expiringSoonEl) expiringSoonEl.textContent = expiringSoonBookingsCount;
     
     const subscribersEl = document.getElementById('stat_alert_subscribers');
     if (subscribersEl) subscribersEl.textContent = subscribersCount;
