@@ -193,6 +193,11 @@
     color: #991b1b;
   }
 
+  .buylater-status-refunded {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
   .buylater-booking-pricing {
     display: flex;
     align-items: center;
@@ -397,12 +402,13 @@
     const currencySymbol = "{{ cart.currency.symbol }}";
 
     // Format Status String
-    function formatStatus(status) {
-      if (status === 'deposit_paid') return 'Deposit Paid';
-      if (status === 'completed') return 'Completed';
-      if (status === 'pending') return 'Pending Deposit';
-      if (status === 'expired') return 'Expired';
-      return status;
+    function formatStatus(booking) {
+      if (booking.payment_status === 'refunded') return 'Refunded';
+      if (booking.status === 'deposit_paid') return 'Deposit Paid';
+      if (booking.status === 'completed') return 'Completed';
+      if (booking.status === 'pending') return 'Pending Deposit';
+      if (booking.status === 'expired') return 'Expired';
+      return booking.status;
     }
 
     // Format Expiration String
@@ -452,7 +458,7 @@
         }
 
         bookingsList.innerHTML = data.bookings.map(booking => {
-          const statusText = formatStatus(booking.status);
+          const statusText = formatStatus(booking);
           const expiryText = getExpirationText(booking);
           const imageHtml = booking.product_image 
             ? `<img src="${booking.product_image}" alt="${booking.product_title}">` 
@@ -461,9 +467,11 @@
           let actionButtonHtml = '';
           if (booking.status === 'pending' && booking.checkout_url) {
             actionButtonHtml = `<a href="${booking.checkout_url}" class="buylater-pay-btn">Pay Deposit</a>`;
-          } else if (booking.status === 'deposit_paid' && booking.checkout_url) {
+          } else if (booking.status === 'deposit_paid' && booking.checkout_url && booking.payment_status !== 'refunded') {
             actionButtonHtml = `<a href="${booking.checkout_url}" class="buylater-pay-btn">Pay Balance</a>`;
           }
+
+          const badgeClass = booking.payment_status === 'refunded' ? 'refunded' : booking.status;
 
           return `
             <div class="buylater-booking-card">
@@ -473,7 +481,7 @@
               <div class="buylater-booking-info">
                 <div class="buylater-booking-title-row">
                   <h4 class="buylater-booking-title">${booking.product_title}</h4>
-                  <span class="buylater-status-badge buylater-status-${booking.status}">
+                  <span class="buylater-status-badge buylater-status-${badgeClass}">
                     ${statusText}
                   </span>
                 </div>
