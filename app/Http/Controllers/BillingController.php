@@ -173,18 +173,61 @@ class BillingController extends Controller
                 Log::warning('GraphQL appSubscriptionCreate failed, falling back to GetPlanUrl: ' . $gqlEx->getMessage());
             }
 
+            $lastErrorMessage = null;
+            if (!empty($subData['userErrors'][0]['message'])) {
+                $lastErrorMessage = $subData['userErrors'][0]['message'];
+            }
+
             // Fallback to GetPlanUrl if GraphQL returned empty confirmation URL
             if (empty($url)) {
-                $url = $getPlanUrl(
-                    $shop->getId(),
-                    NullablePlanId::fromNative($planId),
-                    $host
-                );
+                try {
+                    $url = $getPlanUrl(
+                        $shop->getId(),
+                        NullablePlanId::fromNative($planId),
+                        $host
+                    );
+                } catch (\Exception $ex) {
+                    Log::warning('GetPlanUrl fallback failed: ' . $ex->getMessage());
+                }
             }
 
             Log::info('Generated billing confirmation URL:', ['url' => $url]);
 
             $apiKey = Util::getShopifyConfig('api_key', ShopDomain::fromNative($shopDomainStr));
+
+            if (empty($url)) {
+                $errorDetail = $lastErrorMessage ?: 'Shopify API returned empty payment confirmation URL.';
+                $html = <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Billing Configuration Issue</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px 20px; background: #f6f6f7; color: #202223; }
+        .card { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; padding: 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .error-badge { display: inline-block; background: #ffd6d6; color: #8a0000; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 13px; margin-bottom: 16px; }
+        h2 { margin-top: 0; color: #202223; }
+        p { line-height: 1.6; color: #5c5f62; }
+        .code-block { background: #f1f2f4; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 13px; word-break: break-all; margin: 16px 0; color: #202223; border-left: 4px solid #d82c0d; }
+        .back-btn { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #008060; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="error-badge">Shopify Billing API Restriction</div>
+        <h2>Unable to create subscription charge</h2>
+        <p>Shopify API rejected the subscription creation attempt with the following error:</p>
+        <div class="code-block">{$errorDetail}</div>
+        <p><strong>Solution:</strong> In your <strong>Shopify Partner Dashboard &rarr; App &rarr; App Setup</strong>, ensure that <em>Managed Pricing / App Store Pricing</em> is turned off so that your app is permitted to create custom subscriptions via Billing API.</p>
+        <a href="javascript:history.back()" class="back-btn">&larr; Back to App Dashboard</a>
+    </div>
+</body>
+</html>
+HTML;
+                return response($html, 200)->header('Content-Type', 'text/html');
+            }
 
             // Return fullpage redirect HTML to break out of embedded iframe
             $html = <<<HTML
