@@ -386,7 +386,7 @@ class DashboardController extends Controller
         $request->validate([
             'sender_display_name'      => 'required|string|max:100',
             'deposit_percentage'       => 'required|integer|min:1|max:100',
-            'button_text'              => 'required|string|max:50',
+            'button_text'              => 'nullable|string|max:50',
             'reminder_email_subject'   => 'required|string|max:255',
             'reminder_email_template'  => 'nullable|string',
             'discount_email_subject'   => 'required|string|max:255',
@@ -400,12 +400,14 @@ class DashboardController extends Controller
             'targeted_product_ids'     => 'nullable|string',
         ]);
 
+        $existingSettings = Setting::where('shop_id', $shop->id)->first();
+
         Setting::updateOrCreate(
             ['shop_id' => $shop->id],
             [
                 'sender_display_name'     => $request->input('sender_display_name'),
                 'deposit_percentage'      => $request->input('deposit_percentage'),
-                'button_text'             => $request->input('button_text'),
+                'button_text'             => $request->input('button_text') ?: ($existingSettings->button_text ?? 'Buy Later'),
                 'reminder_email_subject'  => $request->input('reminder_email_subject'),
                 'reminder_email_template' => $request->input('reminder_email_template'),
                 'discount_email_subject'  => $request->input('discount_email_subject'),

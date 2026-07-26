@@ -2702,22 +2702,16 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="button_text">Button Text</label>
-                        <input type="text" id="button_text" name="button_text" value="{{ $settings->button_text }}" required>
-                    </div>
-                    <div class="form-group">
                         <label for="deposit_percentage">Required Deposit Percentage (%)</label>
                         <input type="number" id="deposit_percentage" name="deposit_percentage" value="{{ $settings->deposit_percentage ?? 10 }}" min="1" max="100" required>
                     </div>
-                </div>
-                <div class="form-row">
                     <div class="form-group">
                         <label for="hold_duration_days">Reservation Hold Duration (Days)</label>
                         <input type="number" id="hold_duration_days" name="hold_duration_days" value="{{ $settings->hold_duration_days ?? 14 }}" min="1" max="365" required>
                     </div>
-                    <div class="form-group">
-                        <!-- Spacer for 2-column layout grid -->
-                    </div>
+                </div>
+                <div style="background: #f8f9fa; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: #495057;">
+                    ℹ️ <strong>Storefront Button Customization:</strong> Button text, colors, and layout can be customized directly in your <strong>Shopify Theme Editor &gt; App Blocks / App Embeds</strong>.
                 </div>
                 <div class="form-group" style="margin-top: 16px;">
                     <label for="terms_text">Widget Terms & Conditions (Shown in Pop-up Footer)</label>
