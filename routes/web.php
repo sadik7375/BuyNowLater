@@ -1012,6 +1012,17 @@ Route::group(['prefix' => 'deploy'], function() {
             return 'Purge failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString();
         }
     });
+
+    Route::get('/run-migrations', function() {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            $output = \Illuminate\Support\Facades\Artisan::output();
+            \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+            return '<h3>Migrations Executed Successfully!</h3><pre>' . e($output) . '</pre>';
+        } catch (\Exception $e) {
+            return '<h3>Migration Failed:</h3><pre>' . e($e->getMessage() . "\n" . $e->getTraceAsString()) . '</pre>';
+        }
+    });
 });
 
 
