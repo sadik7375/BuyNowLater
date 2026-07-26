@@ -2761,9 +2761,9 @@
 
                     <input type="hidden" id="targeted_product_ids" name="targeted_product_ids" value="{{ $settings->targeted_product_ids }}">
                 </div>
-                <div style="text-align: right; margin-top: 24px;">
-                    <button type="submit" class="btn-save">Save All Settings</button>
-                </div>
+            </div>
+            <div style="text-align: right; margin-top: 20px; margin-bottom: 20px;">
+                <button type="submit" class="btn-save">Save All Settings</button>
             </div>
         </form>
     </div>
