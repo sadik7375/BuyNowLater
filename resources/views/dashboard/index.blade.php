@@ -2739,11 +2739,15 @@
                             <input type="radio" name="product_targeting_type" value="specific" {{ ($settings->product_targeting_type ?? 'all') === 'specific' ? 'checked' : '' }} onchange="toggleProductSelector()" style="width: 16px; height: 16px; accent-color: var(--primary-color);">
                             Show only on Selected Products
                         </label>
+                        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13.5px; font-weight: 500; color: var(--text-main);">
+                            <input type="radio" name="product_targeting_type" value="exclude" {{ ($settings->product_targeting_type ?? 'all') === 'exclude' ? 'checked' : '' }} onchange="toggleProductSelector()" style="width: 16px; height: 16px; accent-color: var(--primary-color);">
+                            Show on All Products, <strong style="color:#d82c0d;">except</strong> selected
+                        </label>
                     </div>
                 </div>
 
                 <!-- Product Selector container -->
-                <div id="product-selector-container" style="display: {{ ($settings->product_targeting_type ?? 'all') === 'specific' ? 'block' : 'none' }}; border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 16px;">
+                <div id="product-selector-container" style="display: {{ in_array($settings->product_targeting_type ?? 'all', ['specific','exclude']) ? 'block' : 'none' }}; border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 16px;">
                     <div class="form-group" style="position: relative; margin-bottom: 16px;">
                         <label for="product-search-input" style="font-weight: 600; margin-bottom: 8px; display: block;">Search Products to Add</label>
                         <div class="search-input-wrapper" style="width: 100%; max-width: none;">
@@ -2755,7 +2759,7 @@
                     </div>
 
                     <div>
-                        <label style="font-weight: 600; margin-bottom: 12px; display: block;">Selected Products</label>
+                        <label id="product-list-label" style="font-weight: 600; margin-bottom: 12px; display: block;">Selected Products</label>
                         <div id="selected-products-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; background: #fafafa; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px;">
                             <!-- Products will be added dynamically here -->
                         </div>
@@ -3277,9 +3281,16 @@ let selectedProducts = @json($targetedProducts) || [];
 
 function toggleProductSelector() {
     const container = document.getElementById('product-selector-container');
+    const label    = document.getElementById('product-list-label');
     const selectedRadio = document.querySelector('input[name="product_targeting_type"]:checked');
     if (container && selectedRadio) {
-        container.style.display = selectedRadio.value === 'specific' ? 'block' : 'none';
+        const val = selectedRadio.value;
+        container.style.display = (val === 'specific' || val === 'exclude') ? 'block' : 'none';
+        if (label) {
+            label.innerHTML = val === 'exclude'
+                ? '🚫 Excluded Products <small style="font-weight:400;color:#6d7175;">(widget hidden on these)</small>'
+                : 'Selected Products';
+        }
     }
 }
 

@@ -631,20 +631,33 @@ class AppProxyController extends Controller
         $productTargetingType = $settings ? ($settings->product_targeting_type ?? 'all') : 'all';
         $isWidgetEnabled = true;
 
-        if ($productTargetingType === 'specific') {
+        if ($productTargetingType === 'specific' || $productTargetingType === 'exclude') {
             $targetedProductIdsStr = $settings ? $settings->targeted_product_ids : '';
             $targetedProductIds = array_filter(explode(',', $targetedProductIdsStr));
             $currentProductId = $request->query('product_id');
             
-            $isWidgetEnabled = false;
-            if ($currentProductId) {
-                // Strip non-digits to handle format like "gid://shopify/Product/12345" or raw numeric "12345"
-                $cleanCurrentId = preg_replace('/[^0-9]/', '', $currentProductId);
-                foreach ($targetedProductIds as $id) {
-                    $cleanId = preg_replace('/[^0-9]/', '', $id);
-                    if ($cleanId !== '' && $cleanId === $cleanCurrentId) {
-                        $isWidgetEnabled = true;
-                        break;
+            if ($productTargetingType === 'specific') {
+                $isWidgetEnabled = false;
+                if ($currentProductId) {
+                    $cleanCurrentId = preg_replace('/[^0-9]/', '', $currentProductId);
+                    foreach ($targetedProductIds as $id) {
+                        $cleanId = preg_replace('/[^0-9]/', '', $id);
+                        if ($cleanId !== '' && $cleanId === $cleanCurrentId) {
+                            $isWidgetEnabled = true;
+                            break;
+                        }
+                    }
+                }
+            } else if ($productTargetingType === 'exclude') {
+                $isWidgetEnabled = true;
+                if ($currentProductId) {
+                    $cleanCurrentId = preg_replace('/[^0-9]/', '', $currentProductId);
+                    foreach ($targetedProductIds as $id) {
+                        $cleanId = preg_replace('/[^0-9]/', '', $id);
+                        if ($cleanId !== '' && $cleanId === $cleanCurrentId) {
+                            $isWidgetEnabled = false;
+                            break;
+                        }
                     }
                 }
             }

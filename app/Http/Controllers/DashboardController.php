@@ -234,7 +234,7 @@ class DashboardController extends Controller
         $monthlyUsageCount = $monthlyReminders + $monthlySubscribers;
 
         $targetedProducts = [];
-        if (($settings->product_targeting_type ?? 'all') === 'specific' && !empty($settings->targeted_product_ids)) {
+        if (in_array($settings->product_targeting_type ?? 'all', ['specific', 'exclude']) && !empty($settings->targeted_product_ids)) {
             $productCacheKey = "shop_{$shop->id}_targeted_products_" . md5($settings->targeted_product_ids);
             $targetedProducts = \Illuminate\Support\Facades\Cache::remember($productCacheKey, now()->addMinutes(10), function() use ($shop, $settings) {
                 $productsList = [];
@@ -396,7 +396,7 @@ class DashboardController extends Controller
             'show_alerts'              => 'nullable|boolean',
             'hold_duration_days'       => 'required|integer|min:1|max:365',
             'terms_text'               => 'nullable|string',
-            'product_targeting_type'   => 'nullable|string|in:all,specific',
+            'product_targeting_type'   => 'nullable|string|in:all,specific,exclude',
             'targeted_product_ids'     => 'nullable|string',
         ]);
 
