@@ -10,13 +10,11 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Osiset\ShopifyApp\Actions\ActivatePlan;
 use Osiset\ShopifyApp\Actions\GetPlanUrl;
-use Osiset\ShopifyApp\Objects\Enums\PlanType;
 use Osiset\ShopifyApp\Objects\Values\ChargeReference;
 use Osiset\ShopifyApp\Objects\Values\NullablePlanId;
 use Osiset\ShopifyApp\Objects\Values\PlanId;
 use Osiset\ShopifyApp\Objects\Values\SessionToken;
 use Osiset\ShopifyApp\Objects\Values\ShopDomain;
-use Osiset\ShopifyApp\Services\ChargeHelper;
 use Osiset\ShopifyApp\Storage\Models\Plan as PlanModel;
 use Osiset\ShopifyApp\Storage\Queries\Shop as ShopQuery;
 use Osiset\ShopifyApp\Util;
@@ -103,22 +101,79 @@ class BillingController extends Controller
 
             $url = null;
 
-            // Attempt official GraphQL appSubscriptionCreate mutation for modern embedded Shopify billing
+            // Execute official Shopify GraphQL appSubscriptionCreate mutation according to shopify.dev guidelines
             try {
-                $chargeHelper = app(ChargeHelper::class);
                 $planModel = PlanModel::findOrFail($planId);
-                $planDetails = $chargeHelper->details($planModel, $shop, $host);
-                $apiResult = $shop->apiHelper()->createChargeGraphQL($planDetails);
-                $url = $apiResult['confirmationUrl'] ?? null;
+                $returnUrl = route('billing.process', [
+                    'plan' => $planId,
+                    'shop' => $shopDomainStr,
+                    'host' => $host,
+                ]);
 
-                if (!empty($apiResult['userErrors'])) {
-                    Log::warning('Shopify Billing GraphQL userErrors:', $apiResult['userErrors']);
+                $gqlQuery = '
+                mutation appSubscriptionCreate(
+                    $name: String!,
+                    $returnUrl: URL!,
+                    $trialDays: Int,
+                    $test: Boolean,
+                    $lineItems: [AppSubscriptionLineItemInput!]!
+                ) {
+                    appSubscriptionCreate(
+                        name: $name,
+                        returnUrl: $returnUrl,
+                        trialDays: $trialDays,
+                        test: $test,
+                        lineItems: $lineItems
+                    ) {
+                        appSubscription {
+                            id
+                        }
+                        confirmationUrl
+                        userErrors {
+                            field
+                            message
+                        }
+                    }
+                }
+                ';
+
+                $gqlVariables = [
+                    'name' => $planModel->name,
+                    'returnUrl' => $returnUrl,
+                    'test' => (bool) ($planModel->test ?? true),
+                    'lineItems' => [
+                        [
+                            'plan' => [
+                                'appRecurringPricingDetails' => [
+                                    'price' => [
+                                        'amount' => (float) $planModel->price,
+                                        'currencyCode' => 'USD',
+                                    ],
+                                    'interval' => 'EVERY_30_DAYS',
+                                ],
+                            ],
+                        ],
+                    ],
+                ];
+
+                if (!empty($planModel->trial_days) && $planModel->trial_days > 0) {
+                    $gqlVariables['trialDays'] = (int) $planModel->trial_days;
+                }
+
+                $gqlResponse = $shop->apiHelper()->getApi()->graph($gqlQuery, $gqlVariables);
+                $subData = $gqlResponse['body']['data']['appSubscriptionCreate'] ?? [];
+
+                if (!empty($subData['confirmationUrl'])) {
+                    $url = $subData['confirmationUrl'];
+                } else {
+                    $userErrors = $subData['userErrors'] ?? [];
+                    Log::warning('Shopify Billing GraphQL userErrors:', json_decode(json_encode($userErrors), true));
                 }
             } catch (\Exception $gqlEx) {
-                Log::warning('GraphQL createChargeGraphQL failed, falling back to GetPlanUrl: ' . $gqlEx->getMessage());
+                Log::warning('GraphQL appSubscriptionCreate failed, falling back to GetPlanUrl: ' . $gqlEx->getMessage());
             }
 
-            // Fallback to GetPlanUrl if GraphQL returned null
+            // Fallback to GetPlanUrl if GraphQL returned empty confirmation URL
             if (empty($url)) {
                 $url = $getPlanUrl(
                     $shop->getId(),
