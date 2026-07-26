@@ -5,15 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Osiset\ShopifyApp\Actions\ActivatePlan;
 use Osiset\ShopifyApp\Actions\GetPlanUrl;
+use Osiset\ShopifyApp\Objects\Enums\PlanType;
 use Osiset\ShopifyApp\Objects\Values\ChargeReference;
 use Osiset\ShopifyApp\Objects\Values\NullablePlanId;
 use Osiset\ShopifyApp\Objects\Values\PlanId;
 use Osiset\ShopifyApp\Objects\Values\SessionToken;
 use Osiset\ShopifyApp\Objects\Values\ShopDomain;
+use Osiset\ShopifyApp\Services\ChargeHelper;
+use Osiset\ShopifyApp\Storage\Models\Plan as PlanModel;
 use Osiset\ShopifyApp\Storage\Queries\Shop as ShopQuery;
 use Osiset\ShopifyApp\Util;
 
@@ -85,18 +89,45 @@ class BillingController extends Controller
 
             $planId = $plan ?: 1;
 
+            // Ensure plan record in DB has null capped_amount and terms for pure RECURRING plan
+            DB::table('plans')->where('id', $planId)->where('type', 'RECURRING')->update([
+                'capped_amount' => null,
+                'terms' => null,
+            ]);
+
             Log::info('Initiating billing subscription request:', [
                 'shop' => $shopDomainStr,
                 'plan_id' => $planId,
                 'host' => $host
             ]);
 
-            // Get the plan URL for redirect
-            $url = $getPlanUrl(
-                $shop->getId(),
-                NullablePlanId::fromNative($planId),
-                $host
-            );
+            $url = null;
+
+            // Attempt official GraphQL appSubscriptionCreate mutation for modern embedded Shopify billing
+            try {
+                $chargeHelper = app(ChargeHelper::class);
+                $planModel = PlanModel::findOrFail($planId);
+                $planDetails = $chargeHelper->details($planModel, $shop, $host);
+                $apiResult = $shop->apiHelper()->createChargeGraphQL($planDetails);
+                $url = $apiResult['confirmationUrl'] ?? null;
+
+                if (!empty($apiResult['userErrors'])) {
+                    Log::warning('Shopify Billing GraphQL userErrors:', $apiResult['userErrors']);
+                }
+            } catch (\Exception $gqlEx) {
+                Log::warning('GraphQL createChargeGraphQL failed, falling back to GetPlanUrl: ' . $gqlEx->getMessage());
+            }
+
+            // Fallback to GetPlanUrl if GraphQL returned null
+            if (empty($url)) {
+                $url = $getPlanUrl(
+                    $shop->getId(),
+                    NullablePlanId::fromNative($planId),
+                    $host
+                );
+            }
+
+            Log::info('Generated billing confirmation URL:', ['url' => $url]);
 
             $apiKey = Util::getShopifyConfig('api_key', ShopDomain::fromNative($shopDomainStr));
 
@@ -178,7 +209,9 @@ HTML;
             $host = urldecode($host);
         }
 
-        if (!$request->has('charge_id')) {
+        $chargeId = $request->query('charge_id') ?: $request->query('charge_id');
+
+        if (!$chargeId) {
             Log::warning('Billing process: charge_id is missing in response.', [
                 'shop' => $shopDomainStr
             ]);
@@ -195,7 +228,7 @@ HTML;
             $activatePlan(
                 $shop->getId(),
                 PlanId::fromNative($plan),
-                ChargeReference::fromNative((int) $request->query('charge_id')),
+                ChargeReference::fromNative((int) $chargeId),
                 $host
             );
 
