@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\View;
 use Osiset\ShopifyApp\Actions\ActivatePlan;
 use Osiset\ShopifyApp\Actions\GetPlanUrl;
 use Osiset\ShopifyApp\Objects\Values\ChargeReference;
 use Osiset\ShopifyApp\Objects\Values\NullablePlanId;
 use Osiset\ShopifyApp\Objects\Values\PlanId;
+use Osiset\ShopifyApp\Objects\Values\SessionToken;
 use Osiset\ShopifyApp\Objects\Values\ShopDomain;
 use Osiset\ShopifyApp\Storage\Queries\Shop as ShopQuery;
 use Osiset\ShopifyApp\Util;
@@ -28,14 +29,46 @@ class BillingController extends Controller
         ?int $plan = 1
     ) {
         try {
-            // Get shop domain from request query, input, or authenticated user
-            $shopDomainStr = $request->get('shop') ?: $request->query('shop');
+            // 1. Direct shop parameter in query or input
+            $shopDomainStr = $request->get('shop') ?: $request->query('shop') ?: $request->input('shop');
+
+            // 2. Extract shop domain from JWT session token (id_token or token query param / header)
+            if (empty($shopDomainStr)) {
+                $tokenString = $request->get('id_token') ?: $request->get('token') ?: $request->header('Authorization');
+                if ($tokenString) {
+                    $tokenString = str_replace('Bearer ', '', $tokenString);
+                    try {
+                        $sessionToken = new SessionToken($tokenString, false);
+                        $shopDomainStr = $sessionToken->getShopDomain()->toNative();
+                    } catch (\Exception $e) {
+                        Log::warning('BillingController: Could not parse SessionToken for shop domain: ' . $e->getMessage());
+                    }
+                }
+            }
+
+            // 3. Fallback to authenticated user (if logged in)
             if (empty($shopDomainStr) && auth()->check()) {
                 $shopDomainStr = auth()->user()->name;
             }
 
+            // 4. Fallback to extracting store handle from referer header
             if (empty($shopDomainStr)) {
-                Log::error('Billing index error: Shop domain could not be resolved from request or auth.');
+                $referer = $request->header('referer') ?: $request->header('referrer');
+                if ($referer && preg_match('/store\/([a-zA-Z0-9\-]+)/', $referer, $matches)) {
+                    $shopDomainStr = $matches[1] . '.myshopify.com';
+                }
+            }
+
+            // 5. Ultimate fallback: single shop record in database
+            if (empty($shopDomainStr)) {
+                $firstUser = User::first();
+                if ($firstUser) {
+                    $shopDomainStr = $firstUser->name;
+                }
+            }
+
+            if (empty($shopDomainStr)) {
+                Log::error('Billing index error: Shop domain could not be resolved from request, JWT token, or DB.');
                 return response()->json(['message' => 'Shop domain missing.'], 400);
             }
 
@@ -65,16 +98,53 @@ class BillingController extends Controller
                 $host
             );
 
-            // Return fullpage redirect view
-            return View::make(
-                'shopify-app::billing.fullpage_redirect',
-                [
-                    'url' => $url,
-                    'host' => $host,
-                    'locale' => $request->get('locale'),
-                    'apiKey' => Util::getShopifyConfig('api_key', ShopDomain::fromNative($shopDomainStr)),
-                ]
-            );
+            $apiKey = Util::getShopifyConfig('api_key', ShopDomain::fromNative($shopDomainStr));
+
+            // Return fullpage redirect HTML to break out of embedded iframe
+            $html = <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="shopify-api-key" content="{$apiKey}" />
+    <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+    <title>Redirecting to Shopify Billing...</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f6f6f7; color: #202223; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #e1e3e5; border-top: 4px solid #008060; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .redirect-btn { margin-top: 15px; padding: 12px 24px; background: #008060; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 14px; }
+        .redirect-btn:hover { background: #006e52; }
+    </style>
+</head>
+<body>
+    <div class="spinner"></div>
+    <h3 style="margin: 0 0 10px 0;">Redirecting to Shopify Payment Approval...</h3>
+    <p style="margin: 0 0 15px 0; color: #6d7175;">If you are not redirected automatically, click the button below:</p>
+    <a id="redirect-link" href="{$url}" target="_top" class="redirect-btn">Approve Premium Plan ($5/mo) &rarr;</a>
+
+    <script type="text/javascript">
+        (function() {
+            var redirectUrl = "{$url}";
+            try {
+                if (window.top && window.top !== window.self) {
+                    window.top.location.href = redirectUrl;
+                } else {
+                    window.location.href = redirectUrl;
+                }
+            } catch(e) {
+                try {
+                    window.open(redirectUrl, '_top');
+                } catch(err) {}
+            }
+        })();
+    </script>
+</body>
+</html>
+HTML;
+
+            return response($html, 200)->header('Content-Type', 'text/html');
         } catch (\Exception $e) {
             Log::error('Billing index exception: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
@@ -93,7 +163,20 @@ class BillingController extends Controller
         ActivatePlan $activatePlan
     ): RedirectResponse {
         $shopDomainStr = $request->query('shop') ?: ($request->user() ? $request->user()->name : null);
-        $host = urldecode($request->get('host'));
+        if (empty($shopDomainStr)) {
+            $firstUser = User::first();
+            if ($firstUser) {
+                $shopDomainStr = $firstUser->name;
+            }
+        }
+
+        $host = $request->get('host');
+        if (empty($host) && !empty($shopDomainStr)) {
+            $shopHandle = explode('.', $shopDomainStr)[0];
+            $host = base64_encode("admin.shopify.com/store/{$shopHandle}");
+        } else {
+            $host = urldecode($host);
+        }
 
         if (!$request->has('charge_id')) {
             Log::warning('Billing process: charge_id is missing in response.', [
