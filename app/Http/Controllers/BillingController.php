@@ -237,8 +237,7 @@ HTML;
     public function process(
         int $plan,
         Request $request,
-        ShopQuery $shopQuery,
-        ActivatePlan $activatePlan
+        ShopQuery $shopQuery
     ): RedirectResponse {
         $shopDomainStr = $request->query('shop') ?: ($request->user()?->name);
 
@@ -262,19 +261,21 @@ HTML;
         if ($chargeId) {
             try {
                 $shop = $shopQuery->getByDomain(ShopDomain::fromNative($shopDomainStr));
+                // Resolve ActivatePlan through the service container (it has a callable dependency)
+                $activatePlan = app(\Osiset\ShopifyApp\Actions\ActivatePlan::class);
                 $activatePlan(
                     $shop->getId(),
                     PlanId::fromNative($plan),
                     ChargeReference::fromNative((int) $chargeId),
                     $host
                 );
-                Log::info('Plan activated:', [
+                Log::info('Plan activated successfully:', [
                     'shop'      => $shopDomainStr,
                     'plan'      => $plan,
                     'charge_id' => $chargeId,
                 ]);
             } catch (\Exception $e) {
-                Log::error('BillingController@process error: ' . $e->getMessage());
+                Log::error('BillingController@process activation error: ' . $e->getMessage());
             }
         }
 
