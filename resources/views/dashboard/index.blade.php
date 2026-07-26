@@ -2109,7 +2109,7 @@
                     <canvas id="statusDonutChart" style="max-height: 160px; max-width: 160px;"></canvas>
                     <div class="donut-center-text" style="position: absolute; text-align: center; pointer-events: none; top: 50%; left: 50%; transform: translate(-50%, -50%);">
                         <span style="font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: -2px;">Total</span>
-                        <span id="donut_total_count" style="font-size: 24px; font-weight: 700; color: var(--text-main); line-height: 1;">{{ array_sum($statusCounts) }}</span>
+                        <span id="donut_total_count" style="font-size: 24px; font-weight: 700; color: var(--text-main); line-height: 1;">{{ $statusCounts['deposit_paid'] + $statusCounts['completed'] + $statusCounts['expired'] }}</span>
                     </div>
                 </div>
                 <div class="donut-legend" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 12px;">
@@ -4191,7 +4191,7 @@ function filterSubscribers() {
         }
 
         // Initialize status breakdown chart
-        const statusTotal = {{ array_sum($statusCounts) }};
+        const statusTotal = {{ $statusCounts['deposit_paid'] + $statusCounts['completed'] + $statusCounts['expired'] }};
         const ctx = document.getElementById('statusDonutChart').getContext('2d');
         
         let chartData = {
