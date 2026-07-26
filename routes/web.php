@@ -86,6 +86,8 @@ Route::group(['middleware' => ['shopify.classify']], function () {
     Route::get('/settings', [AppProxyController::class, 'getSettings']);
     Route::get('/apps/buylater-proxy/customer-bookings', [AppProxyController::class, 'getCustomerBookings']);
     Route::get('/customer-bookings', [AppProxyController::class, 'getCustomerBookings']);
+    Route::get('/apps/buylater-proxy/order-booking', [AppProxyController::class, 'getOrderBooking']);
+    Route::get('/order-booking', [AppProxyController::class, 'getOrderBooking']);
 });
 
 // Public Customer Actions (Clicked from emails, no shop login required)

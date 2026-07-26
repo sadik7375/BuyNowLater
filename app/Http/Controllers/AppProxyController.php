@@ -771,4 +771,139 @@ class AppProxyController extends Controller
             return response()->json(['bookings' => []]);
         }
     }
+
+    /**
+     * Fetch booking details by Shopify Order ID or Order Name.
+     */
+    public function getOrderBooking(Request $request)
+    {
+        $orderId = $request->query('order_id');
+        $orderName = $request->query('order_name');
+        $token = $request->query('token');
+
+        if (empty($orderId) && empty($orderName) && empty($token)) {
+            return response()->json(['booking' => null]);
+        }
+
+        $numericOrderId = null;
+        if ($orderId) {
+            if (preg_match('/Order\/(\d+)/', $orderId, $matches)) {
+                $numericOrderId = $matches[1];
+            } else {
+                $numericOrderId = preg_replace('/\D/', '', $orderId);
+            }
+        }
+
+        try {
+            $booking = null;
+
+            // 1. Try finding by token first (best for avoiding race conditions with Shopify webhook)
+            if (!empty($token)) {
+                Log::info("getOrderBooking: Searching booking by token: {$token}");
+                $booking = Booking::where('token', $token)->first();
+            }
+
+            // 2. Fallback to order ID / Name matching
+            if (!$booking) {
+                $bookingQuery = Booking::query();
+
+                if ($numericOrderId && $orderName) {
+                    $cleanName = ltrim($orderName, '#');
+                    $bookingQuery->where(function($q) use ($numericOrderId, $cleanName) {
+                        $q->where('order_id', $numericOrderId)
+                          ->orWhere('balance_order_id', $numericOrderId)
+                          ->orWhere('order_name', $cleanName)
+                          ->orWhere('balance_order_name', $cleanName)
+                          ->orWhere('order_name', '#' . $cleanName)
+                          ->orWhere('balance_order_name', '#' . $cleanName);
+                    });
+                } elseif ($numericOrderId) {
+                    $bookingQuery->where(function($q) use ($numericOrderId) {
+                        $q->where('order_id', $numericOrderId)
+                          ->orWhere('balance_order_id', $numericOrderId);
+                    });
+                } else {
+                    $cleanName = ltrim($orderName, '#');
+                    $bookingQuery->where(function($q) use ($cleanName) {
+                        $q->where('order_name', $cleanName)
+                          ->orWhere('balance_order_name', $cleanName)
+                          ->orWhere('order_name', '#' . $cleanName)
+                          ->orWhere('balance_order_name', '#' . $cleanName);
+                    });
+                }
+
+                $booking = $bookingQuery->first();
+            }
+
+            if (!$booking) {
+                return response()->json(['booking' => null]);
+            }
+
+            // 3. Proactively handle pending status if this is a paid order checkout redirection
+            if ($booking->status === 'pending' && $numericOrderId) {
+                Log::info("getOrderBooking: Booking ID {$booking->id} is pending on checkout redirect. Proactively updating to deposit_paid.", [
+                    'order_id' => $numericOrderId,
+                    'order_name' => $orderName
+                ]);
+
+                $settings = Setting::where('shop_id', $booking->shop_id)->first();
+                $holdDurationDays = $settings ? (int) ($settings->hold_duration_days ?? 14) : 14;
+
+                $booking->update([
+                    'status'        => 'deposit_paid',
+                    'order_id'      => $numericOrderId,
+                    'order_name'    => $orderName,
+                    'expires_at'    => now()->addDays($holdDurationDays),
+                    'deposit_paid_at' => now(),
+                    'draft_order_id'=> null,
+                    'checkout_url'  => null,
+                    'payment_status'=> 'partially_paid',
+                ]);
+
+                // Dispatch webhook job in background to set up Shopify holds, etc.
+                try {
+                    $shop = User::find($booking->shop_id);
+                    if ($shop) {
+                        OrdersPaidJob::dispatch($shop->name, (object)[
+                            'id' => $numericOrderId,
+                            'name' => $orderName,
+                            'tags' => 'buylater-deposit',
+                            'financial_status' => 'partially_paid',
+                            'fulfillment_status' => 'unfulfilled',
+                            'line_items' => []
+                        ]);
+                    }
+                } catch (\Exception $jobEx) {
+                    Log::error('getOrderBooking: Failed to dispatch OrdersPaidJob: ' . $jobEx->getMessage());
+                }
+            }
+
+            $settings = Setting::where('shop_id', $booking->shop_id)->first();
+            $holdDurationDays = $settings ? (int) ($settings->hold_duration_days ?? 14) : 14;
+
+            $depositPaidAt = $booking->updated_at;
+            $expiryDate = $depositPaidAt->copy()->addDays($holdDurationDays);
+
+            if ($booking->status === 'deposit_paid' && empty($booking->checkout_url)) {
+                Log::info("getOrderBooking: Generating remaining balance draft order on the fly for booking ID {$booking->id}");
+                $booking->createRemainingBalanceDraftOrder();
+            }
+
+            $bookingArray = $booking->toArray();
+            $bookingArray['expires_at'] = $expiryDate->toIso8601String();
+
+            if ($booking->status === 'deposit_paid' && now()->gt($expiryDate)) {
+                $bookingArray['status'] = 'expired';
+            }
+
+            return response()->json([
+                'booking' => $bookingArray
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('AppProxy: Exception fetching order booking: ' . $e->getMessage());
+            return response()->json(['booking' => null]);
+        }
+    }
+
 }

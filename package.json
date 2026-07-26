@@ -11,5 +11,10 @@
         "laravel-vite-plugin": "^0.7.2",
         "localtunnel": "^2.0.2",
         "vite": "^4.0.0"
+    },
+    "dependencies": {
+        "@preact/signals": "^2.10.0",
+        "@shopify/ui-extensions": "2026.4.4",
+        "preact": "^10.29.7"
     }
 }
