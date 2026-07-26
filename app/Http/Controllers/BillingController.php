@@ -5,36 +5,34 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Osiset\ShopifyApp\Actions\ActivatePlan;
-use Osiset\ShopifyApp\Actions\GetPlanUrl;
 use Osiset\ShopifyApp\Objects\Values\ChargeReference;
-use Osiset\ShopifyApp\Objects\Values\NullablePlanId;
 use Osiset\ShopifyApp\Objects\Values\PlanId;
 use Osiset\ShopifyApp\Objects\Values\SessionToken;
 use Osiset\ShopifyApp\Objects\Values\ShopDomain;
-use Osiset\ShopifyApp\Storage\Models\Plan as PlanModel;
 use Osiset\ShopifyApp\Storage\Queries\Shop as ShopQuery;
 use Osiset\ShopifyApp\Util;
 
 class BillingController extends Controller
 {
     /**
-     * Redirects to billing screen for Shopify.
+     * Shopify App Pricing (Managed Pricing) is enabled.
+     * We do NOT use the Billing API / appSubscriptionCreate mutation.
+     * Instead, we redirect directly to Shopify's hosted pricing plans page.
+     *
+     * URL format: https://admin.shopify.com/store/{store_handle}/charges/{api_key}/pricing_plans
      */
     public function index(
         Request $request,
         ShopQuery $shopQuery,
-        GetPlanUrl $getPlanUrl,
         ?int $plan = 1
     ) {
         try {
-            // 1. Direct shop parameter in query or input
+            // --- Resolve shop domain ---
             $shopDomainStr = $request->get('shop') ?: $request->query('shop') ?: $request->input('shop');
 
-            // 2. Extract shop domain from JWT session token (id_token or token query param / header)
             if (empty($shopDomainStr)) {
                 $tokenString = $request->get('id_token') ?: $request->get('token') ?: $request->header('Authorization');
                 if ($tokenString) {
@@ -43,25 +41,15 @@ class BillingController extends Controller
                         $sessionToken = new SessionToken($tokenString, false);
                         $shopDomainStr = $sessionToken->getShopDomain()->toNative();
                     } catch (\Exception $e) {
-                        Log::warning('BillingController: Could not parse SessionToken for shop domain: ' . $e->getMessage());
+                        Log::warning('BillingController: Could not parse SessionToken: ' . $e->getMessage());
                     }
                 }
             }
 
-            // 3. Fallback to authenticated user (if logged in)
             if (empty($shopDomainStr) && auth()->check()) {
                 $shopDomainStr = auth()->user()->name;
             }
 
-            // 4. Fallback to extracting store handle from referer header
-            if (empty($shopDomainStr)) {
-                $referer = $request->header('referer') ?: $request->header('referrer');
-                if ($referer && preg_match('/store\/([a-zA-Z0-9\-]+)/', $referer, $matches)) {
-                    $shopDomainStr = $matches[1] . '.myshopify.com';
-                }
-            }
-
-            // 5. Ultimate fallback: single shop record in database
             if (empty($shopDomainStr)) {
                 $firstUser = User::first();
                 if ($firstUser) {
@@ -70,173 +58,23 @@ class BillingController extends Controller
             }
 
             if (empty($shopDomainStr)) {
-                Log::error('Billing index error: Shop domain could not be resolved from request, JWT token, or DB.');
+                Log::error('BillingController: Shop domain could not be resolved.');
                 return response()->json(['message' => 'Shop domain missing.'], 400);
             }
 
-            $shop = $shopQuery->getByDomain(ShopDomain::fromNative($shopDomainStr));
-
-            // Determine host parameter
-            $host = $request->get('host');
-            if (empty($host)) {
-                $shopHandle = explode('.', $shopDomainStr)[0];
-                $host = base64_encode("admin.shopify.com/store/{$shopHandle}");
-            } else {
-                $host = urldecode($host);
-            }
-
-            $planId = $plan ?: 1;
-
-            // Ensure plan record in DB has null capped_amount and terms for pure RECURRING plan
-            DB::table('plans')->where('id', $planId)->where('type', 'RECURRING')->update([
-                'capped_amount' => null,
-                'terms' => null,
-            ]);
-
-            Log::info('Initiating billing subscription request:', [
-                'shop' => $shopDomainStr,
-                'plan_id' => $planId,
-                'host' => $host
-            ]);
-
-            $url = null;
-
-            // Execute official Shopify GraphQL appSubscriptionCreate mutation according to shopify.dev guidelines
-            try {
-                $planModel = PlanModel::findOrFail($planId);
-                $returnUrl = route('billing.process', [
-                    'plan' => $planId,
-                    'shop' => $shopDomainStr,
-                    'host' => $host,
-                ]);
-
-                $gqlQuery = '
-                mutation appSubscriptionCreate(
-                    $name: String!,
-                    $returnUrl: URL!,
-                    $trialDays: Int,
-                    $test: Boolean,
-                    $lineItems: [AppSubscriptionLineItemInput!]!
-                ) {
-                    appSubscriptionCreate(
-                        name: $name,
-                        returnUrl: $returnUrl,
-                        trialDays: $trialDays,
-                        test: $test,
-                        lineItems: $lineItems
-                    ) {
-                        appSubscription {
-                            id
-                        }
-                        confirmationUrl
-                        userErrors {
-                            field
-                            message
-                        }
-                    }
-                }
-                ';
-
-                $gqlVariables = [
-                    'name' => $planModel->name,
-                    'returnUrl' => $returnUrl,
-                    'test' => (bool) ($planModel->test ?? true),
-                    'lineItems' => [
-                        [
-                            'plan' => [
-                                'appRecurringPricingDetails' => [
-                                    'price' => [
-                                        'amount' => (float) $planModel->price,
-                                        'currencyCode' => 'USD',
-                                    ],
-                                    'interval' => 'EVERY_30_DAYS',
-                                ],
-                            ],
-                        ],
-                    ],
-                ];
-
-                if (!empty($planModel->trial_days) && $planModel->trial_days > 0) {
-                    $gqlVariables['trialDays'] = (int) $planModel->trial_days;
-                }
-
-                $gqlResponse = $shop->apiHelper()->getApi()->graph($gqlQuery, $gqlVariables);
-                $subData = $gqlResponse['body']['data']['appSubscriptionCreate'] ?? [];
-
-                if (!empty($subData['confirmationUrl'])) {
-                    $url = $subData['confirmationUrl'];
-                } else {
-                    $userErrors = $subData['userErrors'] ?? [];
-                    Log::warning('Shopify Billing GraphQL userErrors:', json_decode(json_encode($userErrors), true));
-                }
-            } catch (\Exception $gqlEx) {
-                Log::warning('GraphQL appSubscriptionCreate failed, falling back to GetPlanUrl: ' . $gqlEx->getMessage());
-            }
-
-            $lastErrorMessage = null;
-            if (!empty($subData['userErrors'][0]['message'])) {
-                $lastErrorMessage = $subData['userErrors'][0]['message'];
-            }
-
-            // Fallback to GetPlanUrl if GraphQL returned empty confirmation URL
-            if (empty($url)) {
-                try {
-                    $url = $getPlanUrl(
-                        $shop->getId(),
-                        NullablePlanId::fromNative($planId),
-                        $host
-                    );
-                } catch (\Exception $ex) {
-                    Log::warning('GetPlanUrl fallback failed: ' . $ex->getMessage());
-                }
-            }
-
+            // --- Build Shopify Managed Pricing URL ---
             $shopHandle = explode('.', $shopDomainStr)[0];
             $apiKey = Util::getShopifyConfig('api_key', ShopDomain::fromNative($shopDomainStr));
 
-            // If Managed Pricing is active, Shopify rejects API charge creation. Fallback to Shopify Native Managed Pricing URL!
-            if (empty($url) || ($lastErrorMessage && str_contains($lastErrorMessage, 'Managed Pricing'))) {
-                $url = "https://admin.shopify.com/store/{$shopHandle}/charges/{$apiKey}/pricing_plans";
-                Log::info('Using Shopify Native Managed Pricing URL:', ['url' => $url]);
-            }
+            // Shopify-hosted pricing plans page (Managed Pricing / Shopify App Pricing)
+            $pricingUrl = "https://admin.shopify.com/store/{$shopHandle}/charges/{$apiKey}/pricing_plans";
 
-            Log::info('Generated billing confirmation URL:', ['url' => $url]);
+            Log::info('Redirecting to Shopify Managed Pricing page:', [
+                'shop' => $shopDomainStr,
+                'url'  => $pricingUrl,
+            ]);
 
-            if (empty($url)) {
-                $errorDetail = $lastErrorMessage ?: 'Shopify API returned empty payment confirmation URL.';
-                $html = <<<HTML
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Billing Configuration Issue</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px 20px; background: #f6f6f7; color: #202223; }
-        .card { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; padding: 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        .error-badge { display: inline-block; background: #ffd6d6; color: #8a0000; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 13px; margin-bottom: 16px; }
-        h2 { margin-top: 0; color: #202223; }
-        p { line-height: 1.6; color: #5c5f62; }
-        .code-block { background: #f1f2f4; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 13px; word-break: break-all; margin: 16px 0; color: #202223; border-left: 4px solid #d82c0d; }
-        .back-btn { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #008060; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <div class="error-badge">Shopify Billing API Restriction</div>
-        <h2>Unable to create subscription charge</h2>
-        <p>Shopify API rejected the subscription creation attempt with the following error:</p>
-        <div class="code-block">{$errorDetail}</div>
-        <p><strong>Solution:</strong> In your <strong>Shopify Partner Dashboard &rarr; App &rarr; App Setup</strong>, ensure that <em>Managed Pricing / App Store Pricing</em> is turned off so that your app is permitted to create custom subscriptions via Billing API.</p>
-        <a href="javascript:history.back()" class="back-btn">&larr; Back to App Dashboard</a>
-    </div>
-</body>
-</html>
-HTML;
-                return response($html, 200)->header('Content-Type', 'text/html');
-            }
-
-            // Return fullpage redirect HTML to break out of embedded iframe
+            // --- Return iframe-breakout HTML page ---
             $html = <<<HTML
 <!DOCTYPE html>
 <html lang="en">
@@ -245,30 +83,49 @@ HTML;
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="shopify-api-key" content="{$apiKey}" />
     <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
-    <title>Redirecting to Shopify Billing...</title>
+    <title>Upgrading to Premium...</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f6f6f7; color: #202223; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #e1e3e5; border-top: 4px solid #008060; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", Roboto, sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; height: 100vh; margin: 0;
+            background: #f6f6f7; color: #202223;
+        }
+        .spinner {
+            width: 44px; height: 44px;
+            border: 4px solid #e1e3e5;
+            border-top: 4px solid #008060;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+            margin-bottom: 20px;
+        }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .redirect-btn { margin-top: 15px; padding: 12px 24px; background: #008060; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block; font-size: 14px; }
-        .redirect-btn:hover { background: #006e52; }
+        h3 { margin: 0 0 8px 0; font-size: 18px; }
+        p { margin: 0 0 20px 0; color: #6d7175; font-size: 14px; }
+        .btn {
+            padding: 12px 28px; background: #008060; color: white;
+            text-decoration: none; border-radius: 8px; font-weight: 600;
+            font-size: 15px; display: inline-block;
+        }
+        .btn:hover { background: #006e52; }
     </style>
 </head>
 <body>
     <div class="spinner"></div>
-    <h3 style="margin: 0 0 10px 0;">Redirecting to Shopify Payment Approval...</h3>
-    <p style="margin: 0 0 15px 0; color: #6d7175;">If you are not redirected automatically, click the button below:</p>
-    <a id="redirect-link" href="{$url}" target="_top" class="redirect-btn">Approve Premium Plan ($5/mo) &rarr;</a>
+    <h3>Redirecting to Premium Plan...</h3>
+    <p>You'll be taken to Shopify's secure billing page.</p>
+    <a href="{$pricingUrl}" target="_top" class="btn">Select Plan &rarr;</a>
 
-    <script type="text/javascript">
-        (function() {
-            var redirectUrl = "{$url}";
+    <script>
+        (function () {
+            var url = "{$pricingUrl}";
+            // Use App Bridge if available (embedded app)
             if (typeof shopify !== 'undefined' && shopify.navigation) {
-                shopify.navigation.redirect(redirectUrl);
+                shopify.navigation.redirect(url);
             } else if (window.top && window.top !== window.self) {
-                window.top.location.href = redirectUrl;
+                window.top.location.href = url;
             } else {
-                window.location.href = redirectUrl;
+                window.location.href = url;
             }
         })();
     </script>
@@ -277,16 +134,19 @@ HTML;
 HTML;
 
             return response($html, 200)->header('Content-Type', 'text/html');
+
         } catch (\Exception $e) {
-            Log::error('Billing index exception: ' . $e->getMessage(), [
+            Log::error('BillingController@index error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
-            return response()->json(['message' => 'Billing failed: ' . $e->getMessage()], 500);
+            return response()->json(['message' => 'Billing error: ' . $e->getMessage()], 500);
         }
     }
 
     /**
-     * Processes the response from the customer after approving or declining billing.
+     * Processes the response after merchant approves/declines on Shopify billing page.
+     * For Managed Pricing, Shopify handles plan activation automatically.
+     * We just redirect back to home.
      */
     public function process(
         int $plan,
@@ -295,6 +155,7 @@ HTML;
         ActivatePlan $activatePlan
     ): RedirectResponse {
         $shopDomainStr = $request->query('shop') ?: ($request->user() ? $request->user()->name : null);
+
         if (empty($shopDomainStr)) {
             $firstUser = User::first();
             if ($firstUser) {
@@ -307,49 +168,35 @@ HTML;
             $shopHandle = explode('.', $shopDomainStr)[0];
             $host = base64_encode("admin.shopify.com/store/{$shopHandle}");
         } else {
-            $host = urldecode($host);
+            $host = urldecode((string) $host);
         }
 
-        $chargeId = $request->query('charge_id') ?: $request->query('charge_id');
+        $chargeId = $request->query('charge_id');
 
-        if (!$chargeId) {
-            Log::warning('Billing process: charge_id is missing in response.', [
-                'shop' => $shopDomainStr
-            ]);
-            return Redirect::route(Util::getShopifyConfig('route_names.home'), [
+        if ($chargeId) {
+            try {
+                $shop = $shopQuery->getByDomain(ShopDomain::fromNative($shopDomainStr));
+                $activatePlan(
+                    $shop->getId(),
+                    PlanId::fromNative($plan),
+                    ChargeReference::fromNative((int) $chargeId),
+                    $host
+                );
+                Log::info('Billing activated (charge_id flow):', ['shop' => $shopDomainStr, 'plan' => $plan]);
+            } catch (\Exception $e) {
+                Log::warning('BillingController@process activation error: ' . $e->getMessage());
+            }
+        } else {
+            // Managed Pricing: Shopify activates the plan automatically, no charge_id returned
+            Log::info('Managed Pricing: merchant returned from pricing page, redirecting home.', [
                 'shop' => $shopDomainStr,
-                'host' => $host,
-                'locale' => $request->get('locale'),
             ]);
         }
 
-        try {
-            $shop = $shopQuery->getByDomain(ShopDomain::fromNative($shopDomainStr));
-
-            $activatePlan(
-                $shop->getId(),
-                PlanId::fromNative($plan),
-                ChargeReference::fromNative((int) $chargeId),
-                $host
-            );
-
-            Log::info('Billing successfully activated for shop:', [
-                'shop' => $shopDomainStr,
-                'plan_id' => $plan
-            ]);
-
-            return Redirect::route(Util::getShopifyConfig('route_names.home'), [
-                'shop' => $shop->getDomain()->toNative(),
-                'host' => $host,
-                'locale' => $request->get('locale'),
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Billing process activation error: ' . $e->getMessage());
-            return Redirect::route(Util::getShopifyConfig('route_names.home'), [
-                'shop' => $shopDomainStr,
-                'host' => $host,
-                'locale' => $request->get('locale'),
-            ]);
-        }
+        return Redirect::route(Util::getShopifyConfig('route_names.home'), [
+            'shop'   => $shopDomainStr,
+            'host'   => $host,
+            'locale' => $request->get('locale'),
+        ]);
     }
 }
