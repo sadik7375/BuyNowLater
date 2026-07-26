@@ -213,16 +213,12 @@ class BillingController extends Controller
     <script type="text/javascript">
         (function() {
             var redirectUrl = "{$url}";
-            try {
-                if (window.top && window.top !== window.self) {
-                    window.top.location.href = redirectUrl;
-                } else {
-                    window.location.href = redirectUrl;
-                }
-            } catch(e) {
-                try {
-                    window.open(redirectUrl, '_top');
-                } catch(err) {}
+            if (typeof shopify !== 'undefined' && shopify.navigation) {
+                shopify.navigation.redirect(redirectUrl);
+            } else if (window.top && window.top !== window.self) {
+                window.top.location.href = redirectUrl;
+            } else {
+                window.location.href = redirectUrl;
             }
         })();
     </script>
