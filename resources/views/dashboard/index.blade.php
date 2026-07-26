@@ -2139,7 +2139,7 @@
                     </div>
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <span style="width: 10px; height: 10px; border-radius: 50%; background-color: #d82c0d; display: inline-block;"></span>
-                        <span style="color: var(--text-muted);">Expired:</span>
+                        <span style="color: var(--text-muted);">Refunded:</span>
                         <strong id="legend_expired" style="color: var(--text-main);">{{ $statusCounts['expired'] }}</strong>
                     </div>
                 </div>
@@ -2327,7 +2327,7 @@
                         <option value="all">All Statuses</option>
                         <option value="deposit_paid">Partial Paid</option>
                         <option value="completed">Full Paid</option>
-                        <option value="expired">Expired</option>
+                        <option value="expired">Refunded</option>
                     </select>
                     <select id="sort-bookings" class="filter-select" onchange="filterBookings()">
                         <option value="date_desc">Newest First</option>
@@ -4079,7 +4079,7 @@ function recalculateStatsAndChart() {
             chartInstance.data.datasets[0].hoverOffset = 0;
             chartInstance.options.plugins.tooltip.enabled = false;
         } else {
-            chartInstance.data.labels = ['Partial Paid', 'Full Paid', 'Expired'];
+            chartInstance.data.labels = ['Partial Paid', 'Full Paid', 'Refunded'];
             chartInstance.data.datasets[0].data = [depositPaidBookingsCount, completedBookingsCount, expiredBookingsCount];
             chartInstance.data.datasets[0].backgroundColor = ['#005ea2', '#108043', '#d82c0d'];
             chartInstance.data.datasets[0].hoverOffset = 4;
@@ -4223,7 +4223,7 @@ function filterSubscribers() {
         const ctx = document.getElementById('statusDonutChart').getContext('2d');
         
         let chartData = {
-            labels: ['Partial Paid', 'Full Paid', 'Expired'],
+            labels: ['Partial Paid', 'Full Paid', 'Refunded'],
             datasets: [{
                 data: [
                     {{ $statusCounts['deposit_paid'] }},
