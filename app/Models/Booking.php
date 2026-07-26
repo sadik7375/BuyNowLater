@@ -184,13 +184,11 @@ class Booking extends Model
     public static function getUsageStats($shopId)
     {
         $holds = \App\Models\Booking::where('shop_id', $shopId)->count();
-        $reminders = \App\Models\Reminder::where('shop_id', $shopId)->count();
-        $alerts = \App\Models\Subscriber::where('shop_id', $shopId)->count();
         return [
             'holds' => $holds,
-            'reminders' => $reminders,
-            'alerts' => $alerts,
-            'total' => $holds + $reminders + $alerts,
+            'reminders' => 0,
+            'alerts' => 0,
+            'total' => $holds,
         ];
     }
 }

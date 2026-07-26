@@ -1874,8 +1874,8 @@
             <span class="warning-icon">⚠️</span>
             <div class="warning-content">
                 <h4>Plan Limit Reached</h4>
-                <p>You have used all <strong>{{ $usageCount }} of your 10 free combined reservations, reminders, and price drop alerts</strong>. Customers can no longer place holds or set reminders on your store. Please upgrade your plan to unlock unlimited usage.</p>
-                <button type="button" onclick="switchTab(event, 'tab-pricing')" class="warning-action-btn">
+                <p>You have used all <strong>{{ $usageCount }} of your 10 free deposit reservations</strong>. Customers can no longer reserve products on your store. Please upgrade your plan to unlock unlimited reservations.</p>
+                <button type="button" onclick="switchTab(event, 'sub-tab-pricing')" class="warning-action-btn">
                     Upgrade Plan
                 </button>
             </div>
@@ -1885,8 +1885,8 @@
             <span class="warning-icon">⚠️</span>
             <div class="warning-content">
                 <h4>Approaching Plan Limit</h4>
-                <p>You have used <strong>{{ $usageCount }} of your 10 free combined reservations, reminders, and price drop alerts</strong>. Upgrade now to ensure uninterrupted service for your customers.</p>
-                <button type="button" onclick="switchTab(event, 'tab-pricing')" class="warning-action-btn" style="background: #f59e0b; border-color: #f59e0b;">
+                <p>You have used <strong>{{ $usageCount }} of your 10 free deposit reservations</strong>. Upgrade now to ensure uninterrupted reservation service for your customers.</p>
+                <button type="button" onclick="switchTab(event, 'sub-tab-pricing')" class="warning-action-btn" style="background: #f59e0b; border-color: #f59e0b;">
                     Upgrade Plan
                 </button>
             </div>
