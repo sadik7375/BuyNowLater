@@ -92,6 +92,13 @@ class DashboardController extends Controller
         $subscribers = Subscriber::where('shop_id', $shop->id)
             ->orderBy('created_at', 'desc')
             ->get();
+        // Auto-expire bookings whose hold period has passed
+        Booking::where('shop_id', $shop->id)
+            ->where('status', 'deposit_paid')
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<', Carbon::now())
+            ->update(['status' => 'expired']);
+
         $allBookings = Booking::where('shop_id', $shop->id)
             ->orderBy('created_at', 'desc')
             ->get();
