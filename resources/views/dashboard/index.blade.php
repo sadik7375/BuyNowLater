@@ -2439,7 +2439,7 @@
                                         $fulfillmentTone = '';
                                     }
                                 @endphp
-                                <s-table-row data-search-text="{{ $searchText }}" data-status="{{ $booking->status }}" data-created-at="{{ $createdAtTimestamp }}" data-balance="{{ $booking->remaining_balance }}" data-price="{{ $booking->product_price }}" data-expires-at="{{ $booking->expires_at ? $booking->expires_at->timestamp : 0 }}">
+                                <s-table-row data-search-text="{{ $searchText }}" data-status="{{ $booking->status }}" data-payment-status="{{ strtolower($booking->payment_status ?? '') }}" data-created-at="{{ $createdAtTimestamp }}" data-balance="{{ $booking->remaining_balance }}" data-price="{{ $booking->product_price }}" data-expires-at="{{ $booking->expires_at ? $booking->expires_at->timestamp : 0 }}">
                                     <s-table-cell style="text-align: center; width: 40px; vertical-align: middle;">
                                         <input type="checkbox" class="booking-checkbox" data-id="{{ $booking->id }}" style="cursor: pointer;">
                                     </s-table-cell>
@@ -3974,11 +3974,14 @@ function recalculateStatsAndChart() {
         const matchesDate = !window.currentDateStart || (createdAt >= window.currentDateStart && createdAt <= window.currentDateEnd);
         const expiresAt = parseInt(row.getAttribute('data-expires-at')) || 0;
         const status = row.getAttribute('data-status');
+        const paymentStatus = row.getAttribute('data-payment-status') || '';
         
         if (matchesDate) {
             const price = parseFloat(row.getAttribute('data-price')) || 0;
             
-            if (status === 'completed') {
+            if (paymentStatus === 'refunded') {
+                expiredBookingsCount++;
+            } else if (status === 'completed') {
                 totalRevenue += price;
                 completedBookingsCount++;
             } else if (status === 'deposit_paid') {
@@ -3990,7 +3993,7 @@ function recalculateStatsAndChart() {
         }
 
         // Count expiring soon (next 2 days)
-        if (status === 'deposit_paid' && expiresAt > 0) {
+        if (status === 'deposit_paid' && paymentStatus !== 'refunded' && expiresAt > 0) {
             const nowTimestamp = Math.floor(Date.now() / 1000);
             const secondsLeft = expiresAt - nowTimestamp;
             if (secondsLeft > 0 && secondsLeft <= 172800) { // 2 days in seconds
@@ -4103,10 +4106,18 @@ function filterBookings() {
     rows.forEach(row => {
         const searchText = row.getAttribute('data-search-text') || '';
         const status = row.getAttribute('data-status') || '';
+        const paymentStatus = row.getAttribute('data-payment-status') || '';
         const createdAt = parseInt(row.getAttribute('data-created-at')) || 0;
         
         const matchesSearch = searchText.includes(searchVal);
-        const matchesStatus = statusVal === 'all' || status === statusVal;
+        let matchesStatus = false;
+        if (statusVal === 'all') {
+            matchesStatus = true;
+        } else if (statusVal === 'expired') {
+            matchesStatus = (status === 'expired' || paymentStatus === 'refunded');
+        } else {
+            matchesStatus = (status === statusVal && paymentStatus !== 'refunded');
+        }
         const matchesDate = !window.currentDateStart || (createdAt >= window.currentDateStart && createdAt <= window.currentDateEnd);
 
         if (matchesSearch && matchesStatus && matchesDate) {

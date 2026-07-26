@@ -131,9 +131,9 @@ class DashboardController extends Controller
         // --- Status Counts (100% Dynamic from Database) ---
         $statusCounts = [
             'pending'      => $allBookings->where('status', 'pending')->count(),
-            'deposit_paid' => $allBookings->where('status', 'deposit_paid')->count(),
-            'completed'    => $allBookings->where('status', 'completed')->count(),
-            'expired'      => $allBookings->where('status', 'expired')->count(),
+            'deposit_paid' => $allBookings->filter(fn($b) => $b->status === 'deposit_paid' && strtolower($b->payment_status) !== 'refunded')->count(),
+            'completed'    => $allBookings->filter(fn($b) => $b->status === 'completed' && strtolower($b->payment_status) !== 'refunded')->count(),
+            'expired'      => $allBookings->filter(fn($b) => $b->status === 'expired' || strtolower($b->payment_status) === 'refunded')->count(),
         ];
         $isMockStatus = false; // Always dynamic
 
@@ -145,16 +145,28 @@ class DashboardController extends Controller
         // --- Overview Stats (100% Dynamic from Database) ---
         $revenueRecovered = Booking::where('shop_id', $shop->id)
             ->where('status', 'completed')
+            ->where(function($q) {
+                $q->whereNull('payment_status')
+                  ->orWhereRaw('LOWER(payment_status) != ?', ['refunded']);
+            })
             ->sum('product_price');
 
         $activeBookings = Booking::where('shop_id', $shop->id)
             ->where('status', 'deposit_paid')
+            ->where(function($q) {
+                $q->whereNull('payment_status')
+                  ->orWhereRaw('LOWER(payment_status) != ?', ['refunded']);
+            })
             ->count();
 
         $now = Carbon::now();
         $twoDaysFromNow = Carbon::now()->addDays(2)->endOfDay();
         $expiringSoonCount = Booking::where('shop_id', $shop->id)
             ->where('status', 'deposit_paid')
+            ->where(function($q) {
+                $q->whereNull('payment_status')
+                  ->orWhereRaw('LOWER(payment_status) != ?', ['refunded']);
+            })
             ->whereNotNull('expires_at')
             ->where('expires_at', '>=', $now)
             ->where('expires_at', '<=', $twoDaysFromNow)
