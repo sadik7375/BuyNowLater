@@ -3035,7 +3035,7 @@
                         @if($hasPlan)
                             <s-button disabled="true" style="margin: 0; width: 100%;">Current Plan</s-button>
                         @else
-                            <s-button href="{{ route('billing', array_merge(['plan' => 1], request()->query())) }}" variant="primary" target="_top" style="margin: 0; width: 100%;">Upgrade to Premium</s-button>
+                            <s-button href="{{ route('billing', array_merge(['plan' => 1, 'shop' => $shop->name], request()->query())) }}" variant="primary" target="_top" style="margin: 0; width: 100%;">Upgrade to Premium</s-button>
                         @endif
                     </div>
                 </div>

@@ -44,6 +44,9 @@ Route::group(['middleware' => ['verify.shopify']], function () {
     Route::get('/benefits', [DashboardController::class, 'index'])->name('admin.benefits');
     Route::get('/price-plan', [DashboardController::class, 'index'])->name('admin.price-plan');
 
+    Route::get('/billing/{plan?}', [\App\Http\Controllers\BillingController::class, 'index'])->name('billing');
+    Route::get('/billing/process/{plan}', [\App\Http\Controllers\BillingController::class, 'process'])->name('billing.process');
+
     Route::get('/admin/products/search', [DashboardController::class, 'searchProducts'])->name('products.search');
     Route::post('/admin/settings', [DashboardController::class, 'saveSettings'])->name('settings.save');
     Route::post('/admin/feedback', [DashboardController::class, 'submitFeedback'])->name('feedback.submit');
