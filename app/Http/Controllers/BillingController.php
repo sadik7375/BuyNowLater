@@ -191,9 +191,16 @@ class BillingController extends Controller
                 }
             }
 
-            Log::info('Generated billing confirmation URL:', ['url' => $url]);
-
+            $shopHandle = explode('.', $shopDomainStr)[0];
             $apiKey = Util::getShopifyConfig('api_key', ShopDomain::fromNative($shopDomainStr));
+
+            // If Managed Pricing is active, Shopify rejects API charge creation. Fallback to Shopify Native Managed Pricing URL!
+            if (empty($url) || ($lastErrorMessage && str_contains($lastErrorMessage, 'Managed Pricing'))) {
+                $url = "https://admin.shopify.com/store/{$shopHandle}/charges/{$apiKey}/pricing_plans";
+                Log::info('Using Shopify Native Managed Pricing URL:', ['url' => $url]);
+            }
+
+            Log::info('Generated billing confirmation URL:', ['url' => $url]);
 
             if (empty($url)) {
                 $errorDetail = $lastErrorMessage ?: 'Shopify API returned empty payment confirmation URL.';
