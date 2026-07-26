@@ -1877,7 +1877,7 @@
             <div class="warning-content">
                 <h4>Plan Limit Reached</h4>
                 <p>You have used all <strong>{{ $usageCount }} of your 10 free deposit reservations</strong>. Customers can no longer reserve products on your store. Please upgrade your plan to unlock unlimited reservations.</p>
-                <button type="button" onclick="switchTab(event, 'sub-tab-pricing')" class="warning-action-btn">
+                <button type="button" onclick="switchTab(event, 'tab-pricing')" class="warning-action-btn">
                     Upgrade Plan
                 </button>
             </div>
@@ -1888,7 +1888,7 @@
             <div class="warning-content">
                 <h4>Approaching Plan Limit</h4>
                 <p>You have used <strong>{{ $usageCount }} of your 10 free deposit reservations</strong>. Upgrade now to ensure uninterrupted reservation service for your customers.</p>
-                <button type="button" onclick="switchTab(event, 'sub-tab-pricing')" class="warning-action-btn" style="background: #f59e0b; border-color: #f59e0b;">
+                <button type="button" onclick="switchTab(event, 'tab-pricing')" class="warning-action-btn" style="background: #f59e0b; border-color: #f59e0b;">
                     Upgrade Plan
                 </button>
             </div>
@@ -3596,12 +3596,15 @@ document.addEventListener('DOMContentLoaded', function() {
     function switchTab(event, tabId) {
         let actualTabId = tabId;
         let subTabId = null;
-        if (tabId === 'tab-pricing' || tabId === 'tab-price-plan') {
+        if (tabId === 'tab-pricing' || tabId === 'tab-price-plan' || tabId === 'sub-tab-pricing' || tabId === 'pricing') {
             actualTabId = 'tab-support';
             subTabId = 'sub-tab-pricing';
-        } else if (tabId === 'tab-how-it-works') {
+        } else if (tabId === 'tab-how-it-works' || tabId === 'sub-tab-how-it-works') {
             actualTabId = 'tab-support';
             subTabId = 'sub-tab-how-it-works';
+        } else if (tabId === 'tab-benefits' || tabId === 'sub-tab-benefits') {
+            actualTabId = 'tab-support';
+            subTabId = 'sub-tab-benefits';
         }
 
         const tabContents = document.querySelectorAll('.tab-content');
