@@ -1545,11 +1545,11 @@
     /* --- Pricing Plan Layout --- */
     .pricing-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 420px));
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
         gap: 24px;
         margin: 20px auto 0 auto;
         justify-content: center;
-        max-width: 880px;
+        max-width: 1080px;
     }
     .pricing-card {
         background: #ffffff;
