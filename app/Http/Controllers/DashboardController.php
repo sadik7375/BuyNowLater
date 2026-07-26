@@ -52,11 +52,34 @@ class DashboardController extends Controller
                 'show_reminders'           => true,
                 'show_alerts'              => true,
                 'hold_duration_days'       => 14,
-                'use_selling_plan'         => false,
+                'use_selling_plan'         => true,
             ]
         );
 
-
+        // Auto-initialize Selling Plan Group if missing so native checkout is enabled by default out-of-the-box
+        if (empty($settings->selling_plan_group_id)) {
+            try {
+                $sellingPlanService = app(\App\Services\SellingPlanService::class);
+                $res = $sellingPlanService->createOrUpdatePlanGroup($shop, (int)($settings->deposit_percentage ?? 10), (int)($settings->hold_duration_days ?? 14));
+                if ($res && !empty($res['group_id'])) {
+                    $gqlQuery = 'query getProducts($first: Int!) { products(first: $first) { edges { node { id } } } }';
+                    $response = $shop->api()->graph($gqlQuery, ['first' => 250]);
+                    $productGqlIds = [];
+                    if (isset($response['body']['data']['products']['edges'])) {
+                        foreach ($response['body']['data']['products']['edges'] as $edge) {
+                            if (isset($edge['node']['id'])) {
+                                $productGqlIds[] = $edge['node']['id'];
+                            }
+                        }
+                    }
+                    if (!empty($productGqlIds)) {
+                        $sellingPlanService->attachProducts($shop, $res['group_id'], $productGqlIds);
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error("Auto SellingPlan setup failed: " . $e->getMessage());
+            }
+        }
 
         // ---------- Self-Healing: Sync Status of Active Bookings ----------
         $this->syncBookingsWithShopify($shop);
