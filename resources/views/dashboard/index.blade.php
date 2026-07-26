@@ -1932,6 +1932,17 @@
         </div>
     @endif
 
+    <!-- 
+      DEBUG REVENUE INFO:
+      PHP Revenue Recovered: ${{ $revenueRecovered }}
+      PHP Active Bookings: {{ $activeBookings }}
+      PHP Expiring Soon Count: {{ $expiringSoonCount }}
+      Bookings Details:
+      @foreach($bookings as $b)
+        - ID: {{ $b->id }}, Status: {{ $b->status }}, Payment Status: {{ $b->payment_status }}, Price: {{ $b->product_price }}, Balance: {{ $b->remaining_balance }}
+      @endforeach
+    -->
+
     <!-- Stats Cards Grid -->
     <div class="stats-grid">
         <div class="stat-card">
