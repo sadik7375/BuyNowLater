@@ -2493,13 +2493,6 @@
                                     <s-table-cell>
                                         <div class="actions-cell" style="display: flex; gap: 8px;">
                                             <s-button variant="secondary" onclick="openBookingDetails({{ json_encode($booking) }})">Details</s-button>
-
-                                            @if($booking->status !== 'completed' && $booking->status !== 'expired')
-                                                <form action="{{ route('bookings.send_reminder', array_merge(['id' => $booking->id], request()->query())) }}" method="POST" style="margin:0;">
-                                                    @csrf
-                                                    <button type="submit" class="btn-action-secondary">{{ $booking->invoice_sent ? 'Resend Invoice' : 'Send Invoice' }}</button>
-                                                </form>
-                                            @endif
                                         </div>
                                     </s-table-cell>
                                 </s-table-row>
