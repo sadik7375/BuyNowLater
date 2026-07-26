@@ -2963,31 +2963,27 @@
         <div id="sub-tab-how-it-works" class="sub-tab-content" style="display: {{ $subTab === 'support' ? 'block' : 'none' }};">
             <div class="guide-header">
                 <h2>Support</h2>
-                <p>Understand the core features, options flow, and customer journey of the Buy Later app.</p>
+                <p>Learn how Buy Now Later helps your customers reserve products with a deposit and complete their purchase later.</p>
             </div>
 
             <div class="panel-card" style="margin-bottom: 24px;">
-                <h3>🔄 Storefront Customer Journey</h3>
+                <h3>🔄 How Buy Now Later Works</h3>
                 <div class="guide-timeline">
                     <div class="guide-timeline-item">
-                        <h5>1. Trigger Widget on Product Page</h5>
-                        <p>The "Buy Later" button is placed seamlessly next to or below your standard add-to-cart button using Shopify App Blocks. It dynamically loads configuration settings (colors, fonts, allowed options) directly from the application database.</p>
+                        <h5>1. Customer Clicks "Buy Now Later" on Product Page</h5>
+                        <p>The Buy Now Later button appears on your product pages via a Shopify App Block. Customers see it alongside the regular Add to Cart button. It loads your configured deposit percentage and settings automatically.</p>
                     </div>
                     <div class="guide-timeline-item">
-                        <h5>2. Option Selection Modal</h5>
-                        <p>Clicking the button opens an attractive, clean modal presenting three flexible options to the customer: Book with Deposit, Set a Reminder, or Subscribe to Discount Alerts.</p>
+                        <h5>2. Customer Pays a Deposit to Reserve</h5>
+                        <p>The customer enters their email and proceeds to a Shopify checkout where they pay only the deposit amount (e.g. 10–50% of the product price). The product is reserved exclusively for them in your Shopify admin as a Draft Order.</p>
                     </div>
                     <div class="guide-timeline-item">
-                        <h5>3. Processing the Selection</h5>
-                        <p>
-                            • <strong>Book It Now (Partial Paid)</strong>: The customer provides their email, pays the required deposit (e.g. 10%), and is redirected to checkout. A secure hold is created, and the status updates in your dashboard.<br>
-                            • <strong>Remind Me Later</strong>: The customer picks a custom date and time to receive an automated follow-up email containing a direct link to the product.<br>
-                            • <strong>Alert Me on Discount</strong>: Subscribes the customer to instant price drop alerts for the specific product.
-                        </p>
+                        <h5>3. Merchant Tracks the Reservation</h5>
+                        <p>The reservation appears instantly in your Buy Now Later dashboard with full details — customer name, email, deposit paid, remaining balance, hold expiry date, and status. You can view, manage, and send balance payment links from the dashboard.</p>
                     </div>
                     <div class="guide-timeline-item">
-                        <h5>4. Completing the Purchase</h5>
-                        <p>For deposit holds, customers can revisit their portal to pay the remaining balance, settling the draft order. Reminder and discount emails contain direct purchase links to ensure quick conversion.</p>
+                        <h5>4. Customer Pays the Remaining Balance</h5>
+                        <p>You send the customer a payment link for the remaining balance. Once paid, the reservation is marked as <strong>Completed</strong> and the product is ready to fulfill. If the hold expires before payment, the reservation is marked <strong>Expired</strong>.</p>
                     </div>
                 </div>
             </div>
@@ -2995,18 +2991,18 @@
             <div class="guide-grid-3">
                 <div class="guide-card-premium">
                     <div class="guide-card-badge">💰</div>
-                    <h4>Deposit Holds</h4>
-                    <p>Ensures immediate cash flow by collecting partial payments while reserving high-demand items for customers.</p>
+                    <h4>Deposit-Based Holds</h4>
+                    <p>Collect a partial payment upfront to secure the customer's interest and reserve their product — no full payment needed immediately.</p>
                 </div>
                 <div class="guide-card-premium">
-                    <div class="guide-card-badge">⏰</div>
-                    <h4>Automated Reminders</h4>
-                    <p>Draft orders are linked directly inside scheduler tasks to send professional reminder emails exactly when requested.</p>
+                    <div class="guide-card-badge">📦</div>
+                    <h4>Inventory Reserved</h4>
+                    <p>Each reservation creates a Shopify Draft Order, ensuring the product is held and inventory stays accurate across your store.</p>
                 </div>
                 <div class="guide-card-premium">
-                    <div class="guide-card-badge">🔔</div>
-                    <h4>Price Alert Engine</h4>
-                    <p>Scans price updates across products and variants, immediately emailing subscribers if a discount is published.</p>
+                    <div class="guide-card-badge">✅</div>
+                    <h4>Easy Balance Collection</h4>
+                    <p>Send balance payment links directly from your dashboard. Once the remaining amount is paid, the order is completed and ready to ship.</p>
                 </div>
             </div>
 
@@ -3105,8 +3101,8 @@
         <!-- Sub Tab 3: Price Plan -->
         <div id="sub-tab-pricing" class="sub-tab-content" style="display: {{ $subTab === 'pricing' ? 'block' : 'none' }};">
             <div class="guide-header">
-                <h2>Select Price Plan</h2>
-                <p>Upgrade to unlock unlimited reservations, reminders, and price drop notifications.</p>
+                <h2>Select Your Plan</h2>
+                <p>Start for free or upgrade to unlock unlimited deposit reservations and priority support.</p>
             </div>
 
             <div class="pricing-grid">
@@ -3115,7 +3111,7 @@
                     <div>
                         <div class="pricing-card-header">
                             <h3>Free Plan</h3>
-                            <p>Perfect for testing and getting started with holds & alerts.</p>
+                            <p>Perfect for getting started with deposit-based product reservations.</p>
                         </div>
                         <div class="pricing-price">
                             <span class="amount">$0</span>
@@ -3124,31 +3120,27 @@
                         <ul class="pricing-features">
                             <li>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                Up to 10 combined items (Holds, Reminders, Alerts)
+                                Up to 10 active deposit reservations
                             </li>
                             <li>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                Basic storefront widget integration
+                                Buy Now Later widget on product pages
                             </li>
                             <li>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                Standard Email support
+                                Configurable deposit percentage
                             </li>
                             <li>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                Customer reservations & holds (up to 10)
+                                Shopify Draft Order integration
                             </li>
                             <li>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                Visual Email Template Builder (Drag & Drop)
+                                Reservation dashboard &amp; tracking
                             </li>
                             <li>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                Targeted Products Control
-                            </li>
-                            <li>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                Priority Support (Live Chat & Dev assistance)
+                                Email support
                             </li>
                         </ul>
                     </div>
@@ -3166,7 +3158,7 @@
                     <div>
                         <div class="pricing-card-header">
                             <h3>Premium Plan</h3>
-                            <p>Unlimited reservations, holds, reminders, and drop alerts.</p>
+                            <p>Unlimited deposit reservations with full controls and priority support.</p>
                         </div>
                         <div class="pricing-price">
                             <span class="amount">$5</span>
@@ -3175,39 +3167,39 @@
                         <ul class="pricing-features">
                             <li>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                <strong>Unlimited</strong> reservations & holds
+                                <strong>Unlimited</strong> deposit reservations &amp; holds
                             </li>
                             <li>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                <strong>Unlimited</strong> email reminders
+                                <strong>Custom deposit percentage</strong> per product or store-wide
                             </li>
                             <li>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                <strong>Unlimited</strong> price drop alerts
+                                <strong>Balance payment links</strong> sent directly to customers
                             </li>
                             <li>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                <strong>Visual Email Template Builder</strong> (Drag & Drop)
+                                <strong>Customer Order Status Portal</strong> — track reservation in account
                             </li>
                             <li>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                <strong>Targeted Products Control</strong> (Specific items/collections)
+                                <strong>Automated Draft Order Sync</strong> with Shopify admin
                             </li>
                             <li>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                <strong>Customer Self-Serve Portal</strong> (App Proxy integration)
+                                <strong>Fulfillment Hold</strong> — auto-holds order until balance is paid
                             </li>
                             <li>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                <strong>Automated Draft Order Sync</strong> (Self-healing order tracker)
+                                <strong>Configurable hold expiry</strong> — set how long reservations last
                             </li>
                             <li>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                <strong>Theme App Extension</strong> (Zero theme code edits setup)
+                                <strong>Theme App Extension</strong> — no code edits required
                             </li>
                             <li>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                <strong>Priority Support</strong> (24/7 Email & Crisp Live Chat)
+                                <strong>Priority Support</strong> — 24/7 Email &amp; Live Chat
                             </li>
                         </ul>
                     </div>
