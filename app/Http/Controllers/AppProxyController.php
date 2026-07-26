@@ -629,9 +629,9 @@ class AppProxyController extends Controller
 
         // Check Product Targeting
         $productTargetingType = $settings ? ($settings->product_targeting_type ?? 'all') : 'all';
-        $isWidgetEnabled = !$isLimitReached;
+        $isWidgetEnabled = true;
 
-        if ($isWidgetEnabled && $productTargetingType === 'specific') {
+        if ($productTargetingType === 'specific') {
             $targetedProductIdsStr = $settings ? $settings->targeted_product_ids : '';
             $targetedProductIds = array_filter(explode(',', $targetedProductIdsStr));
             $currentProductId = $request->query('product_id');

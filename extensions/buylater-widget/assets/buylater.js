@@ -142,6 +142,11 @@ function initBuyLaterWidget() {
           triggerBtn.style.display = 'inline-flex';
         }
       }
+      if (data.limit_reached) {
+        window.buylaterLimitReached = true;
+      } else {
+        window.buylaterLimitReached = false;
+      }
       if (data.deposit_percentage) {
         depositPercentage = parseInt(data.deposit_percentage, 10);
         updateDepositDisplay();
@@ -342,6 +347,10 @@ function initBuyLaterWidget() {
     selectedOption = 'book';
     continueBtn.disabled = true;
     continueBtn.classList.remove('enabled');
+
+    if (window.buylaterLimitReached) {
+      showMessage('Notice: This store has reached its deposit reservation limit. Reservations are temporarily unavailable.', 'error');
+    }
   }
 
   // Option Card Selection
