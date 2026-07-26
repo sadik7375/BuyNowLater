@@ -2150,7 +2150,7 @@
         <div class="dashboard-main-grid">
             <!-- Downpay Orders Chart -->
             <div class="panel-card" style="display: flex; flex-direction: column;">
-                <h3 style="text-align: center; margin-bottom: 12px; font-weight: 600; font-size: 15px; color: var(--text-main);">Number of Downpay orders</h3>
+                <h3 style="text-align: center; margin-bottom: 12px; font-weight: 600; font-size: 15px; color: var(--text-main);">Number of Buy Now Later orders</h3>
                 <div style="position: relative; height: 260px; width: 100%; flex: 1;">
                     <canvas id="downpayBarChart"></canvas>
                 </div>
@@ -4276,7 +4276,7 @@ function filterSubscribers() {
             data: {
                 labels: {!! json_encode($downpayChartLabels) !!},
                 datasets: [{
-                    label: 'Downpay Orders',
+                    label: 'Buy Now Later Orders',
                     data: {!! json_encode($downpayChartData) !!},
                     backgroundColor: '#108043',
                     borderWidth: 0,
