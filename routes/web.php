@@ -119,6 +119,35 @@ Route::get('/reminder/cancel/{token}', [AppProxyController::class, 'cancelRemind
 Route::get('/reminder/reschedule/{token}', [AppProxyController::class, 'showRescheduleForm'])->name('reminders.reschedule.form.alt');
 Route::post('/reminder/reschedule/{token}', [AppProxyController::class, 'rescheduleReminder'])->name('reminders.reschedule.alt');
 
+Route::post('/webhook/app-uninstalled', function (Illuminate\Http\Request $request) {
+    try {
+        $shopDomain = $request->header('X-Shopify-Shop-Domain') ?: $request->input('domain') ?: $request->input('shop') ?: null;
+        if (!$shopDomain) {
+            return response()->json(['ok' => false, 'message' => 'Missing shop domain'], 400);
+        }
+
+        $shop = \App\Models\User::where('name', $shopDomain)->first();
+        if (!$shop) {
+            return response()->json(['ok' => true, 'message' => 'Shop not found locally']);
+        }
+
+        $shop->shopify_offline_refresh_token = null;
+        $shop->shopify_offline_access_token_expires_at = null;
+        $shop->shopify_offline_refresh_token_expires_at = null;
+        $shop->password = '';
+        $shop->plan_id = null;
+        $shop->shopify_freemium = 0;
+        $shop->save();
+
+        \Illuminate\Support\Facades\DB::table('charges')->where('user_id', $shop->id)->update(['status' => 'CANCELLED', 'deleted_at' => now()]);
+
+        return response()->json(['ok' => true, 'message' => 'Cleanup completed for ' . $shopDomain]);
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::error('Direct uninstall cleanup failed: ' . $e->getMessage());
+        return response()->json(['ok' => false, 'message' => $e->getMessage()], 500);
+    }
+});
+
 Route::get('/status-settings-db', function() {
     try {
         $settings = \App\Models\Setting::all()->map(function($s) {
