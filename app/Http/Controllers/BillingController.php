@@ -203,11 +203,20 @@ class BillingController extends Controller
                 ], 500);
             }
 
-            $apiKey = Util::getShopifyConfig('api_key', ShopDomain::fromNative($shopDomainStr));
-            Log::info('Redirecting to billing confirmation:', ['url' => $url]);
+            // Format URL for modern Unified Admin (admin.shopify.com) if shop domain URL was returned
+            $shopHandle = explode('.', $shopDomainStr)[0];
+            $unifiedUrl = $url;
+            if (str_contains($url, "{$shopDomainStr}/admin/charges/")) {
+                $unifiedUrl = str_replace("{$shopDomainStr}/admin/charges/", "admin.shopify.com/store/{$shopHandle}/charges/", $url);
+            } elseif (str_contains($url, 'https://') && !str_contains($url, 'admin.shopify.com') && str_contains($url, '/admin/charges/')) {
+                $unifiedUrl = preg_replace('/https:\/\/[^\/]+\/admin\/charges\//', "https://admin.shopify.com/store/{$shopHandle}/charges/", $url);
+            }
 
-            // Instant transparent redirect — no visible intermediate page
-            $safeUrl = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+            Log::info('Redirecting to billing confirmation:', ['url' => $url, 'unifiedUrl' => $unifiedUrl]);
+
+            $safeUrl = htmlspecialchars($unifiedUrl, ENT_QUOTES, 'UTF-8');
+            $safeFallbackUrl = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+
             $html = <<<HTML
 <!DOCTYPE html>
 <html>
@@ -218,20 +227,25 @@ class BillingController extends Controller
     <script type="text/javascript">
         (function() {
             var targetUrl = "{$safeUrl}";
-            if (window.top === window.self) {
-                window.top.location.href = targetUrl;
-            } else {
+            var fallbackUrl = "{$safeFallbackUrl}";
+            
+            function doRedirect() {
                 try {
-                    window.top.location.href = targetUrl;
+                    if (window.top && window.top !== window.self) {
+                        window.top.location.href = targetUrl;
+                    } else {
+                        window.location.href = targetUrl;
+                    }
                 } catch (e) {
-                    window.open(targetUrl, '_top');
+                    window.location.href = fallbackUrl;
                 }
             }
+            doRedirect();
         })();
     </script>
 </head>
 <body style="margin:0;background:#fff;">
-    <p style="padding:20px;font-family:sans-serif;">Redirecting to Shopify Billing... <a href="{$safeUrl}" target="_top">Click here if not redirected</a>.</p>
+    <p style="padding:20px;font-family:sans-serif;">Redirecting to Shopify Subscription Approval... <a href="{$safeUrl}" target="_top">Click here if not redirected</a>.</p>
 </body>
 </html>
 HTML;
