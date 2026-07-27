@@ -3039,7 +3039,7 @@
                         @if($hasPlan)
                             <s-button disabled="true" style="margin: 0; width: 100%;">Current Plan</s-button>
                         @else
-                            <a href="{{ route('billing', array_merge(['plan' => 1, 'shop' => $shop->name], request()->query())) }}" target="_top" class="Polaris-Button Polaris-Button--primary" style="display: block; text-align: center; text-decoration: none; padding: 12px; background: #008060; color: #fff; border-radius: 8px; font-weight: 600; width: 100%; box-sizing: border-box;">Upgrade to Premium ($5/mo)</a>
+                            <a href="{{ route('billing', array_merge(['plan' => 1, 'shop' => $shop->name], request()->query())) }}" class="Polaris-Button Polaris-Button--primary" style="display: block; text-align: center; text-decoration: none; padding: 12px; background: #008060; color: #fff; border-radius: 8px; font-weight: 600; width: 100%; box-sizing: border-box;">Upgrade to Premium ($5/mo)</a>
                         @endif
                     </div>
                 </div>
