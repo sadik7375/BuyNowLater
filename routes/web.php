@@ -662,6 +662,13 @@ Route::group(['prefix' => 'deploy'], function() {
         }
     });
 
+    Route::get('/reauth', function() {
+        $shopName = request('shop') ?: 'canny-apps.myshopify.com';
+        $shopHandle = explode('.', $shopName)[0];
+        $host = request('host') ?: base64_encode("admin.shopify.com/store/" . $shopHandle);
+        return redirect()->route('authenticate', ['shop' => $shopName, 'host' => $host]);
+    });
+
     Route::get('/test-billing-debug', function() {
         try {
             $shopName = request('shop') ?: 'canny-apps.myshopify.com';
