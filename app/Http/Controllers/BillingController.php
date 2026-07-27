@@ -181,9 +181,19 @@ class BillingController extends Controller
                     $shop->save();
 
                     try {
+                        $targetUrl = '/billing/' . $planId . '?' . http_build_query([
+                            'plan' => $planId,
+                            'shop' => $shopDomainStr,
+                            'host' => $host,
+                        ]);
+
+                        $redirectUriWithTarget = route('authenticate', ['target' => $targetUrl]);
                         $session = new \Gnikyt\BasicShopifyAPI\Session($shopDomainStr, '');
                         $apiHelper = resolve(\Osiset\ShopifyApp\Contracts\ApiHelper::class)->make($session);
-                        $authUrl = $apiHelper->buildAuthUrl(\Osiset\ShopifyApp\Objects\Enums\AuthMode::OFFLINE(), Util::getShopifyConfig('api_scopes', $shop));
+                        $rawAuthUrl = $apiHelper->buildAuthUrl(\Osiset\ShopifyApp\Objects\Enums\AuthMode::OFFLINE(), Util::getShopifyConfig('api_scopes', $shop));
+
+                        // Override redirect_uri in AuthUrl so OAuth returns straight to billing
+                        $authUrl = preg_replace('/([?&]redirect_uri=)[^&]+/', '$1' . urlencode($redirectUriWithTarget), $rawAuthUrl);
 
                         return response()->view('shopify-app::auth.fullpage_redirect', [
                             'apiKey'     => Util::getShopifyConfig('api_key', ShopDomain::fromNative($shopDomainStr)),
