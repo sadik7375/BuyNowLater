@@ -68,6 +68,19 @@ class BillingController extends Controller
             }
 
             $shop   = $shopQuery->getByDomain(ShopDomain::fromNative($shopDomainStr));
+            if (!$shop) {
+                $shop = User::withTrashed()->where('name', $shopDomainStr)->latest('id')->first();
+                if ($shop && $shop->trashed()) {
+                    $shop->restore();
+                }
+            }
+            if (!$shop) {
+                $shop = new User();
+                $shop->name = $shopDomainStr;
+                $shop->email = $shopDomainStr . '@myshopify.com';
+                $shop->password = '';
+                $shop->save();
+            }
             $planId = $plan ?: 1;
 
             // Resolve host
@@ -162,7 +175,7 @@ class BillingController extends Controller
                 } else {
                     $lastError .= 'GraphQL Errors: ' . json_encode($resArray['errors'] ?? $resArray['data']['appSubscriptionCreate']['userErrors'] ?? $resArray);
                 }
-            } catch (\Exception $gqlEx) {
+            } catch (\Throwable $gqlEx) {
                 Log::error('BillingController GraphQL exception: ' . $gqlEx->getMessage());
                 $lastError .= 'GraphQL Exception: ' . $gqlEx->getMessage();
             }
