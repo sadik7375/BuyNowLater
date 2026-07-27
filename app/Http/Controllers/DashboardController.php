@@ -81,7 +81,8 @@ class DashboardController extends Controller
             }
         }
 
-        // ---------- Self-Healing: Sync Status of Active Bookings ----------
+        // ---------- Self-Healing: Verify Subscription & Sync Status of Active Bookings ----------
+        $this->verifySubscriptionWithShopify($shop);
         $this->syncBookingsWithShopify($shop);
 
         // ---------- Date Filter Handling ----------
@@ -1183,6 +1184,51 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error("sendShopifyDraftOrderInvoice exception: " . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Self-Healing: Verify active subscription with Shopify GraphQL API.
+     * If Shopify shows no active recurring subscription for this app, reset shop plan_id to null.
+     */
+    private function verifySubscriptionWithShopify($shop)
+    {
+        if (app()->environment() === 'testing' || !$shop || !$shop->plan_id) {
+            return;
+        }
+
+        try {
+            $gql = 'query {
+                currentAppInstallation {
+                    activeSubscriptions {
+                        id
+                        name
+                        status
+                    }
+                }
+            }';
+
+            $response = $shop->api()->graph($gql);
+            $activeSubs = $response['body']['data']['currentAppInstallation']['activeSubscriptions'] ?? [];
+
+            $hasActiveSub = false;
+            foreach ($activeSubs as $sub) {
+                if (isset($sub['status']) && strtoupper($sub['status']) === 'ACTIVE') {
+                    $hasActiveSub = true;
+                    break;
+                }
+            }
+
+            if (!$hasActiveSub) {
+                \Illuminate\Support\Facades\Log::info("verifySubscriptionWithShopify: No active Shopify subscription found for {$shop->name}. Resetting to Free Plan.");
+                $shop->plan_id = null;
+                $shop->shopify_freemium = 0;
+                $shop->save();
+
+                \Illuminate\Support\Facades\DB::table('charges')->where('user_id', $shop->id)->update(['status' => 'CANCELLED']);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning("verifySubscriptionWithShopify check error: " . $e->getMessage());
         }
     }
 
