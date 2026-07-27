@@ -111,11 +111,14 @@ class BillingController extends Controller
                 
                 $apiHelper = $shop->apiHelper()->make();
                 $res = $apiHelper->createChargeGraphQL($details);
+                $resArr = json_decode(json_encode($res), true);
                 
-                if (isset($res['confirmationUrl'])) {
-                    $url = (string) $res['confirmationUrl'];
-                } elseif (isset($res->confirmationUrl)) {
-                    $url = (string) $res->confirmationUrl;
+                if (!empty($resArr['confirmationUrl'])) {
+                    $url = (string) $resArr['confirmationUrl'];
+                } elseif (!empty($resArr['data']['appSubscriptionCreate']['confirmationUrl'])) {
+                    $url = (string) $resArr['data']['appSubscriptionCreate']['confirmationUrl'];
+                } else {
+                    $lastError .= 'Method 1 Response: ' . json_encode($resArr);
                 }
             } catch (\Exception $ex1) {
                 Log::warning('BillingController: Method 1 createChargeGraphQL failed: ' . $ex1->getMessage());
