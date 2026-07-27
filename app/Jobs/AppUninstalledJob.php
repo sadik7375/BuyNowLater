@@ -34,6 +34,8 @@ class AppUninstalledJob extends \Osiset\ShopifyApp\Messaging\Jobs\AppUninstalled
                 $shop->shopify_freemium = 0;
                 $shop->save();
 
+                \Illuminate\Support\Facades\DB::table('charges')->where('user_id', $shop->id)->update(['status' => 'CANCELLED', 'deleted_at' => now()]);
+
                 Booking::where('shop_id', $shop->id)->delete();
                 Reminder::where('shop_id', $shop->id)->delete();
                 Subscriber::where('shop_id', $shop->id)->delete();
