@@ -33,55 +33,30 @@ class DashboardController extends Controller
             }
         }
 
-        // Synchronize plan_id with live Shopify active subscriptions (Single Source of Truth)
+        // Synchronize plan_id with active charge status in local database
         if ($shop) {
-            try {
-                $gql = '{
-                    currentAppInstallation {
-                        activeSubscriptions {
-                            id
-                            name
-                            status
-                        }
-                    }
-                }';
+            $activeCharge = \Illuminate\Support\Facades\DB::table('charges')
+                ->where('user_id', $shop->id)
+                ->where('status', 'ACTIVE')
+                ->whereNull('deleted_at')
+                ->first();
 
-                $response = $shop->api()->graph($gql);
-                $rawBody = $response['body'] ?? $response;
-                if (is_object($rawBody) && method_exists($rawBody, 'getContainer')) {
-                    $rawBody = $rawBody->getContainer();
-                } elseif (is_object($rawBody)) {
-                    $rawBody = json_decode(json_encode($rawBody), true);
+            if (!$activeCharge) {
+                if ($shop->plan_id !== null || $shop->shopify_freemium != 0) {
+                    \Illuminate\Support\Facades\Log::info("DashboardController: No ACTIVE charge found for {$shop->name}. Resetting plan_id to free plan.");
+                    $shop->plan_id = null;
+                    $shop->shopify_freemium = 0;
+                    $shop->save();
                 }
-
-                $activeSubs = $rawBody['data']['currentAppInstallation']['activeSubscriptions'] ?? [];
-
-                $hasActiveSub = false;
-                foreach ($activeSubs as $sub) {
-                    if (isset($sub['status']) && strtoupper($sub['status']) === 'ACTIVE') {
-                        $hasActiveSub = true;
-                        break;
-                    }
+            } else {
+                if ($shop->plan_id === null) {
+                    $shop->plan_id = $activeCharge->plan_id ?: 1;
+                    $shop->save();
                 }
+            }
 
-                if (!$hasActiveSub) {
-                    if ($shop->plan_id !== null || $shop->shopify_freemium != 0) {
-                        \Illuminate\Support\Facades\Log::info("DashboardController: No active Shopify subscription found for {$shop->name}. Resetting plan_id to free plan.");
-                        $shop->plan_id = null;
-                        $shop->shopify_freemium = 0;
-                        $shop->save();
-                    }
-                    \Illuminate\Support\Facades\DB::table('charges')
-                        ->where('user_id', $shop->id)
-                        ->update(['status' => 'CANCELLED', 'deleted_at' => now()]);
-                } else {
-                    if ($shop->plan_id === null) {
-                        $shop->plan_id = 1;
-                        $shop->save();
-                    }
-                }
-            } catch (\Throwable $ex) {
-                \Illuminate\Support\Facades\Log::warning("DashboardController live sub sync error: " . $ex->getMessage());
+            if ($shop->plan_id) {
+                $this->verifySubscriptionWithShopify($shop);
             }
         }
 
