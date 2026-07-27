@@ -80,10 +80,11 @@ class CustomInstallShop extends BaseInstallShop
                 : $apiHelper->getAccessData($code, $grantMode);
             $this->persistShopifyOAuthTokens($shop, $data, $grantMode);
 
-            // On fresh install / reinstall, Shopify cancels previous subscriptions, so reset plan to free
+            // On fresh install / reinstall, Shopify cancels previous subscriptions, so reset plan to free and cancel old charges
             $shop->plan_id = null;
             $shop->shopify_freemium = 0;
             $shop->save();
+            \Illuminate\Support\Facades\DB::table('charges')->where('user_id', $shop->id)->update(['status' => 'CANCELLED', 'deleted_at' => now()]);
 
             try {
                 $themeSupportLevel = call_user_func($this->verifyThemeSupport, $shop->getId());

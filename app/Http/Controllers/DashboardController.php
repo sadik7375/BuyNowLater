@@ -33,9 +33,27 @@ class DashboardController extends Controller
             }
         }
 
-        // Verify with Shopify GraphQL if the store actually has an active subscription
-        if ($shop && $shop->plan_id) {
-            $this->verifySubscriptionWithShopify($shop);
+        // Synchronize plan_id with active charge status in database & Shopify
+        if ($shop) {
+            $activeCharge = \Illuminate\Support\Facades\DB::table('charges')
+                ->where('user_id', $shop->id)
+                ->where('status', 'ACTIVE')
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (!$activeCharge && $shop->plan_id) {
+                \Illuminate\Support\Facades\Log::info("DashboardController: No ACTIVE charge found for {$shop->name}. Resetting plan_id to free plan.");
+                $shop->plan_id = null;
+                $shop->shopify_freemium = 0;
+                $shop->save();
+            } elseif ($activeCharge && !$shop->plan_id) {
+                $shop->plan_id = $activeCharge->plan_id ?: 1;
+                $shop->save();
+            }
+
+            if ($shop->plan_id) {
+                $this->verifySubscriptionWithShopify($shop);
+            }
         }
 
         if ($request->query('clear_all_bookings') === 'yes') {

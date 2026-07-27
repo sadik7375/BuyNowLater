@@ -686,6 +686,20 @@ Route::group(['prefix' => 'deploy'], function() {
         } catch (\Exception $e) {
             return 'Wipe token error: ' . $e->getMessage();
         }
+    Route::get('/reset-plan', function() {
+        try {
+            $shopName = request('shop') ?: 'canny-apps.myshopify.com';
+            $shop = \App\Models\User::where('name', $shopName)->first();
+            if ($shop) {
+                $shop->plan_id = null;
+                $shop->shopify_freemium = 0;
+                $shop->save();
+                \Illuminate\Support\Facades\DB::table('charges')->where('user_id', $shop->id)->update(['status' => 'CANCELLED', 'deleted_at' => now()]);
+            }
+            return 'Plan successfully reset to Free Plan for ' . $shopName;
+        } catch (\Exception $e) {
+            return 'Reset plan error: ' . $e->getMessage();
+        }
     });
 
     Route::get('/test-billing-debug', function() {
