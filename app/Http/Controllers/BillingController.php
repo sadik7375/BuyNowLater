@@ -192,7 +192,7 @@ class BillingController extends Controller
             if (empty($url)) {
                 Log::error('BillingController: No URL could be generated. Details: ' . $lastError);
                 
-                if (str_contains($lastError, 'invalid_request') || str_contains($lastError, 'refreshOfflineAccessToken') || str_contains($lastError, 'oauthAccessTokenPost') || str_contains($lastError, 'domain missing') || str_contains($lastError, 'Method 1 Error')) {
+                if (str_contains($lastError, 'invalid_request') || str_contains($lastError, 'refreshOfflineAccessToken') || str_contains($lastError, 'oauthAccessTokenPost') || str_contains($lastError, 'domain missing')) {
                     Log::warning('BillingController: Token/API error detected. Wiping token and forcing OAuth re-auth for: ' . $shopDomainStr);
                     
                     $shop->shopify_offline_refresh_token = null;
@@ -225,17 +225,30 @@ class BillingController extends Controller
             }
 
             $apiKey = Util::getShopifyConfig('api_key', ShopDomain::fromNative($shopDomainStr));
-            Log::info('Redirecting to billing confirmation:', ['url' => $url]);
+            
+            // Format URL for modern Unified Admin (admin.shopify.com)
+            $shopHandle = explode('.', $shopDomainStr)[0];
+            $unifiedUrl = $url;
+            if (str_contains($url, "{$shopDomainStr}/admin/charges/")) {
+                $unifiedUrl = str_replace("{$shopDomainStr}/admin/charges/", "admin.shopify.com/store/{$shopHandle}/charges/", $url);
+            } elseif (str_contains($url, 'https://') && !str_contains($url, 'admin.shopify.com') && str_contains($url, '/admin/charges/')) {
+                $unifiedUrl = preg_replace('/https:\/\/[^\/]+\/admin\/charges\//', "https://admin.shopify.com/store/{$shopHandle}/charges/", $url);
+            }
+
+            Log::info('Redirecting to billing confirmation:', ['url' => $url, 'unifiedUrl' => $unifiedUrl]);
 
             if ($request->wantsJson() || $request->query('json')) {
                 return response()->json([
                     'success' => true,
-                    'confirmationUrl' => $url
+                    'confirmationUrl' => $unifiedUrl,
+                    'rawUrl' => $url
                 ]);
             }
 
-            // Instant transparent redirect — App Bridge REMOTE action with fallback
-            $safeUrl = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+            // Instant transparent redirect — top-level navigation to Unified Admin
+            $safeUnifiedUrl = htmlspecialchars($unifiedUrl, ENT_QUOTES, 'UTF-8');
+            $safeRawUrl = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+
             $html = <<<HTML
 <!DOCTYPE html>
 <html>
@@ -245,38 +258,25 @@ class BillingController extends Controller
     <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
 </head>
 <body style="margin:0;background:#fff;display:flex;justify-content:center;align-items:center;height:100vh;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">
-    <p>Redirecting to Shopify Subscription Approval... <a id="br" href="{$safeUrl}" target="_top">Click here if not redirected automatically</a></p>
+    <p style="color:#5c5f62;">Redirecting to Shopify Subscription Approval... <a id="br" href="{$safeUnifiedUrl}" target="_top">Click here if not redirected automatically</a></p>
     <script type="text/javascript">
         (function() {
-            var url = "{$safeUrl}";
-            var host = "{$host}";
-            var apiKey = "{$apiKey}";
+            var targetUrl = "{$safeUnifiedUrl}";
+            var rawUrl = "{$safeRawUrl}";
             
             try {
-                var AppBridge = window['app-bridge'];
-                if (AppBridge && (AppBridge.default || AppBridge.createApp)) {
-                    var createApp = AppBridge.default || AppBridge.createApp;
-                    var actions = AppBridge.actions || (window['app-bridge-utils'] ? window['app-bridge-utils'] : null);
-                    var app = createApp({ apiKey: apiKey, host: host });
-                    if (actions && actions.Redirect) {
-                        var redirect = actions.Redirect.create(app);
-                        redirect.dispatch(actions.Redirect.Action.REMOTE, url);
-                        return;
-                    }
-                }
-            } catch(err) {
-                console.warn('App Bridge redirect failed:', err);
-            }
-
-            try {
                 if (window.top && window.top !== window.self) {
-                    window.top.location.href = url;
+                    window.top.location.href = targetUrl;
                 } else {
-                    window.location.href = url;
+                    window.location.href = targetUrl;
                 }
             } catch(e) {
                 var link = document.getElementById('br');
-                if (link) link.click();
+                if (link) {
+                    link.click();
+                } else {
+                    window.location.href = rawUrl;
+                }
             }
         })();
     </script>
