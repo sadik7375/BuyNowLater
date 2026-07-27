@@ -91,103 +91,106 @@ class BillingController extends Controller
             ]);
 
             $url = null;
+            $lastError = '';
 
-            // --- GraphQL appSubscriptionCreate ---
+            $planModel = PlanModel::firstOrCreate(
+                ['id' => $planId],
+                [
+                    'type' => 'RECURRING',
+                    'name' => 'Premium Plan',
+                    'price' => 5.00,
+                    'interval' => 'EVERY_30_DAYS',
+                    'test' => true,
+                ]
+            );
+
+            // --- Method 1: Package Built-in createChargeGraphQL ---
             try {
-                $planModel = PlanModel::firstOrCreate(
-                    ['id' => $planId],
-                    [
-                        'type' => 'RECURRING',
-                        'name' => 'Premium Plan',
-                        'price' => 5.00,
-                        'interval' => 'EVERY_30_DAYS',
-                        'test' => true,
-                    ]
-                );
-                $returnUrl = route('billing.process', [
-                    'plan' => $planId,
-                    'shop' => $shopDomainStr,
-                    'host' => $host,
-                ]);
-
-                $gqlQuery = '
-                mutation appSubscriptionCreate(
-                    $name: String!,
-                    $returnUrl: URL!,
-                    $trialDays: Int,
-                    $test: Boolean,
-                    $lineItems: [AppSubscriptionLineItemInput!]!
-                ) {
-                    appSubscriptionCreate(
-                        name: $name,
-                        returnUrl: $returnUrl,
-                        trialDays: $trialDays,
-                        test: $test,
-                        lineItems: $lineItems
-                    ) {
-                        appSubscription { id }
-                        confirmationUrl
-                        userErrors { field message }
-                    }
-                }';
-
-                $gqlVariables = [
-                    'name'      => $planModel->name,
-                    'returnUrl' => $returnUrl,
-                    'test'      => true,
-                    'lineItems' => [[
-                        'plan' => [
-                            'appRecurringPricingDetails' => [
-                                'price'    => [
-                                    'amount'       => (float) $planModel->price,
-                                    'currencyCode' => 'USD',
-                                ],
-                                'interval' => 'EVERY_30_DAYS',
-                            ],
-                        ],
-                    ]],
-                ];
-
-                if (!empty($planModel->trial_days) && $planModel->trial_days > 0) {
-                    $gqlVariables['trialDays'] = (int) $planModel->trial_days;
+                $chargeHelper = app(\Osiset\ShopifyApp\Services\ChargeHelper::class);
+                $details = $chargeHelper->details($planModel, $shop, $host);
+                
+                $apiHelper = $shop->apiHelper()->make();
+                $res = $apiHelper->createChargeGraphQL($details);
+                
+                if (isset($res['confirmationUrl'])) {
+                    $url = (string) $res['confirmationUrl'];
+                } elseif (isset($res->confirmationUrl)) {
+                    $url = (string) $res->confirmationUrl;
                 }
-
-                $gqlResponse = $shop->api()->graph($gqlQuery, $gqlVariables);
-                $subData = $gqlResponse['body']['data']['appSubscriptionCreate'] ?? [];
-
-                if (!empty($subData['confirmationUrl'])) {
-                    $url = $subData['confirmationUrl'];
-                    Log::info('Got confirmationUrl:', ['url' => $url]);
-                } else {
-                    $errors = $subData['userErrors'] ?? [];
-                    $lastError = 'GraphQL UserErrors: ' . json_encode($errors);
-                    Log::error('GraphQL userErrors:', json_decode(json_encode($errors), true));
-                }
-            } catch (\Exception $gqlEx) {
-                $lastError = 'GraphQL Exception: ' . $gqlEx->getMessage();
-                Log::error('GraphQL appSubscriptionCreate exception: ' . $gqlEx->getMessage());
+            } catch (\Exception $ex1) {
+                Log::warning('BillingController: Method 1 createChargeGraphQL failed: ' . $ex1->getMessage());
+                $lastError .= 'Method 1 Error: ' . $ex1->getMessage();
             }
 
-            // --- Fallback to package helper ---
+            // --- Method 2: Direct GraphQL Fallback ---
             if (empty($url)) {
                 try {
-                    $url = $getPlanUrl(
-                        $shop->getId(),
-                        NullablePlanId::fromNative($planId),
-                        $host
-                    );
-                    Log::info('Got URL from GetPlanUrl fallback:', ['url' => $url]);
-                } catch (\Exception $ex) {
-                    $lastError .= ' | Fallback Exception: ' . $ex->getMessage();
-                    Log::error('GetPlanUrl fallback failed: ' . $ex->getMessage());
+                    $returnUrl = route('billing.process', [
+                        'plan' => $planId,
+                        'shop' => $shopDomainStr,
+                        'host' => $host,
+                    ]);
+
+                    $gqlQuery = '
+                    mutation appSubscriptionCreate(
+                        $name: String!,
+                        $returnUrl: URL!,
+                        $trialDays: Int,
+                        $test: Boolean,
+                        $lineItems: [AppSubscriptionLineItemInput!]!
+                    ) {
+                        appSubscriptionCreate(
+                            name: $name,
+                            returnUrl: $returnUrl,
+                            trialDays: $trialDays,
+                            test: $test,
+                            lineItems: $lineItems
+                        ) {
+                            appSubscription { id }
+                            confirmationUrl
+                            userErrors { field message }
+                        }
+                    }';
+
+                    $gqlVariables = [
+                        'name'      => $planModel->name,
+                        'returnUrl' => $returnUrl,
+                        'test'      => true,
+                        'lineItems' => [[
+                            'plan' => [
+                                'appRecurringPricingDetails' => [
+                                    'price'    => [
+                                        'amount'       => (float) $planModel->price,
+                                        'currencyCode' => 'USD',
+                                    ],
+                                    'interval' => 'EVERY_30_DAYS',
+                                ],
+                            ],
+                        ]],
+                    ];
+
+                    if (!empty($planModel->trial_days) && $planModel->trial_days > 0) {
+                        $gqlVariables['trialDays'] = (int) $planModel->trial_days;
+                    }
+
+                    $gqlResponse = $shop->api()->graph($gqlQuery, $gqlVariables);
+                    $resArray = json_decode(json_encode($gqlResponse['body'] ?? $gqlResponse), true);
+
+                    if (!empty($resArray['data']['appSubscriptionCreate']['confirmationUrl'])) {
+                        $url = $resArray['data']['appSubscriptionCreate']['confirmationUrl'];
+                    } else {
+                        $lastError .= ' | Method 2 Errors: ' . json_encode($resArray['errors'] ?? $resArray['data']['appSubscriptionCreate']['userErrors'] ?? $resArray);
+                    }
+                } catch (\Exception $gqlEx) {
+                    $lastError .= ' | Method 2 Exception: ' . $gqlEx->getMessage();
                 }
             }
 
             if (empty($url)) {
-                Log::error('BillingController: No URL could be generated. Details: ' . ($lastError ?? 'Unknown'));
+                Log::error('BillingController: No URL could be generated. Details: ' . $lastError);
                 return response()->json([
                     'message' => 'Could not generate billing URL.',
-                    'details' => $lastError ?? 'Unknown error'
+                    'details' => $lastError
                 ], 500);
             }
 
