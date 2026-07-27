@@ -662,6 +662,84 @@ Route::group(['prefix' => 'deploy'], function() {
         }
     });
 
+    Route::get('/test-billing-debug', function() {
+        try {
+            $shopName = request('shop') ?: 'canny-apps.myshopify.com';
+            $shop = \App\Models\User::where('name', $shopName)->first();
+            if (!$shop) {
+                return response()->json(['error' => 'Shop not found']);
+            }
+
+            $planModel = \Osiset\ShopifyApp\Storage\Models\Plan::firstOrCreate(
+                ['id' => 1],
+                [
+                    'type' => 'RECURRING',
+                    'name' => 'Premium Plan',
+                    'price' => 5.00,
+                    'interval' => 'EVERY_30_DAYS',
+                    'test' => true,
+                ]
+            );
+
+            $host = base64_encode("admin.shopify.com/store/" . explode('.', $shop->name)[0]);
+            $returnUrl = route('billing.process', [
+                'plan' => 1,
+                'shop' => $shop->name,
+                'host' => $host,
+            ]);
+
+            $gqlQuery = '
+            mutation appSubscriptionCreate(
+                $name: String!,
+                $returnUrl: URL!,
+                $trialDays: Int,
+                $test: Boolean,
+                $lineItems: [AppSubscriptionLineItemInput!]!
+            ) {
+                appSubscriptionCreate(
+                    name: $name,
+                    returnUrl: $returnUrl,
+                    trialDays: $trialDays,
+                    test: $test,
+                    lineItems: $lineItems
+                ) {
+                    appSubscription { id }
+                    confirmationUrl
+                    userErrors { field message }
+                }
+            }';
+
+            $gqlVariables = [
+                'name'      => $planModel->name,
+                'returnUrl' => $returnUrl,
+                'test'      => true,
+                'lineItems' => [[
+                    'plan' => [
+                        'appRecurringPricingDetails' => [
+                            'price'    => [
+                                'amount'       => "5.00",
+                                'currencyCode' => 'USD',
+                            ],
+                            'interval' => 'EVERY_30_DAYS',
+                        ],
+                    ],
+                ]],
+            ];
+
+            $gqlResponse = $shop->api()->graph($gqlQuery, $gqlVariables);
+            return response()->json([
+                'shop' => $shop->name,
+                'returnUrl' => $returnUrl,
+                'gqlResponse' => json_decode(json_encode($gqlResponse), true),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
+    });
+
     Route::get('/inspect-order', function() {
         try {
             $shopName = request('shop') ?: 'canny-apps.myshopify.com';
