@@ -82,8 +82,8 @@ class CustomInstallShop extends BaseInstallShop
 
             // On fresh install / reinstall, reset plan to free and cancel all previous charges across all DB rows for this shop
             $domainStr = $shopDomain->toNative();
-            $allUserIds = User::withTrashed()->where('name', $domainStr)->pluck('id');
-            User::withTrashed()->where('name', $domainStr)->update(['plan_id' => null, 'shopify_freemium' => 0]);
+            $allUserIds = \App\Models\User::withTrashed()->where('name', $domainStr)->pluck('id');
+            \App\Models\User::withTrashed()->where('name', $domainStr)->update(['plan_id' => null, 'shopify_freemium' => 0]);
             \Illuminate\Support\Facades\DB::table('charges')->whereIn('user_id', $allUserIds)->update(['status' => 'CANCELLED', 'deleted_at' => now()]);
             $shop->plan_id = null;
             $shop->shopify_freemium = 0;
