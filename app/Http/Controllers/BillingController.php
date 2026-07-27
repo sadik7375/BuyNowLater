@@ -234,7 +234,7 @@ class BillingController extends Controller
                 ]);
             }
 
-            // Instant transparent redirect — no visible intermediate page
+            // Instant transparent redirect — App Bridge REMOTE action with fallback
             $safeUrl = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
             $html = <<<HTML
 <!DOCTYPE html>
@@ -244,11 +244,30 @@ class BillingController extends Controller
     <meta name="shopify-api-key" content="{$apiKey}" />
     <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
 </head>
-<body style="margin:0;background:#fff;">
-    <a id="br" href="{$safeUrl}" target="_top" style="display:none;"></a>
-    <script>
+<body style="margin:0;background:#fff;display:flex;justify-content:center;align-items:center;height:100vh;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">
+    <p>Redirecting to Shopify Subscription Approval... <a id="br" href="{$safeUrl}" target="_top">Click here if not redirected automatically</a></p>
+    <script type="text/javascript">
         (function() {
             var url = "{$safeUrl}";
+            var host = "{$host}";
+            var apiKey = "{$apiKey}";
+            
+            try {
+                var AppBridge = window['app-bridge'];
+                if (AppBridge && (AppBridge.default || AppBridge.createApp)) {
+                    var createApp = AppBridge.default || AppBridge.createApp;
+                    var actions = AppBridge.actions || (window['app-bridge-utils'] ? window['app-bridge-utils'] : null);
+                    var app = createApp({ apiKey: apiKey, host: host });
+                    if (actions && actions.Redirect) {
+                        var redirect = actions.Redirect.create(app);
+                        redirect.dispatch(actions.Redirect.Action.REMOTE, url);
+                        return;
+                    }
+                }
+            } catch(err) {
+                console.warn('App Bridge redirect failed:', err);
+            }
+
             try {
                 if (window.top && window.top !== window.self) {
                     window.top.location.href = url;
@@ -256,7 +275,8 @@ class BillingController extends Controller
                     window.location.href = url;
                 }
             } catch(e) {
-                document.getElementById('br').click();
+                var link = document.getElementById('br');
+                if (link) link.click();
             }
         })();
     </script>
