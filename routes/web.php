@@ -639,6 +639,29 @@ Route::group(['prefix' => 'deploy'], function() {
         }
     });
 
+    Route::get('/enable-billing', function() {
+        try {
+            $envPath = base_path('.env');
+            if (file_exists($envPath)) {
+                $content = file_get_contents($envPath);
+                if (str_contains($content, 'SHOPIFY_BILLING_ENABLED=false')) {
+                    $content = str_replace('SHOPIFY_BILLING_ENABLED=false', 'SHOPIFY_BILLING_ENABLED=true', $content);
+                } elseif (!str_contains($content, 'SHOPIFY_BILLING_ENABLED')) {
+                    $content .= "\nSHOPIFY_BILLING_ENABLED=true\n";
+                }
+                if (str_contains($content, 'SHOPIFY_BILLING_FREEMIUM_ENABLED=true')) {
+                    $content = str_replace('SHOPIFY_BILLING_FREEMIUM_ENABLED=true', 'SHOPIFY_BILLING_FREEMIUM_ENABLED=false', $content);
+                }
+                file_put_contents($envPath, $content);
+                \Illuminate\Support\Facades\Artisan::call('config:clear');
+                return 'SHOPIFY_BILLING_ENABLED set to true successfully in .env!';
+            }
+            return '.env file not found.';
+        } catch (\Exception $e) {
+            return 'Failed to update .env: ' . $e->getMessage();
+        }
+    });
+
     Route::get('/inspect-order', function() {
         try {
             $shopName = request('shop') ?: 'canny-apps.myshopify.com';
