@@ -160,7 +160,7 @@ class BillingController extends Controller
                             'plan' => [
                                 'appRecurringPricingDetails' => [
                                     'price'    => [
-                                        'amount'       => (float) $planModel->price,
+                                        'amount'       => number_format((float) $planModel->price, 2, '.', ''),
                                         'currencyCode' => 'USD',
                                     ],
                                     'interval' => 'EVERY_30_DAYS',
