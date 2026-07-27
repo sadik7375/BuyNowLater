@@ -69,6 +69,9 @@ class CustomInstallShop extends BaseInstallShop
         try {
             if ($shop->trashed()) {
                 $shop->restore();
+                $shop->plan_id = null;
+                $shop->shopify_freemium = 0;
+                $shop->save();
             }
 
             // Get the data and set the access token

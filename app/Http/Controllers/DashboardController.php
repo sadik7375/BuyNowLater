@@ -33,6 +33,24 @@ class DashboardController extends Controller
             }
         }
 
+        // Verify with Shopify GraphQL if the store actually has an active subscription
+        if ($shop && $shop->plan_id) {
+            try {
+                $subRes = $shop->api()->graph('{ currentAppInstallation { activeSubscriptions { id name status } } }');
+                $subData = json_decode(json_encode($subRes['body'] ?? $subRes), true);
+                $activeSubs = $subData['data']['currentAppInstallation']['activeSubscriptions'] ?? [];
+
+                if (empty($activeSubs)) {
+                    \Illuminate\Support\Facades\Log::info("DashboardController: No active subscriptions found on Shopify for {$shop->name}. Resetting plan_id to null.");
+                    $shop->plan_id = null;
+                    $shop->shopify_freemium = 0;
+                    $shop->save();
+                }
+            } catch (\Throwable $subEx) {
+                \Illuminate\Support\Facades\Log::warning("DashboardController activeSubscriptions check error: " . $subEx->getMessage());
+            }
+        }
+
         if ($request->query('clear_all_bookings') === 'yes') {
             Booking::where('shop_id', $shop->id)->delete();
             return redirect($request->url());
