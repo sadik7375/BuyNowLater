@@ -94,7 +94,16 @@ class BillingController extends Controller
 
             // --- GraphQL appSubscriptionCreate ---
             try {
-                $planModel = PlanModel::findOrFail($planId);
+                $planModel = PlanModel::firstOrCreate(
+                    ['id' => $planId],
+                    [
+                        'type' => 'RECURRING',
+                        'name' => 'Premium Plan',
+                        'price' => 5.00,
+                        'interval' => 'EVERY_30_DAYS',
+                        'test' => true,
+                    ]
+                );
                 $returnUrl = route('billing.process', [
                     'plan' => $planId,
                     'shop' => $shopDomainStr,
@@ -143,7 +152,7 @@ class BillingController extends Controller
                     $gqlVariables['trialDays'] = (int) $planModel->trial_days;
                 }
 
-                $gqlResponse = $shop->apiHelper()->getApi()->graph($gqlQuery, $gqlVariables);
+                $gqlResponse = $shop->api()->graph($gqlQuery, $gqlVariables);
                 $subData = $gqlResponse['body']['data']['appSubscriptionCreate'] ?? [];
 
                 if (!empty($subData['confirmationUrl'])) {
