@@ -35,14 +35,23 @@ Route::get('/run-migrate-force', function () {
 Route::get('/reset-plan', function() {
     try {
         $shopName = request('shop') ?: 'canny-apps.myshopify.com';
-        $shop = \App\Models\User::where('name', $shopName)->first();
-        if ($shop) {
-            $shop->plan_id = null;
-            $shop->shopify_freemium = 0;
-            $shop->save();
-            \Illuminate\Support\Facades\DB::table('charges')->where('user_id', $shop->id)->update(['status' => 'CANCELLED', 'deleted_at' => now()]);
-        }
-        return 'Plan successfully reset to Free Plan for ' . $shopName;
+        
+        \App\Models\User::withTrashed()
+            ->where('name', $shopName)
+            ->update([
+                'plan_id' => null,
+                'shopify_freemium' => 0,
+            ]);
+
+        $userIds = \App\Models\User::withTrashed()
+            ->where('name', $shopName)
+            ->pluck('id');
+
+        \Illuminate\Support\Facades\DB::table('charges')
+            ->whereIn('user_id', $userIds)
+            ->update(['status' => 'CANCELLED', 'deleted_at' => now()]);
+
+        return 'Plan successfully reset to Free Plan for ALL instances of ' . $shopName;
     } catch (\Exception $e) {
         return 'Reset plan error: ' . $e->getMessage();
     }

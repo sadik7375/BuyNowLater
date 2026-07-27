@@ -43,10 +43,12 @@ class DashboardController extends Controller
 
             if (!$activeCharge) {
                 if ($shop->plan_id !== null || $shop->shopify_freemium != 0) {
-                    \Illuminate\Support\Facades\Log::info("DashboardController: No ACTIVE charge found for {$shop->name}. Resetting plan_id to free plan.");
+                    \Illuminate\Support\Facades\Log::info("DashboardController: No ACTIVE charge found for {$shop->name}. Resetting plan_id to free plan across all DB rows.");
+                    \App\Models\User::withTrashed()
+                        ->where('name', $shop->name)
+                        ->update(['plan_id' => null, 'shopify_freemium' => 0]);
                     $shop->plan_id = null;
                     $shop->shopify_freemium = 0;
-                    $shop->save();
                 }
             } else {
                 if ($shop->plan_id === null) {
