@@ -160,9 +160,11 @@ class BillingController extends Controller
                     Log::info('Got confirmationUrl:', ['url' => $url]);
                 } else {
                     $errors = $subData['userErrors'] ?? [];
+                    $lastError = 'GraphQL UserErrors: ' . json_encode($errors);
                     Log::error('GraphQL userErrors:', json_decode(json_encode($errors), true));
                 }
             } catch (\Exception $gqlEx) {
+                $lastError = 'GraphQL Exception: ' . $gqlEx->getMessage();
                 Log::error('GraphQL appSubscriptionCreate exception: ' . $gqlEx->getMessage());
             }
 
@@ -176,13 +178,17 @@ class BillingController extends Controller
                     );
                     Log::info('Got URL from GetPlanUrl fallback:', ['url' => $url]);
                 } catch (\Exception $ex) {
+                    $lastError .= ' | Fallback Exception: ' . $ex->getMessage();
                     Log::error('GetPlanUrl fallback failed: ' . $ex->getMessage());
                 }
             }
 
             if (empty($url)) {
-                Log::error('BillingController: No URL could be generated.');
-                return response()->json(['message' => 'Could not generate billing URL.'], 500);
+                Log::error('BillingController: No URL could be generated. Details: ' . ($lastError ?? 'Unknown'));
+                return response()->json([
+                    'message' => 'Could not generate billing URL.',
+                    'details' => $lastError ?? 'Unknown error'
+                ], 500);
             }
 
             $apiKey = Util::getShopifyConfig('api_key', ShopDomain::fromNative($shopDomainStr));
