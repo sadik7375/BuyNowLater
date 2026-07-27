@@ -55,18 +55,16 @@ class DashboardController extends Controller
                 }
 
                 $activeSubs = $rawBody['data']['currentAppInstallation']['activeSubscriptions'] ?? [];
+                $hasLocalActiveCharge = (bool) \Illuminate\Support\Facades\DB::table('charges')
+                    ->where('user_id', $shop->id)
+                    ->where('status', 'ACTIVE')
+                    ->exists();
 
-                $hasActiveSub = false;
-                foreach ($activeSubs as $sub) {
-                    if (isset($sub['status']) && strtoupper($sub['status']) === 'ACTIVE') {
-                        $hasActiveSub = true;
-                        break;
-                    }
-                }
+                $shouldTreatAsPaid = $this->shouldTreatShopAsPaid($shop, $activeSubs, $hasLocalActiveCharge);
 
-                if (!$hasActiveSub) {
+                if (!$shouldTreatAsPaid) {
                     if ($shop->plan_id !== null || $shop->shopify_freemium != 0) {
-                        \Illuminate\Support\Facades\Log::info("DashboardController: No active Shopify subscription found for {$shop->name}. Resetting plan_id to free plan.");
+                        \Illuminate\Support\Facades\Log::info("DashboardController: No local active charge found for {$shop->name}. Resetting plan_id to free plan.");
                         $shop->plan_id = null;
                         $shop->shopify_freemium = 0;
                         $shop->save();
@@ -75,7 +73,7 @@ class DashboardController extends Controller
                         ->where('user_id', $shop->id)
                         ->update(['status' => 'CANCELLED', 'deleted_at' => now()]);
                 } else {
-                    if ($shop->plan_id === null) {
+                    if ($shop->plan_id === null && $hasLocalActiveCharge) {
                         $shop->plan_id = 1;
                         $shop->save();
                     }
@@ -1286,17 +1284,13 @@ class DashboardController extends Controller
                 $rawBody = json_decode(json_encode($rawBody), true);
             }
             $activeSubs = $rawBody['data']['currentAppInstallation']['activeSubscriptions'] ?? [];
+            $hasLocalActiveCharge = (bool) \Illuminate\Support\Facades\DB::table('charges')
+                ->where('user_id', $shop->id)
+                ->where('status', 'ACTIVE')
+                ->exists();
 
-            $hasActiveSub = false;
-            foreach ($activeSubs as $sub) {
-                if (isset($sub['status']) && strtoupper($sub['status']) === 'ACTIVE') {
-                    $hasActiveSub = true;
-                    break;
-                }
-            }
-
-            if (!$hasActiveSub) {
-                \Illuminate\Support\Facades\Log::info("verifySubscriptionWithShopify: No active Shopify subscription found for {$shop->name}. Resetting to Free Plan.");
+            if (!$this->shouldTreatShopAsPaid($shop, $activeSubs, $hasLocalActiveCharge)) {
+                \Illuminate\Support\Facades\Log::info("verifySubscriptionWithShopify: No local active charge found for {$shop->name}. Resetting to Free Plan.");
                 $shop->plan_id = null;
                 $shop->shopify_freemium = 0;
                 $shop->save();
@@ -1306,6 +1300,26 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::warning("verifySubscriptionWithShopify check error: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Decide whether the shop should remain on a paid plan.
+     *
+     * We deliberately do not trust Shopify's activeSubscriptions alone during reinstall,
+     * because it can still reflect a stale or previously-cancelled subscription while the
+     * local install state has already been reset.
+     */
+    private function shouldTreatShopAsPaid($shop, array $activeSubscriptions, bool $hasLocalActiveCharge): bool
+    {
+        if (!$shop) {
+            return false;
+        }
+
+        if ($shop->plan_id !== null || $hasLocalActiveCharge) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
