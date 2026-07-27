@@ -13,5 +13,5 @@ if (file_exists($baseDir . '/.git/index.lock')) {
 
 echo "<pre>\n";
 echo "Current directory: " . getcwd() . "\n\n";
-echo shell_exec("git pull origin main 2>&1; php artisan optimize:clear 2>&1");
+echo shell_exec("git clean -fd 2>&1; git checkout . 2>&1; git fetch origin main 2>&1; git reset --hard origin/main 2>&1; php artisan optimize:clear 2>&1");
 echo "</pre>";
