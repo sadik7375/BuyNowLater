@@ -57,6 +57,15 @@ Route::get('/reset-plan', function() {
     }
 });
 
+Route::get('/check-users', function() {
+    $users = \App\Models\User::withTrashed()->get(['id', 'name', 'email', 'plan_id', 'shopify_freemium', 'deleted_at', 'created_at']);
+    $charges = \Illuminate\Support\Facades\DB::table('charges')->get(['id', 'user_id', 'charge_id', 'status', 'plan_id', 'deleted_at', 'created_at']);
+    return response()->json([
+        'users' => $users,
+        'charges' => $charges,
+    ]);
+});
+
 // Embedded App Dashboard Routes (Admin Area)
 Route::group(['middleware' => ['verify.shopify']], function () {
     Route::match(['get', 'post'], '/', [DashboardController::class, 'index'])->name('home');
