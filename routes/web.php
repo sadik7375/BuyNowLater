@@ -137,20 +137,30 @@ Route::post('/webhook/app-uninstalled', function (Illuminate\Http\Request $reque
             return response()->json(['ok' => false, 'message' => 'Missing shop domain'], 400);
         }
 
-        $shop = \App\Models\User::where('name', $shopDomain)->first();
-        if (!$shop) {
-            return response()->json(['ok' => true, 'message' => 'Shop not found locally']);
+        \Illuminate\Support\Facades\Log::info("Webhook app-uninstalled triggered for: " . $shopDomain);
+
+        $allUserIds = \App\Models\User::withTrashed()->where('name', $shopDomain)->pluck('id');
+
+        if ($allUserIds->isNotEmpty()) {
+            \Illuminate\Support\Facades\DB::table('charges')
+                ->whereIn('user_id', $allUserIds)
+                ->update(['status' => 'CANCELLED', 'deleted_at' => now()]);
+
+            \App\Models\Booking::whereIn('shop_id', $allUserIds)->delete();
+            \App\Models\Reminder::whereIn('shop_id', $allUserIds)->delete();
+            \App\Models\Subscriber::whereIn('shop_id', $allUserIds)->delete();
+            \App\Models\Setting::whereIn('shop_id', $allUserIds)->delete();
+
+            \App\Models\User::withTrashed()->where('name', $shopDomain)->update([
+                'shopify_offline_refresh_token' => null,
+                'shopify_offline_access_token_expires_at' => null,
+                'shopify_offline_refresh_token_expires_at' => null,
+                'password' => '',
+                'plan_id' => null,
+                'shopify_freemium' => 0,
+                'deleted_at' => now(),
+            ]);
         }
-
-        $shop->shopify_offline_refresh_token = null;
-        $shop->shopify_offline_access_token_expires_at = null;
-        $shop->shopify_offline_refresh_token_expires_at = null;
-        $shop->password = '';
-        $shop->plan_id = null;
-        $shop->shopify_freemium = 0;
-        $shop->save();
-
-        \Illuminate\Support\Facades\DB::table('charges')->where('user_id', $shop->id)->update(['status' => 'CANCELLED', 'deleted_at' => now()]);
 
         return response()->json(['ok' => true, 'message' => 'Cleanup completed for ' . $shopDomain]);
     } catch (\Throwable $e) {

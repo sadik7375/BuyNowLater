@@ -1273,12 +1273,15 @@ class DashboardController extends Controller
             }
 
             if (!$hasActiveSub) {
-                \Illuminate\Support\Facades\Log::info("verifySubscriptionWithShopify: No active Shopify subscription found for {$shop->name}. Resetting to Free Plan.");
+                \Illuminate\Support\Facades\Log::info("verifySubscriptionWithShopify: No active Shopify subscription found for {$shop->name}. Resetting to Free Plan across all rows.");
+                \App\Models\User::withTrashed()
+                    ->where('name', $shop->name)
+                    ->update(['plan_id' => null, 'shopify_freemium' => 0]);
                 $shop->plan_id = null;
                 $shop->shopify_freemium = 0;
-                $shop->save();
 
-                \Illuminate\Support\Facades\DB::table('charges')->where('user_id', $shop->id)->update(['status' => 'CANCELLED']);
+                $allUserIds = \App\Models\User::withTrashed()->where('name', $shop->name)->pluck('id');
+                \Illuminate\Support\Facades\DB::table('charges')->whereIn('user_id', $allUserIds)->update(['status' => 'CANCELLED', 'deleted_at' => now()]);
             }
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::warning("verifySubscriptionWithShopify check error: " . $e->getMessage());
