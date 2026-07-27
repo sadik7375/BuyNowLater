@@ -104,119 +104,71 @@ class BillingController extends Controller
                 ]
             );
 
-            // --- Method 1: Package Built-in createChargeGraphQL ---
+            // --- Direct GraphQL Subscription Charge Creation ---
             try {
-                $chargeHelper = app(\Osiset\ShopifyApp\Services\ChargeHelper::class);
-                $details = $chargeHelper->details($planModel, $shop, $host);
-                
-                $apiHelper = $shop->apiHelper()->make();
-                $res = $apiHelper->createChargeGraphQL($details);
-                $resArr = json_decode(json_encode($res), true);
-                
-                if (!empty($resArr['confirmationUrl'])) {
-                    $url = (string) $resArr['confirmationUrl'];
-                } elseif (!empty($resArr['data']['appSubscriptionCreate']['confirmationUrl'])) {
-                    $url = (string) $resArr['data']['appSubscriptionCreate']['confirmationUrl'];
-                } else {
-                    $lastError .= 'Method 1 Response: ' . json_encode($resArr);
-                }
-            } catch (\Exception $ex1) {
-                Log::warning('BillingController: Method 1 createChargeGraphQL failed: ' . $ex1->getMessage());
-                $lastError .= 'Method 1 Error: ' . $ex1->getMessage();
-            }
+                $returnUrl = route('billing.process', [
+                    'plan' => $planId,
+                    'shop' => $shopDomainStr,
+                    'host' => $host,
+                ]);
 
-            // --- Method 2: Direct GraphQL Fallback ---
-            if (empty($url)) {
-                try {
-                    $returnUrl = route('billing.process', [
-                        'plan' => $planId,
-                        'shop' => $shopDomainStr,
-                        'host' => $host,
-                    ]);
-
-                    $gqlQuery = '
-                    mutation appSubscriptionCreate(
-                        $name: String!,
-                        $returnUrl: URL!,
-                        $trialDays: Int,
-                        $test: Boolean,
-                        $lineItems: [AppSubscriptionLineItemInput!]!
+                $gqlQuery = '
+                mutation appSubscriptionCreate(
+                    $name: String!,
+                    $returnUrl: URL!,
+                    $trialDays: Int,
+                    $test: Boolean,
+                    $lineItems: [AppSubscriptionLineItemInput!]!
+                ) {
+                    appSubscriptionCreate(
+                        name: $name,
+                        returnUrl: $returnUrl,
+                        trialDays: $trialDays,
+                        test: $test,
+                        lineItems: $lineItems
                     ) {
-                        appSubscriptionCreate(
-                            name: $name,
-                            returnUrl: $returnUrl,
-                            trialDays: $trialDays,
-                            test: $test,
-                            lineItems: $lineItems
-                        ) {
-                            appSubscription { id }
-                            confirmationUrl
-                            userErrors { field message }
-                        }
-                    }';
+                        appSubscription { id }
+                        confirmationUrl
+                        userErrors { field message }
+                    }
+                }';
 
-                    $gqlVariables = [
-                        'name'      => $planModel->name,
-                        'returnUrl' => $returnUrl,
-                        'test'      => true,
-                        'lineItems' => [[
-                            'plan' => [
-                                'appRecurringPricingDetails' => [
-                                    'price'    => [
-                                        'amount'       => number_format((float) $planModel->price, 2, '.', ''),
-                                        'currencyCode' => 'USD',
-                                    ],
-                                    'interval' => 'EVERY_30_DAYS',
+                $gqlVariables = [
+                    'name'      => $planModel->name,
+                    'returnUrl' => $returnUrl,
+                    'test'      => true,
+                    'lineItems' => [[
+                        'plan' => [
+                            'appRecurringPricingDetails' => [
+                                'price'    => [
+                                    'amount'       => number_format((float) $planModel->price, 2, '.', ''),
+                                    'currencyCode' => 'USD',
                                 ],
+                                'interval' => 'EVERY_30_DAYS',
                             ],
-                        ]],
-                    ];
+                        ],
+                    ]],
+                ];
 
-                    if (!empty($planModel->trial_days) && $planModel->trial_days > 0) {
-                        $gqlVariables['trialDays'] = (int) $planModel->trial_days;
-                    }
-
-                    $gqlResponse = $shop->api()->graph($gqlQuery, $gqlVariables);
-                    $resArray = json_decode(json_encode($gqlResponse['body'] ?? $gqlResponse), true);
-
-                    if (!empty($resArray['data']['appSubscriptionCreate']['confirmationUrl'])) {
-                        $url = $resArray['data']['appSubscriptionCreate']['confirmationUrl'];
-                    } else {
-                        $lastError .= ' | Method 2 Errors: ' . json_encode($resArray['errors'] ?? $resArray['data']['appSubscriptionCreate']['userErrors'] ?? $resArray);
-                    }
-                } catch (\Exception $gqlEx) {
-                    $lastError .= ' | Method 2 Exception: ' . $gqlEx->getMessage();
+                if (!empty($planModel->trial_days) && $planModel->trial_days > 0) {
+                    $gqlVariables['trialDays'] = (int) $planModel->trial_days;
                 }
+
+                $gqlResponse = $shop->api()->graph($gqlQuery, $gqlVariables);
+                $resArray = json_decode(json_encode($gqlResponse['body'] ?? $gqlResponse), true);
+
+                if (!empty($resArray['data']['appSubscriptionCreate']['confirmationUrl'])) {
+                    $url = $resArray['data']['appSubscriptionCreate']['confirmationUrl'];
+                } else {
+                    $lastError .= 'GraphQL Errors: ' . json_encode($resArray['errors'] ?? $resArray['data']['appSubscriptionCreate']['userErrors'] ?? $resArray);
+                }
+            } catch (\Exception $gqlEx) {
+                Log::error('BillingController GraphQL exception: ' . $gqlEx->getMessage());
+                $lastError .= 'GraphQL Exception: ' . $gqlEx->getMessage();
             }
 
             if (empty($url)) {
-                Log::error('BillingController: No URL could be generated. Details: ' . $lastError);
-                
-                if (str_contains($lastError, 'invalid_request') || str_contains($lastError, 'refreshOfflineAccessToken') || str_contains($lastError, 'oauthAccessTokenPost') || str_contains($lastError, 'domain missing')) {
-                    Log::warning('BillingController: Token/API error detected. Wiping token and forcing OAuth re-auth for: ' . $shopDomainStr);
-                    
-                    $shop->shopify_offline_refresh_token = null;
-                    $shop->shopify_offline_access_token_expires_at = null;
-                    $shop->shopify_offline_refresh_token_expires_at = null;
-                    $shop->password = '';
-                    $shop->save();
-
-                    try {
-                        $session = new \Gnikyt\BasicShopifyAPI\Session($shopDomainStr, '');
-                        $apiHelper = resolve(\Osiset\ShopifyApp\Contracts\ApiHelper::class)->make($session);
-                        $authUrl = $apiHelper->buildAuthUrl(\Osiset\ShopifyApp\Objects\Enums\AuthMode::OFFLINE(), Util::getShopifyConfig('api_scopes', $shop));
-
-                        return response()->view('shopify-app::auth.fullpage_redirect', [
-                            'apiKey'     => Util::getShopifyConfig('api_key', ShopDomain::fromNative($shopDomainStr)),
-                            'url'        => $authUrl,
-                            'host'       => $host,
-                            'shopDomain' => $shopDomainStr,
-                            'locale'     => $request->get('locale'),
-                        ]);
-                    } catch (\Exception $authEx) {
-                        Log::error('BillingController OAuth fallback failed: ' . $authEx->getMessage());
-                    }
-                }
+                Log::error('BillingController: Could not generate billing URL. Details: ' . $lastError);
 
                 return response()->json([
                     'message' => 'Could not generate billing URL.',
