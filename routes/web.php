@@ -622,6 +622,23 @@ Route::group(['prefix' => 'deploy'], function() {
         }
     });
 
+    Route::get('/reset-free-plan', function() {
+        try {
+            $shops = \App\Models\User::all();
+            $resetShops = [];
+            foreach ($shops as $shop) {
+                $shop->plan_id = null;
+                $shop->shopify_freemium = 0;
+                $shop->save();
+                \DB::table('charges')->where('user_id', $shop->id)->delete();
+                $resetShops[] = $shop->name;
+            }
+            return 'All shops reset to Free Plan successfully: ' . implode(', ', $resetShops);
+        } catch (\Exception $e) {
+            return 'Reset failed: ' . $e->getMessage();
+        }
+    });
+
     Route::get('/inspect-order', function() {
         try {
             $shopName = request('shop') ?: 'canny-apps.myshopify.com';

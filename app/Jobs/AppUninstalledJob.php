@@ -25,7 +25,11 @@ class AppUninstalledJob extends \Osiset\ShopifyApp\Messaging\Jobs\AppUninstalled
             $shop = User::withTrashed()->where('name', $shopDomainStr)->first();
 
             if ($shop) {
-                Log::info("AppUninstalledJob: Purging data for uninstalled shop {$shopDomainStr}");
+                Log::info("AppUninstalledJob: Purging data and resetting plan for uninstalled shop {$shopDomainStr}");
+                $shop->plan_id = null;
+                $shop->shopify_freemium = 0;
+                $shop->save();
+
                 Booking::where('shop_id', $shop->id)->delete();
                 Reminder::where('shop_id', $shop->id)->delete();
                 Subscriber::where('shop_id', $shop->id)->delete();
