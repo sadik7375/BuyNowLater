@@ -669,6 +669,25 @@ Route::group(['prefix' => 'deploy'], function() {
         return redirect()->route('authenticate', ['shop' => $shopName, 'host' => $host]);
     });
 
+    Route::get('/wipe-token', function() {
+        try {
+            $shopName = request('shop') ?: 'canny-apps.myshopify.com';
+            $shop = \App\Models\User::where('name', $shopName)->first();
+            if ($shop) {
+                $shop->shopify_offline_refresh_token = null;
+                $shop->shopify_offline_access_token_expires_at = null;
+                $shop->shopify_offline_refresh_token_expires_at = null;
+                $shop->password = '';
+                $shop->save();
+            }
+            $shopHandle = explode('.', $shopName)[0];
+            $host = request('host') ?: base64_encode("admin.shopify.com/store/" . $shopHandle);
+            return redirect()->route('authenticate', ['shop' => $shopName, 'host' => $host]);
+        } catch (\Exception $e) {
+            return 'Wipe token error: ' . $e->getMessage();
+        }
+    });
+
     Route::get('/test-billing-debug', function() {
         try {
             $shopName = request('shop') ?: 'canny-apps.myshopify.com';

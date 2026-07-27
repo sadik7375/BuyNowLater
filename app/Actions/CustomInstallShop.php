@@ -31,7 +31,24 @@ class CustomInstallShop extends BaseInstallShop
             $shop = $this->shopQuery->getByDomain($shopDomain);
         }
 
-        $apiHelper = $shop->apiHelper();
+        try {
+            $apiHelper = $shop->apiHelper();
+        } catch (\Throwable $ex) {
+            Log::warning('CustomInstallShop: apiHelper failed due to invalid/expired token. Wiping stale tokens to allow re-auth.', [
+                'shop' => $shopDomain->toNative(),
+                'error' => $ex->getMessage()
+            ]);
+            
+            $shop->shopify_offline_refresh_token = null;
+            $shop->shopify_offline_access_token_expires_at = null;
+            $shop->shopify_offline_refresh_token_expires_at = null;
+            $shop->password = '';
+            $shop->save();
+            
+            $shop->apiHelper = null;
+            $apiHelper = $shop->apiHelper();
+        }
+
         $grantMode = $shop->hasOfflineAccess()
             ? AuthMode::fromNative(Util::getShopifyConfig('api_grant_mode', $shop))
             : AuthMode::OFFLINE();
