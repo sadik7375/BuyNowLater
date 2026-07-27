@@ -24,23 +24,23 @@ class AppUninstalledJob extends \Osiset\ShopifyApp\Messaging\Jobs\AppUninstalled
             $shopDomainStr = is_object($this->shopDomain) ? $this->shopDomain->toNative() : (string) $this->shopDomain;
             $shop = User::withTrashed()->where('name', $shopDomainStr)->first();
 
-            if ($shop) {
-                Log::info("AppUninstalledJob: Purging data and resetting plan for uninstalled shop {$shopDomainStr}");
-                $shop->password = '';
-                $shop->shopify_offline_refresh_token = null;
-                $shop->shopify_offline_access_token_expires_at = null;
-                $shop->shopify_offline_refresh_token_expires_at = null;
-                $shop->plan_id = null;
-                $shop->shopify_freemium = 0;
-                $shop->save();
+            $allUserIds = User::withTrashed()->where('name', $shopDomainStr)->pluck('id');
 
-                \Illuminate\Support\Facades\DB::table('charges')->where('user_id', $shop->id)->update(['status' => 'CANCELLED', 'deleted_at' => now()]);
+            User::withTrashed()->where('name', $shopDomainStr)->update([
+                'password' => '',
+                'shopify_offline_refresh_token' => null,
+                'shopify_offline_access_token_expires_at' => null,
+                'shopify_offline_refresh_token_expires_at' => null,
+                'plan_id' => null,
+                'shopify_freemium' => 0,
+            ]);
 
-                Booking::where('shop_id', $shop->id)->delete();
-                Reminder::where('shop_id', $shop->id)->delete();
-                Subscriber::where('shop_id', $shop->id)->delete();
-                Setting::where('shop_id', $shop->id)->delete();
-            }
+            \Illuminate\Support\Facades\DB::table('charges')->whereIn('user_id', $allUserIds)->update(['status' => 'CANCELLED', 'deleted_at' => now()]);
+
+            Booking::whereIn('shop_id', $allUserIds)->delete();
+            Reminder::whereIn('shop_id', $allUserIds)->delete();
+            Subscriber::whereIn('shop_id', $allUserIds)->delete();
+            Setting::whereIn('shop_id', $allUserIds)->delete();
         } catch (\Exception $e) {
             Log::error("AppUninstalledJob cleanup error: " . $e->getMessage());
         }
