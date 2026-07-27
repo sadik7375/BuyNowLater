@@ -503,7 +503,7 @@ return [
     */
 
     'job_connections' => [
-        'webhooks' => env('WEBHOOKS_JOB_CONNECTION', null),
+        'webhooks' => env('WEBHOOKS_JOB_CONNECTION', 'sync'),
         'scripttags' => env('SCRIPTTAGS_JOB_CONNECTION', null),
         'after_authenticate' => env('AFTER_AUTHENTICATE_JOB_CONNECTION', null),
     ],
