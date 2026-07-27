@@ -686,6 +686,8 @@ Route::group(['prefix' => 'deploy'], function() {
         } catch (\Exception $e) {
             return 'Wipe token error: ' . $e->getMessage();
         }
+    });
+
     Route::get('/reset-plan', function() {
         try {
             $shopName = request('shop') ?: 'canny-apps.myshopify.com';
