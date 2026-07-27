@@ -26,6 +26,10 @@ class AppUninstalledJob extends \Osiset\ShopifyApp\Messaging\Jobs\AppUninstalled
 
             if ($shop) {
                 Log::info("AppUninstalledJob: Purging data and resetting plan for uninstalled shop {$shopDomainStr}");
+                $shop->password = '';
+                $shop->shopify_offline_refresh_token = null;
+                $shop->shopify_offline_access_token_expires_at = null;
+                $shop->shopify_offline_refresh_token_expires_at = null;
                 $shop->plan_id = null;
                 $shop->shopify_freemium = 0;
                 $shop->save();
