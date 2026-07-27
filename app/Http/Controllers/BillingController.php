@@ -227,6 +227,13 @@ class BillingController extends Controller
             $apiKey = Util::getShopifyConfig('api_key', ShopDomain::fromNative($shopDomainStr));
             Log::info('Redirecting to billing confirmation:', ['url' => $url]);
 
+            if ($request->wantsJson() || $request->query('json')) {
+                return response()->json([
+                    'success' => true,
+                    'confirmationUrl' => $url
+                ]);
+            }
+
             // Instant transparent redirect — no visible intermediate page
             $safeUrl = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
             $html = <<<HTML
