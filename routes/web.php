@@ -132,12 +132,20 @@ Route::post('/reminder/reschedule/{token}', [AppProxyController::class, 'resched
 
 Route::post('/webhook/app-uninstalled', function (Illuminate\Http\Request $request) {
     try {
-        $shopDomain = $request->header('X-Shopify-Shop-Domain') ?: $request->input('domain') ?: $request->input('shop') ?: null;
+        \Illuminate\Support\Facades\Log::info("Webhook app-uninstalled HIT!", [
+            'header_domain' => $request->header('X-Shopify-Shop-Domain'),
+            'input_domain' => $request->input('domain'),
+            'input_myshopify_domain' => $request->input('myshopify_domain'),
+            'input_shop' => $request->input('shop'),
+        ]);
+
+        $shopDomain = $request->header('X-Shopify-Shop-Domain') ?: $request->input('myshopify_domain') ?: $request->input('domain') ?: $request->input('shop') ?: null;
         if (!$shopDomain) {
+            \Illuminate\Support\Facades\Log::warning("Webhook app-uninstalled: Missing shop domain in request payload.");
             return response()->json(['ok' => false, 'message' => 'Missing shop domain'], 400);
         }
 
-        \Illuminate\Support\Facades\Log::info("Webhook app-uninstalled triggered for: " . $shopDomain);
+        \Illuminate\Support\Facades\Log::info("Webhook app-uninstalled executing cleanup for: " . $shopDomain);
 
         $allUserIds = \App\Models\User::withTrashed()->where('name', $shopDomain)->pluck('id');
 
@@ -167,6 +175,16 @@ Route::post('/webhook/app-uninstalled', function (Illuminate\Http\Request $reque
         \Illuminate\Support\Facades\Log::error('Direct uninstall cleanup failed: ' . $e->getMessage());
         return response()->json(['ok' => false, 'message' => $e->getMessage()], 500);
     }
+});
+
+Route::get('/view-log', function() {
+    $logFile = storage_path('logs/laravel.log');
+    if (!file_exists($logFile)) {
+        return 'Log file not found.';
+    }
+    $lines = file($logFile);
+    $lastLines = array_slice($lines, -150);
+    return response('<pre>' . implode('', $lastLines) . '</pre>');
 });
 
 Route::get('/status-settings-db', function() {
