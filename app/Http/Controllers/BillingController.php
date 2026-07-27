@@ -213,25 +213,25 @@ class BillingController extends Controller
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="shopify-api-key" content="{$apiKey}" />
-    <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
-</head>
-<body style="margin:0;background:#fff;">
-    <a id="br" href="{$safeUrl}" target="_top" style="display:none;"></a>
-    <script>
+    <base target="_top">
+    <title>Redirecting to Shopify Billing...</title>
+    <script type="text/javascript">
         (function() {
-            var url = "{$safeUrl}";
-            try {
-                if (window.top && window.top !== window.self) {
-                    window.top.location.href = url;
-                } else {
-                    window.location.href = url;
+            var targetUrl = "{$safeUrl}";
+            if (window.top === window.self) {
+                window.top.location.href = targetUrl;
+            } else {
+                try {
+                    window.top.location.href = targetUrl;
+                } catch (e) {
+                    window.open(targetUrl, '_top');
                 }
-            } catch(e) {
-                document.getElementById('br').click();
             }
         })();
     </script>
+</head>
+<body style="margin:0;background:#fff;">
+    <p style="padding:20px;font-family:sans-serif;">Redirecting to Shopify Billing... <a href="{$safeUrl}" target="_top">Click here if not redirected</a>.</p>
 </body>
 </html>
 HTML;
