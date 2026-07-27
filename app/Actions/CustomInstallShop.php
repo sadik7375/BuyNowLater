@@ -32,7 +32,12 @@ class CustomInstallShop extends BaseInstallShop
         }
 
         try {
-            $apiHelper = $shop->apiHelper();
+            if (!$shop->hasOfflineAccess()) {
+                $session = new \Gnikyt\BasicShopifyAPI\Session($shopDomain->toNative(), '');
+                $apiHelper = resolve(\Osiset\ShopifyApp\Contracts\ApiHelper::class)->make($session);
+            } else {
+                $apiHelper = $shop->apiHelper();
+            }
         } catch (\Throwable $ex) {
             Log::warning('CustomInstallShop: apiHelper failed due to invalid/expired token. Wiping stale tokens to allow re-auth.', [
                 'shop' => $shopDomain->toNative(),
@@ -45,8 +50,8 @@ class CustomInstallShop extends BaseInstallShop
             $shop->password = '';
             $shop->save();
             
-            $shop->apiHelper = null;
-            $apiHelper = $shop->apiHelper();
+            $session = new \Gnikyt\BasicShopifyAPI\Session($shopDomain->toNative(), '');
+            $apiHelper = resolve(\Osiset\ShopifyApp\Contracts\ApiHelper::class)->make($session);
         }
 
         $grantMode = $shop->hasOfflineAccess()

@@ -192,8 +192,8 @@ class BillingController extends Controller
             if (empty($url)) {
                 Log::error('BillingController: No URL could be generated. Details: ' . $lastError);
                 
-                if (str_contains($lastError, 'invalid_request') || str_contains($lastError, 'refreshOfflineAccessToken') || str_contains($lastError, 'oauthAccessTokenPost')) {
-                    Log::warning('BillingController: Token expired/invalid. Redirecting to authenticate for shop: ' . $shopDomainStr);
+                if (str_contains($lastError, 'invalid_request') || str_contains($lastError, 'refreshOfflineAccessToken') || str_contains($lastError, 'oauthAccessTokenPost') || str_contains($lastError, 'domain missing')) {
+                    Log::warning('BillingController: Token expired/invalid/missing. Redirecting to authenticate for shop: ' . $shopDomainStr);
                     return redirect()->route('authenticate', ['shop' => $shopDomainStr, 'host' => $host]);
                 }
 
