@@ -15,6 +15,24 @@ class DashboardController extends Controller
     {
         $shop = auth()->user();
 
+        // Validate access token on dashboard load to guarantee fresh token before any billing action
+        if ($shop && !empty($shop->password)) {
+            try {
+                $shop->apiHelper()->make();
+            } catch (\Throwable $t) {
+                \Illuminate\Support\Facades\Log::warning('DashboardController: Invalid token on page load. Wiping password to force re-auth for: ' . $shop->name);
+                $shop->shopify_offline_refresh_token = null;
+                $shop->shopify_offline_access_token_expires_at = null;
+                $shop->shopify_offline_refresh_token_expires_at = null;
+                $shop->password = '';
+                $shop->save();
+
+                $shopHandle = explode('.', $shop->name)[0];
+                $host = $request->get('host') ?: base64_encode("admin.shopify.com/store/" . $shopHandle);
+                return redirect()->route('authenticate', ['shop' => $shop->name, 'host' => $host]);
+            }
+        }
+
         if ($request->query('clear_all_bookings') === 'yes') {
             Booking::where('shop_id', $shop->id)->delete();
             return redirect($request->url());

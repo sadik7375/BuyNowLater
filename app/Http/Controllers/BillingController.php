@@ -171,7 +171,7 @@ class BillingController extends Controller
                 Log::error('BillingController: Could not generate billing URL. Details: ' . $lastError);
 
                 // Handle expired/invalid token after uninstall & reinstall
-                if (str_contains($lastError, 'Invalid API key') || str_contains($lastError, 'access token') || str_contains($lastError, 'unrecognized login') || str_contains($lastError, 'wrong password') || str_contains($lastError, 'invalid_request') || str_contains($lastError, 'Unauthorized')) {
+                if (str_contains($lastError, 'Invalid API key') || str_contains($lastError, 'unrecognized login') || str_contains($lastError, 'wrong password')) {
                     Log::warning('BillingController: Invalid token detected. Wiping dead token and initiating OAuth re-authorization for: ' . $shopDomainStr);
 
                     $shop->shopify_offline_refresh_token = null;
