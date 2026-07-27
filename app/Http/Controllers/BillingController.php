@@ -192,9 +192,30 @@ class BillingController extends Controller
             if (empty($url)) {
                 Log::error('BillingController: No URL could be generated. Details: ' . $lastError);
                 
-                if (str_contains($lastError, 'invalid_request') || str_contains($lastError, 'refreshOfflineAccessToken') || str_contains($lastError, 'oauthAccessTokenPost') || str_contains($lastError, 'domain missing')) {
-                    Log::warning('BillingController: Token expired/invalid/missing. Redirecting to authenticate for shop: ' . $shopDomainStr);
-                    return redirect()->route('authenticate', ['shop' => $shopDomainStr, 'host' => $host]);
+                if (str_contains($lastError, 'invalid_request') || str_contains($lastError, 'refreshOfflineAccessToken') || str_contains($lastError, 'oauthAccessTokenPost') || str_contains($lastError, 'domain missing') || str_contains($lastError, 'Method 1 Error')) {
+                    Log::warning('BillingController: Token/API error detected. Wiping token and forcing OAuth re-auth for: ' . $shopDomainStr);
+                    
+                    $shop->shopify_offline_refresh_token = null;
+                    $shop->shopify_offline_access_token_expires_at = null;
+                    $shop->shopify_offline_refresh_token_expires_at = null;
+                    $shop->password = '';
+                    $shop->save();
+
+                    try {
+                        $session = new \Gnikyt\BasicShopifyAPI\Session($shopDomainStr, '');
+                        $apiHelper = resolve(\Osiset\ShopifyApp\Contracts\ApiHelper::class)->make($session);
+                        $authUrl = $apiHelper->buildAuthUrl(\Osiset\ShopifyApp\Objects\Enums\AuthMode::OFFLINE(), Util::getShopifyConfig('api_scopes', $shop));
+
+                        return response()->view('shopify-app::auth.fullpage_redirect', [
+                            'apiKey'     => Util::getShopifyConfig('api_key', ShopDomain::fromNative($shopDomainStr)),
+                            'url'        => $authUrl,
+                            'host'       => $host,
+                            'shopDomain' => $shopDomainStr,
+                            'locale'     => $request->get('locale'),
+                        ]);
+                    } catch (\Exception $authEx) {
+                        Log::error('BillingController OAuth fallback failed: ' . $authEx->getMessage());
+                    }
                 }
 
                 return response()->json([
@@ -203,49 +224,35 @@ class BillingController extends Controller
                 ], 500);
             }
 
-            // Format URL for modern Unified Admin (admin.shopify.com) if shop domain URL was returned
-            $shopHandle = explode('.', $shopDomainStr)[0];
-            $unifiedUrl = $url;
-            if (str_contains($url, "{$shopDomainStr}/admin/charges/")) {
-                $unifiedUrl = str_replace("{$shopDomainStr}/admin/charges/", "admin.shopify.com/store/{$shopHandle}/charges/", $url);
-            } elseif (str_contains($url, 'https://') && !str_contains($url, 'admin.shopify.com') && str_contains($url, '/admin/charges/')) {
-                $unifiedUrl = preg_replace('/https:\/\/[^\/]+\/admin\/charges\//', "https://admin.shopify.com/store/{$shopHandle}/charges/", $url);
-            }
+            $apiKey = Util::getShopifyConfig('api_key', ShopDomain::fromNative($shopDomainStr));
+            Log::info('Redirecting to billing confirmation:', ['url' => $url]);
 
-            Log::info('Redirecting to billing confirmation:', ['url' => $url, 'unifiedUrl' => $unifiedUrl]);
-
-            $safeUrl = htmlspecialchars($unifiedUrl, ENT_QUOTES, 'UTF-8');
-            $safeFallbackUrl = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
-
+            // Instant transparent redirect — no visible intermediate page
+            $safeUrl = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
             $html = <<<HTML
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
-    <base target="_top">
-    <title>Redirecting to Shopify Billing...</title>
-    <script type="text/javascript">
-        (function() {
-            var targetUrl = "{$safeUrl}";
-            var fallbackUrl = "{$safeFallbackUrl}";
-            
-            function doRedirect() {
-                try {
-                    if (window.top && window.top !== window.self) {
-                        window.top.location.href = targetUrl;
-                    } else {
-                        window.location.href = targetUrl;
-                    }
-                } catch (e) {
-                    window.location.href = fallbackUrl;
-                }
-            }
-            doRedirect();
-        })();
-    </script>
+    <meta name="shopify-api-key" content="{$apiKey}" />
+    <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
 </head>
 <body style="margin:0;background:#fff;">
-    <p style="padding:20px;font-family:sans-serif;">Redirecting to Shopify Subscription Approval... <a href="{$safeUrl}" target="_top">Click here if not redirected</a>.</p>
+    <a id="br" href="{$safeUrl}" target="_top" style="display:none;"></a>
+    <script>
+        (function() {
+            var url = "{$safeUrl}";
+            try {
+                if (window.top && window.top !== window.self) {
+                    window.top.location.href = url;
+                } else {
+                    window.location.href = url;
+                }
+            } catch(e) {
+                document.getElementById('br').click();
+            }
+        })();
+    </script>
 </body>
 </html>
 HTML;
