@@ -1361,8 +1361,11 @@ class DashboardController extends Controller
                 if (empty($customerName) && !empty($node['billingAddress']['name'])) {
                     $customerName = $node['billingAddress']['name'];
                 }
+                if (empty($customerName) && !empty($node['shippingAddress']['name'])) {
+                    $customerName = $node['shippingAddress']['name'];
+                }
                 if (empty($customerName)) {
-                    $customerName = 'N/A';
+                    $customerName = 'Guest Customer';
                 }
 
                 $email = $customer && !empty($customer['email']) ? $customer['email'] : ($node['email'] ?? 'N/A');

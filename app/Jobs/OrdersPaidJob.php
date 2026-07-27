@@ -158,15 +158,41 @@ class OrdersPaidJob implements ShouldQueue
                                 $customerName = $fetchedName;
                             }
                         }
+                        if (empty($customerName) && !empty($this->data->billing_address)) {
+                            $b = $this->data->billing_address;
+                            $fetchedName = trim(($b->first_name ?? '') . ' ' . ($b->last_name ?? ''));
+                            if (empty($fetchedName) && !empty($b->name)) {
+                                $fetchedName = $b->name;
+                            }
+                            if (!empty($fetchedName)) {
+                                $customerName = $fetchedName;
+                            }
+                        }
+                        if (empty($customerName) && !empty($this->data->shipping_address)) {
+                            $s = $this->data->shipping_address;
+                            $fetchedName = trim(($s->first_name ?? '') . ' ' . ($s->last_name ?? ''));
+                            if (empty($fetchedName) && !empty($s->name)) {
+                                $fetchedName = $s->name;
+                            }
+                            if (!empty($fetchedName)) {
+                                $customerName = $fetchedName;
+                            }
+                        }
                         if (empty($customerName)) {
                             $customerName = $booking->customer_name;
                         }
+                        if (empty($customerName) || strtolower($customerName) === 'n/a') {
+                            $customerName = 'Guest Customer';
+                        }
+
+                        $email = $this->data->email ?? ($customer->email ?? $booking->email);
 
                         $booking->update([
                             'status'        => 'deposit_paid',
                             'order_id'      => $orderId,
                             'order_name'    => $orderName,
                             'customer_name' => $customerName,
+                            'email'         => $email,
                             'expires_at'    => now()->addDays($holdDurationDays),
                             'deposit_paid_at' => now(),
                             'draft_order_id'=> null,

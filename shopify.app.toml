@@ -18,6 +18,14 @@ redirect_urls = [
 api_version = "2026-07"
 
 [[webhooks.subscriptions]]
+topics = [ "orders/paid" ]
+uri = "/webhook/orders-paid"
+
+[[webhooks.subscriptions]]
+topics = [ "products/update" ]
+uri = "/webhook/products-update"
+
+[[webhooks.subscriptions]]
 topics = [ "subscription_contracts/create" ]
 uri = "/webhook/subscription-contract-create"
 
