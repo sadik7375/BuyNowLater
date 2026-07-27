@@ -8,6 +8,9 @@ use App\Models\Subscriber;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
+use Osiset\ShopifyApp\Contracts\Commands\Shop as IShopCommand;
+use Osiset\ShopifyApp\Contracts\Queries\Shop as IShopQuery;
+use Osiset\ShopifyApp\Actions\CancelCurrentPlan;
 
 class AppUninstalledJob extends \Osiset\ShopifyApp\Messaging\Jobs\AppUninstalledJob
 {
@@ -16,13 +19,16 @@ class AppUninstalledJob extends \Osiset\ShopifyApp\Messaging\Jobs\AppUninstalled
      *
      * @return bool
      */
-    public function handle(): bool
-    {
-        parent::handle();
+    public function handle(
+        IShopCommand $shopCommand,
+        IShopQuery $shopQuery,
+        CancelCurrentPlan $cancelCurrentPlanAction
+    ): bool {
+        parent::handle($shopCommand, $shopQuery, $cancelCurrentPlanAction);
 
         try {
             $shopDomainStr = is_object($this->shopDomain) ? $this->shopDomain->toNative() : (string) $this->shopDomain;
-            $shop = User::withTrashed()->where('name', $shopDomainStr)->first();
+            Log::info("AppUninstalledJob processing cleanup for: " . $shopDomainStr);
 
             $allUserIds = User::withTrashed()->where('name', $shopDomainStr)->pluck('id');
 
@@ -33,6 +39,7 @@ class AppUninstalledJob extends \Osiset\ShopifyApp\Messaging\Jobs\AppUninstalled
                 'shopify_offline_refresh_token_expires_at' => null,
                 'plan_id' => null,
                 'shopify_freemium' => 0,
+                'deleted_at' => now(),
             ]);
 
             \Illuminate\Support\Facades\DB::table('charges')->whereIn('user_id', $allUserIds)->update(['status' => 'CANCELLED', 'deleted_at' => now()]);
@@ -41,6 +48,8 @@ class AppUninstalledJob extends \Osiset\ShopifyApp\Messaging\Jobs\AppUninstalled
             Reminder::whereIn('shop_id', $allUserIds)->delete();
             Subscriber::whereIn('shop_id', $allUserIds)->delete();
             Setting::whereIn('shop_id', $allUserIds)->delete();
+
+            Log::info("AppUninstalledJob cleanup successful for: " . $shopDomainStr);
         } catch (\Exception $e) {
             Log::error("AppUninstalledJob cleanup error: " . $e->getMessage());
         }
