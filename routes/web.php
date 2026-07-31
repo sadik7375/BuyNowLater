@@ -29,6 +29,15 @@ Route::get('/debug-json', function(\Illuminate\Http\Request $request) {
     if (!$user) {
         return response()->json(['error' => 'Shop not found for domain ' . $shopDomain, 'all_shops' => \App\Models\User::pluck('name')], 404);
     }
+    
+    // Trigger live GraphQL sync from Shopify
+    try {
+        $controller = new \App\Http\Controllers\DashboardController();
+        $controller->syncBookingsWithShopify($user);
+    } catch (\Exception $e) {
+        Log::error("Debug JSON sync error: " . $e->getMessage());
+    }
+
     $bookings = \App\Models\Booking::where('shop_id', $user->id)->orderBy('created_at', 'desc')->get();
     return response()->json([
         'shop' => $user->name,
