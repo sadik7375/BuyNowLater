@@ -229,8 +229,9 @@
     }
 
     .dashboard-container {
-        max-width: 1180px;
-        margin: 0 auto;
+        max-width: 1280px;
+        margin: 0;
+        width: 100%;
     }
 
     /* Top Navigation bar / header */
@@ -1547,9 +1548,9 @@
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
         gap: 24px;
-        margin: 20px auto 0 auto;
-        justify-content: center;
-        max-width: 1080px;
+        margin: 24px 0 0 0;
+        width: 100%;
+        max-width: 1100px;
     }
     .pricing-card {
         background: #ffffff;
