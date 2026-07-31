@@ -81,8 +81,7 @@ class DashboardController extends Controller
             $activeTab = 'tab-support';
             $subTab = 'support';
         } elseif ($request->is('price-plan')) {
-            $activeTab = 'tab-support';
-            $subTab = 'pricing';
+            $activeTab = 'tab-pricing';
         }
 
         $settings = Setting::firstOrCreate(
@@ -1466,19 +1465,49 @@ class DashboardController extends Controller
                 if (empty($customerName) && !empty($node['shippingAddress']['name'])) {
                     $customerName = $node['shippingAddress']['name'];
                 }
+                $email = $customer && !empty($customer['email']) ? $customer['email'] : ($node['email'] ?? 'N/A');
+                if (empty($customerName) && !empty($email) && $email !== 'N/A') {
+                    $customerName = explode('@', $email)[0];
+                }
                 if (empty($customerName)) {
-                    $customerName = 'Guest Customer';
+                    $customerName = 'Customer ' . ($orderName ?: '#' . $numericOrderId);
                 }
 
-                $email = $customer && !empty($customer['email']) ? $customer['email'] : ($node['email'] ?? 'N/A');
-
-                // 3. Auto-create booking if it doesn't exist but has a token
+                // 3. Auto-create booking if it doesn't exist yet
                 if (!$booking) {
                     if (!$token) {
                         $token = $this->extractTokenFromNode($node);
                     }
-                    if ($token) {
 
+                    $isWidgetOrSellingPlanOrder = false;
+                    if ($token) {
+                        $isWidgetOrSellingPlanOrder = true;
+                    } else {
+                        // Check line items for selling plans or custom attributes
+                        $lineItemsNode = $node['lineItems']['edges'] ?? [];
+                        foreach ($lineItemsNode as $itemEdge) {
+                            $itemNode = $itemEdge['node'] ?? [];
+                            if (!empty($itemNode['sellingPlanAllocation']) || !empty($itemNode['customAttributes'])) {
+                                $isWidgetOrSellingPlanOrder = true;
+                                break;
+                            }
+                        }
+                        // Check tags
+                        $tagsStr = is_array($node['tags'] ?? []) ? implode(',', $node['tags']) : ($node['tags'] ?? '');
+                        if (stripos($tagsStr, 'buylater') !== false || stripos($tagsStr, 'deposit') !== false) {
+                            $isWidgetOrSellingPlanOrder = true;
+                        }
+                        // Check financial status for partial payments
+                        if (!$isWidgetOrSellingPlanOrder && ($financialStatus === 'PARTIALLY_PAID' || $financialStatus === 'PENDING')) {
+                            $isWidgetOrSellingPlanOrder = true;
+                        }
+
+                        if ($isWidgetOrSellingPlanOrder) {
+                            $token = 'bnl_' . $numericOrderId;
+                        }
+                    }
+
+                    if ($isWidgetOrSellingPlanOrder && $token) {
                         $lineItemsNode = $node['lineItems']['edges'] ?? [];
                         $productTitle = !empty($lineItemsNode[0]['node']['title']) ? $lineItemsNode[0]['node']['title'] : 'N/A';
 
@@ -1508,9 +1537,8 @@ class DashboardController extends Controller
 
                         // If order is partially paid or outstanding balance exists
                         if ($calcOutstanding > 0.0 && ($financialStatus === 'PARTIALLY_PAID' || $financialStatus === 'PENDING' || $financialStatus === 'PARTIALLY_REFUNDED')) {
-                            // Native Purchase Option (Selling Plan) Order handling:
                             $originalPrice = $totalPrice;
-                            $depositAmount = $netPayment > 0.0 ? $netPayment : 0.0;
+                            $depositAmount = $netPayment > 0.0 ? $netPayment : round($totalPrice * 0.1, 2);
                             $remainingBalance = $calcOutstanding;
                         } else {
                             // Fallback to Draft Order flow customAttributes check
@@ -1547,8 +1575,13 @@ class DashboardController extends Controller
                                 }
                             }
                             if ($remainingBalance === 0.0) {
-                                $remainingBalance = $originalPrice - $depositAmount;
+                                $remainingBalance = max(0, $originalPrice - $depositAmount);
                             }
+                        }
+
+                        $initialStatus = 'deposit_paid';
+                        if ($financialStatus === 'PAID' && $remainingBalance == 0) {
+                            $initialStatus = 'completed';
                         }
 
                         $booking = Booking::create([
@@ -1563,9 +1596,15 @@ class DashboardController extends Controller
                             'product_price' => $originalPrice,
                             'deposit_amount' => $depositAmount,
                             'remaining_balance' => $remainingBalance,
-                            'status' => 'pending',
+                            'status' => $initialStatus,
+                            'deposit_paid_at' => now(),
+                            'expires_at' => now()->addDays($holdDurationDays),
+                            'order_id' => $numericOrderId,
+                            'order_name' => $orderName,
+                            'payment_status' => strtolower($financialStatus),
+                            'fulfillment_status' => $fulfillmentStatus,
                         ]);
-                        \Illuminate\Support\Facades\Log::info("Sync: Auto-created Booking ID {$booking->id} from Order {$node['name']}");
+                        \Illuminate\Support\Facades\Log::info("Sync: Auto-created Booking ID {$booking->id} from Order {$node['name']} (status: {$initialStatus})");
                     }
                 }
 

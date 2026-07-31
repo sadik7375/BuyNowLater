@@ -75,6 +75,12 @@ class SubscriptionContractCreatedJob implements ShouldQueue
         if ($customer) {
             $customerName = trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''));
         }
+        if (empty($customerName) && !empty($email) && $email !== 'unknown@customer.com') {
+            $customerName = explode('@', $email)[0];
+        }
+        if (empty($customerName)) {
+            $customerName = 'Customer #' . substr(preg_replace('/[^0-9]/', '', (string)$contractId), -6);
+        }
 
         // Extract line items
         $lines = $this->data->lines->edges ?? ($this->data->lines ?? []);

@@ -123,10 +123,25 @@ class OrdersPaidJob implements ShouldQueue
             }
         }
 
-        // If it's not a deposit order and doesn't contain a buylater token, skip
-        if (!$isDeposit && empty($token)) {
+        // Check for selling plan line items or partial payments
+        $hasSellingPlan = false;
+        foreach ($lineItems as $item) {
+            $sp = is_object($item) ? ($item->selling_plan_allocation ?? null) : ($item['selling_plan_allocation'] ?? null);
+            if (!empty($sp)) {
+                $hasSellingPlan = true;
+                break;
+            }
+        }
+
+        $financialStatus = strtoupper($this->data->financial_status ?? '');
+        if (!$isDeposit && empty($token) && !$hasSellingPlan && !in_array($financialStatus, ['PARTIALLY_PAID', 'PENDING'])) {
             Log::info('OrdersPaidJob: Order is neither a BuyLater deposit nor a balance payment, skipping.');
             return;
+        }
+
+        if (empty($token)) {
+            $token = 'bnl_' . $orderId;
+            $isDeposit = true;
         }
 
         $shop = User::where('name', $this->shopDomain)->first();
@@ -140,53 +155,57 @@ class OrdersPaidJob implements ShouldQueue
 
         Log::info('OrdersPaidJob: Processing token', ['token' => $token, 'is_deposit' => $isDeposit]);
 
-        // Update booking status
+        // Customer name resolution
+        $customer = $this->data->customer ?? null;
+        $customerName = null;
+        if ($customer) {
+            $fetchedName = trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''));
+            if (!empty($fetchedName)) {
+                $customerName = $fetchedName;
+            }
+        }
+        if (empty($customerName) && !empty($this->data->billing_address)) {
+            $b = $this->data->billing_address;
+            $fetchedName = trim(($b->first_name ?? '') . ' ' . ($b->last_name ?? ''));
+            if (empty($fetchedName) && !empty($b->name)) {
+                $fetchedName = $b->name;
+            }
+            if (!empty($fetchedName)) {
+                $customerName = $fetchedName;
+            }
+        }
+        if (empty($customerName) && !empty($this->data->shipping_address)) {
+            $s = $this->data->shipping_address;
+            $fetchedName = trim(($s->first_name ?? '') . ' ' . ($s->last_name ?? ''));
+            if (empty($fetchedName) && !empty($s->name)) {
+                $fetchedName = $s->name;
+            }
+            if (!empty($fetchedName)) {
+                $customerName = $fetchedName;
+            }
+        }
+        $email = $this->data->email ?? ($customer->email ?? 'N/A');
+        if (empty($customerName) && !empty($email) && $email !== 'N/A') {
+            $customerName = explode('@', $email)[0];
+        }
+        if (empty($customerName)) {
+            $customerName = 'Customer ' . ($orderName ?: '#' . $orderId);
+        }
+
+        // Update or create booking status
         if ($token) {
             $booking = Booking::where('token', $token)->where('shop_id', $shop->id)->first();
+            if (!$booking) {
+                // Also try matching by order_id
+                $booking = Booking::where('shop_id', $shop->id)->where('order_id', $orderId)->first();
+            }
+
+            $settings = Setting::where('shop_id', $shop->id)->first();
+            $holdDurationDays = $settings ? (int) ($settings->hold_duration_days ?? 14) : 14;
+
             if ($booking) {
                 if ($isDeposit) {
-                    if ($booking->status === 'pending') {
-                        // Initial deposit paid
-                        $settings = Setting::where('shop_id', $shop->id)->first();
-                        $holdDurationDays = $settings ? (int) ($settings->hold_duration_days ?? 14) : 14;
-
-                        $customer = $this->data->customer ?? null;
-                        $customerName = null;
-                        if ($customer) {
-                            $fetchedName = trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? ''));
-                            if (!empty($fetchedName)) {
-                                $customerName = $fetchedName;
-                            }
-                        }
-                        if (empty($customerName) && !empty($this->data->billing_address)) {
-                            $b = $this->data->billing_address;
-                            $fetchedName = trim(($b->first_name ?? '') . ' ' . ($b->last_name ?? ''));
-                            if (empty($fetchedName) && !empty($b->name)) {
-                                $fetchedName = $b->name;
-                            }
-                            if (!empty($fetchedName)) {
-                                $customerName = $fetchedName;
-                            }
-                        }
-                        if (empty($customerName) && !empty($this->data->shipping_address)) {
-                            $s = $this->data->shipping_address;
-                            $fetchedName = trim(($s->first_name ?? '') . ' ' . ($s->last_name ?? ''));
-                            if (empty($fetchedName) && !empty($s->name)) {
-                                $fetchedName = $s->name;
-                            }
-                            if (!empty($fetchedName)) {
-                                $customerName = $fetchedName;
-                            }
-                        }
-                        if (empty($customerName)) {
-                            $customerName = $booking->customer_name;
-                        }
-                        if (empty($customerName) || strtolower($customerName) === 'n/a') {
-                            $customerName = 'Guest Customer';
-                        }
-
-                        $email = $this->data->email ?? ($customer->email ?? $booking->email);
-
+                    if ($booking->status === 'pending' || empty($booking->order_id)) {
                         $booking->update([
                             'status'        => 'deposit_paid',
                             'order_id'      => $orderId,
@@ -197,8 +216,8 @@ class OrdersPaidJob implements ShouldQueue
                             'deposit_paid_at' => now(),
                             'draft_order_id'=> null,
                             'checkout_url'  => null,
-                            'payment_status'=> $this->data->financial_status ?? 'partially_paid',
-                            'fulfillment_status' => $this->data->fulfillment_status ?? 'unfulfilled',
+                            'payment_status'=> strtolower($financialStatus ?: 'partially_paid'),
+                            'fulfillment_status' => strtolower($this->data->fulfillment_status ?? 'unfulfilled'),
                         ]);
                         Log::info('OrdersPaidJob: Booking updated to deposit_paid', ['booking_id' => $booking->id]);
                     } else {
@@ -212,19 +231,43 @@ class OrdersPaidJob implements ShouldQueue
                             'completed_at' => now(),
                             'balance_order_id' => $orderId,
                             'balance_order_name' => $orderName,
-                            'payment_status' => $this->data->financial_status ?? 'paid',
-                            'fulfillment_status' => $this->data->fulfillment_status ?? 'fulfilled',
+                            'payment_status' => strtolower($financialStatus ?: 'paid'),
+                            'fulfillment_status' => strtolower($this->data->fulfillment_status ?? 'fulfilled'),
                         ]);
                         Log::info('OrdersPaidJob: Booking marked completed (balance paid)', ['booking_id' => $booking->id]);
-                        // No need to hold fulfillment for the final balance order
-                        return;
-                    } else {
-                        Log::info('OrdersPaidJob: Booking status is ' . $booking->status . ', cannot mark completed.', ['booking_id' => $booking->id]);
                         return;
                     }
                 }
             } else {
-                Log::warning('OrdersPaidJob: No booking found for token', ['token' => $token]);
+                // Auto-create booking record from webhook order
+                $firstItem = $lineItems[0] ?? null;
+                $productTitle = is_object($firstItem) ? ($firstItem->title ?? 'Reserved Product') : ($firstItem['title'] ?? 'Reserved Product');
+                $totalPrice = (float) ($this->data->total_price ?? 0);
+                $netPayment = (float) ($this->data->current_total_price ?? $totalPrice);
+                $depositAmount = $netPayment > 0 ? $netPayment : round($totalPrice * 0.1, 2);
+                $remainingBalance = max(0, $totalPrice - $depositAmount);
+
+                $booking = Booking::create([
+                    'shop_id' => $shop->id,
+                    'token' => $token,
+                    'order_id' => $orderId,
+                    'order_name' => $orderName,
+                    'customer_name' => $customerName,
+                    'email' => $email,
+                    'product_id' => (string) (is_object($firstItem) ? ($firstItem->product_id ?? 'N/A') : ($firstItem['product_id'] ?? 'N/A')),
+                    'variant_id' => (string) (is_object($firstItem) ? ($firstItem->variant_id ?? 'N/A') : ($firstItem['variant_id'] ?? 'N/A')),
+                    'product_title' => $productTitle,
+                    'product_handle' => 'product',
+                    'product_price' => $totalPrice,
+                    'deposit_amount' => $depositAmount,
+                    'remaining_balance' => $remainingBalance,
+                    'status' => ($financialStatus === 'PAID' && $remainingBalance == 0) ? 'completed' : 'deposit_paid',
+                    'deposit_paid_at' => now(),
+                    'expires_at' => now()->addDays($holdDurationDays),
+                    'payment_status' => strtolower($financialStatus ?: 'partially_paid'),
+                    'fulfillment_status' => strtolower($this->data->fulfillment_status ?? 'unfulfilled'),
+                ]);
+                Log::info('OrdersPaidJob: Auto-created new booking from paid order payload', ['booking_id' => $booking->id]);
             }
         }
 

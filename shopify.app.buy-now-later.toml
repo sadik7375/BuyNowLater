@@ -1,13 +1,13 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "05b438e5be3e9c9cd30d5dcdb36925d4"
+client_id = "39b4ee2ef0ed6c2273df208b36a059fd"
 application_url = "https://limitation-mines-cologne-praise.trycloudflare.com"
 embedded = true
 name = "Buy Now Later"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_draft_orders,read_products,read_themes,write_draft_orders,write_products,read_customers"
+scopes = "read_products,write_products,read_orders,write_orders,read_all_orders,read_customers,read_themes,read_own_subscription_contracts,write_own_subscription_contracts,read_customer_payment_methods,read_draft_orders,write_draft_orders,write_purchase_options,read_purchase_options"
 
 [auth]
 redirect_urls = [

@@ -1809,6 +1809,33 @@
         $isFreemium = $shop->isFreemium();
     @endphp
 
+    @if(session('success'))
+        <div class="alert success">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert error">
+            {{ session('error') }}
+        </div>
+    @endif
+
+    <!-- Hidden tab buttons for JS compatibility -->
+    <div class="dashboard-tabs" aria-hidden="true" style="display: none;">
+        <button class="tab-button active" onclick="switchTab(event, 'tab-overview')">Overview</button>
+        <button class="tab-button" onclick="switchTab(event, 'tab-bookings-list')">Bookings</button>
+        <button class="tab-button" onclick="switchTab(event, 'tab-reminders-list')">Reminders</button>
+        <button class="tab-button" onclick="switchTab(event, 'tab-subscribers-list')">Price Alerts</button>
+        <button class="tab-button" onclick="switchTab(event, 'tab-settings')">Settings</button>
+        <button class="tab-button" onclick="switchTab(event, 'tab-how-it-works')">How It Works</button>
+        <button class="tab-button" onclick="switchTab(event, 'tab-benefits')">Benefits</button>
+        <button class="tab-button" onclick="switchTab(event, 'tab-pricing')">Price Plan</button>
+    </div>
+
+    <!-- Tab 1: Overview Dashboard -->
+    <div id="tab-overview" class="tab-content" style="display: {{ $activeTab === 'tab-overview' ? 'block' : 'none' }};">
+
     <div class="filter-toolbar-container">
         <div class="filter-presets">
             <button class="filter-btn" id="btn_filter_all" onclick="setClientDateFilter('all')">All Time</button>
@@ -1853,18 +1880,6 @@
         </div>
     </div>
 
-    @if(session('success'))
-        <div class="alert success">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="alert error">
-            {{ session('error') }}
-        </div>
-    @endif
-
     @php
         $usageStats = \App\Models\Booking::getUsageStats($shop->id);
         $usageCount = $usageStats['total'];
@@ -1905,7 +1920,7 @@
             <ul class="warning-list">
                 @foreach($expiringToday as $booking)
                     @php
-                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : 'Guest Customer';
+                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : ($booking->email ?: ('Customer ' . ($booking->order_name ?: '#' . $booking->id)));
                     @endphp
                     <li>
                         <strong>{{ $displayName }}</strong>'s reservation for <em>{{ $booking->product_title }}</em> expires today (Deposit: ${{ number_format($booking->deposit_amount, 2) }}).
@@ -1924,7 +1939,7 @@
             <ul class="warning-list">
                 @foreach($expiringTomorrow as $booking)
                     @php
-                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : 'Guest Customer';
+                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : ($booking->email ?: ('Customer ' . ($booking->order_name ?: '#' . $booking->id)));
                     @endphp
                     <li>
                         <strong>{{ $displayName }}</strong>'s reservation for <em>{{ $booking->product_title }}</em> expires tomorrow.
@@ -1933,17 +1948,6 @@
             </ul>
         </div>
     @endif
-
-    <!-- 
-      DEBUG REVENUE INFO:
-      PHP Revenue Recovered: ${{ $revenueRecovered }}
-      PHP Active Bookings: {{ $activeBookings }}
-      PHP Expiring Soon Count: {{ $expiringSoonCount }}
-      Bookings Details:
-      @foreach($bookings as $b)
-        - ID: {{ $b->id }}, Status: {{ $b->status }}, Payment Status: {{ $b->payment_status }}, Price: {{ $b->product_price }}, Balance: {{ $b->remaining_balance }}
-      @endforeach
-    -->
 
     <!-- Stats Cards Grid -->
     <div class="stats-grid">
@@ -1991,20 +1995,6 @@
         </div>
     </div>
 
-    <!-- Hidden tab buttons for JS compatibility -->
-    <div class="dashboard-tabs" aria-hidden="true" style="display: none;">
-        <button class="tab-button active" onclick="switchTab(event, 'tab-overview')">Overview</button>
-        <button class="tab-button" onclick="switchTab(event, 'tab-bookings-list')">Bookings</button>
-        <button class="tab-button" onclick="switchTab(event, 'tab-reminders-list')">Reminders</button>
-        <button class="tab-button" onclick="switchTab(event, 'tab-subscribers-list')">Price Alerts</button>
-        <button class="tab-button" onclick="switchTab(event, 'tab-settings')">Settings</button>
-        <button class="tab-button" onclick="switchTab(event, 'tab-how-it-works')">How It Works</button>
-        <button class="tab-button" onclick="switchTab(event, 'tab-benefits')">Benefits</button>
-        <button class="tab-button" onclick="switchTab(event, 'tab-pricing')">Price Plan</button>
-    </div>
-
-    <!-- Tab 1: Overview Dashboard -->
-    <div id="tab-overview" class="tab-content" style="display: {{ $activeTab === 'tab-overview' ? 'block' : 'none' }};">
         <!-- Theme App Extension Onboarding Card -->
         <div class="onboarding-card">
             <div class="onboarding-card-header">
@@ -2047,45 +2037,8 @@
                 <h3>Recent Bookings</h3>
                 <div class="recent-bookings-list">
                     @if($bookings->isEmpty())
-                        <!-- Default Mockups if DB is clean -->
-                        <div class="booking-item">
-                            <div class="user-avatar-info">
-                                <div class="avatar-circle">SR</div>
-                                <div class="user-meta">
-                                    <h4>Sarah R.</h4>
-                                    <p>Sony WH-1000XM5</p>
-                                </div>
-                            </div>
-                            <div class="booking-status-price">
-                                <span class="price-value">$55.80</span>
-                                <span class="status-pill deposit_paid">Partial Paid</span>
-                            </div>
-                        </div>
-                        <div class="booking-item">
-                            <div class="user-avatar-info">
-                                <div class="avatar-circle green">MK</div>
-                                <div class="user-meta">
-                                    <h4>Mohammed K.</h4>
-                                    <p>Nike Air Max 2025</p>
-                                </div>
-                            </div>
-                            <div class="booking-status-price">
-                                <span class="price-value">$31.20</span>
-                                <span class="status-pill deposit_paid">Partial Paid</span>
-                            </div>
-                        </div>
-                        <div class="booking-item">
-                            <div class="user-avatar-info">
-                                <div class="avatar-circle orange">AL</div>
-                                <div class="user-meta">
-                                    <h4>Aisha L.</h4>
-                                    <p>Apple Watch SE</p>
-                                </div>
-                            </div>
-                            <div class="booking-status-price">
-                                <span class="price-value">$62.50</span>
-                                <span class="status-pill completed">Full Paid</span>
-                            </div>
+                        <div style="text-align: center; color: var(--text-muted); font-size: 13.5px; padding: 40px 10px;">
+                            No recent bookings found.
                         </div>
                     @else
                         @foreach($bookings as $booking)
@@ -2188,7 +2141,7 @@
                                 </div>
                                 @foreach($expiringToday as $booking)
                                     @php
-                                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : 'Guest Customer';
+                                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : ($booking->email ?: ('Customer ' . ($booking->order_name ?: '#' . $booking->id)));
                                     @endphp
                                     <div class="expiry-row" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
                                         <div>
@@ -2217,7 +2170,7 @@
                                 </div>
                                 @foreach($expiringTomorrow as $booking)
                                     @php
-                                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : 'Guest Customer';
+                                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : ($booking->email ?: ('Customer ' . ($booking->order_name ?: '#' . $booking->id)));
                                     @endphp
                                     <div class="expiry-row" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
                                         <div>
@@ -2246,7 +2199,7 @@
                                 </div>
                                 @foreach($expiringThisWeek as $booking)
                                     @php
-                                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : 'Guest Customer';
+                                        $displayName = ($booking->customer_name && strtolower($booking->customer_name) !== 'n/a' && strtolower($booking->customer_name) !== 'null') ? $booking->customer_name : ($booking->email ?: ('Customer ' . ($booking->order_name ?: '#' . $booking->id)));
                                     @endphp
                                     <div class="expiry-row" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--border-color);">
                                         <div>
@@ -2272,6 +2225,7 @@
             </div>
         </div>
     </div>
+</div>
 
     <!-- Tab 2: Bookings List (Required fields & actions) -->
     <div id="tab-bookings-list" class="tab-content" style="display: {{ $activeTab === 'tab-bookings-list' ? 'block' : 'none' }};">
@@ -2930,118 +2884,119 @@
             </div>
         </div>
 
-        <!-- Sub Tab 3: Price Plan -->
-        <div id="sub-tab-pricing" class="sub-tab-content" style="display: {{ $subTab === 'pricing' ? 'block' : 'none' }};">
-            <div class="guide-header">
-                <h2>Select Your Plan</h2>
-                <p>Start for free or upgrade to unlock unlimited deposit reservations and priority support.</p>
+    </div>
+
+    <!-- Standalone Tab: Price Plan -->
+    <div id="tab-pricing" class="tab-content" style="display: {{ $activeTab === 'tab-pricing' ? 'block' : 'none' }};">
+        <div class="guide-header">
+            <h2>Select Your Plan</h2>
+            <p>Start for free or upgrade to unlock unlimited deposit reservations and priority support.</p>
+        </div>
+
+        <div class="pricing-grid">
+            <!-- Free Plan -->
+            <div class="pricing-card">
+                <div>
+                    <div class="pricing-card-header">
+                        <h3>Free Plan</h3>
+                        <p>Perfect for getting started with deposit-based product reservations.</p>
+                    </div>
+                    <div class="pricing-price">
+                        <span class="amount">$0</span>
+                        <span class="period">/ month</span>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Up to 10 active deposit reservations
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Buy Now Later widget on product pages
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Configurable deposit percentage
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Shopify Draft Order integration
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Reservation dashboard &amp; tracking
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Email support
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    @if(!$hasPlan)
+                        <s-button disabled="true" style="margin: 0; width: 100%;">Current Plan</s-button>
+                    @else
+                        <s-button disabled="true" style="margin: 0; width: 100%;">Free Tier</s-button>
+                    @endif
+                </div>
             </div>
 
-            <div class="pricing-grid">
-                <!-- Free Plan -->
-                <div class="pricing-card">
-                    <div>
-                        <div class="pricing-card-header">
-                            <h3>Free Plan</h3>
-                            <p>Perfect for getting started with deposit-based product reservations.</p>
-                        </div>
-                        <div class="pricing-price">
-                            <span class="amount">$0</span>
-                            <span class="period">/ month</span>
-                        </div>
-                        <ul class="pricing-features">
-                            <li>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                Up to 10 active deposit reservations
-                            </li>
-                            <li>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                Buy Now Later widget on product pages
-                            </li>
-                            <li>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                Configurable deposit percentage
-                            </li>
-                            <li>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                Shopify Draft Order integration
-                            </li>
-                            <li>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                Reservation dashboard &amp; tracking
-                            </li>
-                            <li>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                Email support
-                            </li>
-                        </ul>
+            <!-- Premium Plan -->
+            <div class="pricing-card popular">
+                <div>
+                    <div class="pricing-card-header">
+                        <h3>Premium Plan</h3>
+                        <p>Unlimited deposit reservations with full controls and priority support.</p>
                     </div>
-                    <div>
-                        @if(!$hasPlan)
-                            <s-button disabled="true" style="margin: 0; width: 100%;">Current Plan</s-button>
-                        @else
-                            <s-button disabled="true" style="margin: 0; width: 100%;">Free Tier</s-button>
-                        @endif
+                    <div class="pricing-price">
+                        <span class="amount">$5</span>
+                        <span class="period">/ month</span>
                     </div>
+                    <ul class="pricing-features">
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <strong>Unlimited</strong> deposit reservations &amp; holds
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <strong>Custom deposit percentage</strong> per product or store-wide
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <strong>Balance payment links</strong> sent directly to customers
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <strong>Customer Order Status Portal</strong> — track reservation in account
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <strong>Automated Draft Order Sync</strong> with Shopify admin
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <strong>Fulfillment Hold</strong> — auto-holds order until balance is paid
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <strong>Configurable hold expiry</strong> — set how long reservations last
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <strong>Theme App Extension</strong> — no code edits required
+                        </li>
+                        <li>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            <strong>Priority Support</strong> — 24/7 Email &amp; Live Chat
+                        </li>
+                    </ul>
                 </div>
-
-                <!-- Premium Plan -->
-                <div class="pricing-card popular">
-                    <div>
-                        <div class="pricing-card-header">
-                            <h3>Premium Plan</h3>
-                            <p>Unlimited deposit reservations with full controls and priority support.</p>
-                        </div>
-                        <div class="pricing-price">
-                            <span class="amount">$5</span>
-                            <span class="period">/ month</span>
-                        </div>
-                        <ul class="pricing-features">
-                            <li>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                <strong>Unlimited</strong> deposit reservations &amp; holds
-                            </li>
-                            <li>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                <strong>Custom deposit percentage</strong> per product or store-wide
-                            </li>
-                            <li>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                <strong>Balance payment links</strong> sent directly to customers
-                            </li>
-                            <li>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                <strong>Customer Order Status Portal</strong> — track reservation in account
-                            </li>
-                            <li>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                <strong>Automated Draft Order Sync</strong> with Shopify admin
-                            </li>
-                            <li>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                <strong>Fulfillment Hold</strong> — auto-holds order until balance is paid
-                            </li>
-                            <li>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                <strong>Configurable hold expiry</strong> — set how long reservations last
-                            </li>
-                            <li>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                <strong>Theme App Extension</strong> — no code edits required
-                            </li>
-                            <li>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                <strong>Priority Support</strong> — 24/7 Email &amp; Live Chat
-                            </li>
-                        </ul>
-                    </div>
-                    <div>
-                        @if($hasPlan)
-                            <s-button disabled="true" style="margin: 0; width: 100%;">Current Plan</s-button>
-                        @else
-                            <button type="button" onclick="window.location.href='{{ route('billing', array_merge(['plan' => 1, 'shop' => $shop->name], request()->query())) }}'" class="Polaris-Button Polaris-Button--primary" style="display: block; text-align: center; text-decoration: none; padding: 12px; background: #008060; color: #fff; border-radius: 8px; font-weight: 600; width: 100%; box-sizing: border-box; border: none; cursor: pointer;">Upgrade to Premium ($5/mo)</button>
-                        @endif
-                    </div>
+                <div>
+                    @if($hasPlan)
+                        <s-button disabled="true" style="margin: 0; width: 100%;">Current Plan</s-button>
+                    @else
+                        <button type="button" onclick="window.location.href='{{ route('billing', array_merge(['plan' => 1, 'shop' => $shop->name], request()->query())) }}'" class="Polaris-Button Polaris-Button--primary" style="display: block; text-align: center; text-decoration: none; padding: 12px; background: #008060; color: #fff; border-radius: 8px; font-weight: 600; width: 100%; box-sizing: border-box; border: none; cursor: pointer;">Upgrade to Premium ($5/mo)</button>
+                    @endif
                 </div>
             </div>
         </div>
@@ -4758,6 +4713,44 @@ function filterSubscribers() {
             }
         });
     }
+
+    window.switchTab = function(e, tabId) {
+        if (e && e.preventDefault) e.preventDefault();
+        
+        // Hide all main tabs
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.style.display = 'none';
+        });
+
+        // Hide sub-tab contents if any
+        document.querySelectorAll('.sub-tab-content').forEach(sub => {
+            sub.style.display = 'none';
+        });
+
+        // Show selected tab
+        const targetTab = document.getElementById(tabId);
+        if (targetTab) {
+            targetTab.style.display = 'block';
+        }
+
+        // Update active class on sidebar buttons
+        document.querySelectorAll('.sidebar-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        if (e && e.currentTarget) {
+            e.currentTarget.classList.add('active');
+        } else {
+            const activeNavBtn = document.querySelector(`.sidebar-btn[onclick*="${tabId}"]`);
+            if (activeNavBtn) activeNavBtn.classList.add('active');
+        }
+
+        // Handle specific sub-tab fallback if support tab is clicked
+        if (tabId === 'tab-support') {
+            const subWorks = document.getElementById('sub-tab-how-it-works');
+            if (subWorks) subWorks.style.display = 'block';
+        }
+    };
 
     // Onboarding dismissal functionality
     window.dismissOnboarding = function() {

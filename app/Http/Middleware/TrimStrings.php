@@ -15,6 +15,12 @@ class TrimStrings extends Middleware
         'current_password',
         'password',
         'password_confirmation',
+        'hmac',
+        'signature',
+        'host',
+        'shop',
+        'timestamp',
+        'token',
     ];
 
     public function handle($request, \Closure $next)
