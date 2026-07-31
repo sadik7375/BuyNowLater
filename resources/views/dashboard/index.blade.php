@@ -3517,8 +3517,8 @@ document.addEventListener('DOMContentLoaded', function() {
             tabId = 'tab-support';
             subTabId = 'sub-tab-how-it-works';
         } else if (path === '/price-plan') {
-            tabId = 'tab-support';
-            subTabId = 'sub-tab-pricing';
+            tabId = 'tab-pricing';
+            subTabId = null;
         }
         
         switchTab(null, tabId);
@@ -3562,9 +3562,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function switchTab(event, tabId) {
         let actualTabId = tabId;
         let subTabId = null;
-        if (tabId === 'tab-pricing' || tabId === 'tab-price-plan' || tabId === 'sub-tab-pricing' || tabId === 'pricing') {
-            actualTabId = 'tab-support';
-            subTabId = 'sub-tab-pricing';
+        if (tabId === 'tab-pricing' || tabId === 'tab-price-plan' || tabId === 'pricing') {
+            actualTabId = 'tab-pricing';
+            subTabId = null;
         } else if (tabId === 'tab-how-it-works' || tabId === 'sub-tab-how-it-works') {
             actualTabId = 'tab-support';
             subTabId = 'sub-tab-how-it-works';
