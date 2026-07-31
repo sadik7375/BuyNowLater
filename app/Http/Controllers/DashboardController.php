@@ -169,6 +169,9 @@ class DashboardController extends Controller
             ->where('expires_at', '<', Carbon::now())
             ->update(['status' => 'expired']);
 
+        // Sync draft orders and orders from Shopify
+        $this->syncBookingsWithShopify($shop);
+
         $allBookings = Booking::where('shop_id', $shop->id)
             ->orderBy('created_at', 'desc')
             ->get();
