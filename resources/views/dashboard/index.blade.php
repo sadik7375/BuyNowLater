@@ -2326,10 +2326,10 @@
                                     } elseif ($statusLower === 'voided') {
                                         $paymentStatusText = 'Voided';
                                         $paymentTone = 'critical';
-                                    } elseif ($booking->status === 'completed' || ($statusLower === 'paid' && (float)$booking->remaining_balance <= 0)) {
+                                    } elseif ($booking->status === 'completed' || $statusLower === 'paid') {
                                         $paymentStatusText = 'Paid';
                                         $paymentTone = 'success';
-                                    } elseif ($booking->status === 'deposit_paid' || $statusLower === 'partially_paid' || (float)$booking->remaining_balance > 0) {
+                                    } elseif ($booking->status === 'deposit_paid' || $statusLower === 'partially_paid') {
                                         $paymentStatusText = 'Partially paid';
                                         $paymentTone = 'info';
                                     } else {
