@@ -2726,17 +2726,6 @@
             <div style="text-align: right; margin-top: 20px; margin-bottom: 20px;">
                 <button type="submit" class="btn-save">Save All Settings</button>
             </div>
-        </form>
-    </div>
-
-
-
-
-
-
-
-
-        </form>
     </div>
 
     <!-- Tab 6: Support (Consolidated View More) -->
