@@ -421,6 +421,14 @@ return [
             'address' => env('APP_URL') . '/webhook/orders-paid',
         ],
         [
+            'topic' => 'ORDERS_CREATE',
+            'address' => env('APP_URL') . '/webhook/orders-paid',
+        ],
+        [
+            'topic' => 'ORDERS_UPDATED',
+            'address' => env('APP_URL') . '/webhook/orders-paid',
+        ],
+        [
             'topic' => 'APP_UNINSTALLED',
             'address' => env('APP_URL') . '/webhook/app-uninstalled',
         ],
