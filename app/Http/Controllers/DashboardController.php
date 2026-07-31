@@ -176,7 +176,10 @@ class DashboardController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $bookings = $allBookings;
+        // Display bookings that have a valid order_id, draft_order_id, or valid deposit_paid/completed/expired status
+        $bookings = $allBookings->filter(function($b) {
+            return !empty($b->order_id) || !empty($b->draft_order_id) || in_array($b->status, ['deposit_paid', 'completed', 'expired']);
+        });
 
         if ($request->query('format') === 'json') {
             return response()->json([
@@ -1507,7 +1510,7 @@ class DashboardController extends Controller
                     }
                 }
 
-                // 2. Fallback to token matching
+                // 2. Fallback to token matching or uncompleted booking matching
                 $token = null;
                 if (!$booking) {
                     $token = $this->extractTokenFromNode($node);
@@ -1530,6 +1533,22 @@ class DashboardController extends Controller
                 }
                 if (empty($customerName)) {
                     $customerName = 'Customer ' . ($orderName ?: '#' . ($orderNameNumber ?: $numericOrderId));
+                }
+
+                // 2.5 Fallback: link to an uncompleted booking (where order_id is null) for the same customer or pending status
+                if (!$booking && !empty($email) && $email !== 'N/A') {
+                    $booking = Booking::where('shop_id', $shop->id)
+                        ->whereNull('order_id')
+                        ->where('email', $email)
+                        ->orderBy('created_at', 'desc')
+                        ->first();
+                }
+                if (!$booking) {
+                    $booking = Booking::where('shop_id', $shop->id)
+                        ->whereNull('order_id')
+                        ->where('status', 'pending')
+                        ->orderBy('created_at', 'desc')
+                        ->first();
                 }
 
                 // 3. Auto-create booking if it doesn't exist yet
