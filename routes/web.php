@@ -23,6 +23,20 @@ Log::info('Web Route Match:', [
 ]);
 
 
+Route::get('/debug-json', function(\Illuminate\Http\Request $request) {
+    $shopDomain = $request->query('shop', 'canny-apps.myshopify.com');
+    $user = \App\Models\User::where('name', $shopDomain)->orWhere('name', 'like', '%' . explode('.', $shopDomain)[0] . '%')->first();
+    if (!$user) {
+        return response()->json(['error' => 'Shop not found for domain ' . $shopDomain, 'all_shops' => \App\Models\User::pluck('name')], 404);
+    }
+    $bookings = \App\Models\Booking::where('shop_id', $user->id)->orderBy('created_at', 'desc')->get();
+    return response()->json([
+        'shop' => $user->name,
+        'count' => $bookings->count(),
+        'bookings' => $bookings
+    ]);
+});
+
 Route::get('/run-migrate-force', function () {
     try {
         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
