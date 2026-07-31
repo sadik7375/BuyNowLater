@@ -2319,8 +2319,8 @@
                                     $shopHandle = str_replace('.myshopify.com', '', $shop->name);
 
                                     // Payment Status Logic directly from Shopify GraphQL API payment_status
-                                    $paymentStatusText = 'Pending';
-                                    $paymentTone = 'warning';
+                                    $paymentStatusText = 'Partially paid';
+                                    $paymentTone = 'info';
                                     if (!empty($booking->payment_status)) {
                                         $statusLower = strtolower($booking->payment_status);
                                         if ($statusLower === 'paid') {
@@ -2330,8 +2330,13 @@
                                             $paymentStatusText = 'Partially paid';
                                             $paymentTone = 'info';
                                         } elseif ($statusLower === 'pending') {
-                                            $paymentStatusText = 'Pending';
-                                            $paymentTone = 'warning';
+                                            if ($booking->status === 'deposit_paid' || (!empty($booking->deposit_amount) && $booking->deposit_amount > 0)) {
+                                                $paymentStatusText = 'Partially paid';
+                                                $paymentTone = 'info';
+                                            } else {
+                                                $paymentStatusText = 'Pending';
+                                                $paymentTone = 'warning';
+                                            }
                                         } elseif ($statusLower === 'refunded') {
                                             $paymentStatusText = 'Refunded';
                                             $paymentTone = 'critical';

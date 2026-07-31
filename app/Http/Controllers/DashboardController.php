@@ -178,6 +178,14 @@ class DashboardController extends Controller
 
         $bookings = $allBookings;
 
+        if ($request->query('format') === 'json') {
+            return response()->json([
+                'shop' => $shop->name,
+                'count' => $bookings->count(),
+                'bookings' => $bookings
+            ]);
+        }
+
         // --- Expiring Soon (Next 7 days, independent of date filter) ---
         $todayStart = Carbon::today()->startOfDay();
         $tomorrowStart = Carbon::tomorrow()->startOfDay();
