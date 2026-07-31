@@ -181,11 +181,13 @@ class DashboardController extends Controller
             return !empty($b->order_id) || !empty($b->draft_order_id) || in_array($b->status, ['deposit_paid', 'completed', 'expired']);
         });
 
-        if ($request->query('format') === 'json') {
+        if ($request->query('format') === 'json' || $request->query('json') == '1' || $request->query('debug') == '1') {
             return response()->json([
                 'shop' => $shop->name,
-                'count' => $bookings->count(),
-                'bookings' => $bookings
+                'filtered_count' => $bookings->count(),
+                'total_count' => $allBookings->count(),
+                'bookings' => $bookings->values(),
+                'all_bookings' => $allBookings->values()
             ]);
         }
 
