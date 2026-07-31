@@ -174,7 +174,7 @@ class DashboardController extends Controller
             ->get();
 
         $bookings = $allBookings->filter(function($b) {
-            return in_array($b->status, ['deposit_paid', 'completed', 'expired']);
+            return in_array($b->status, ['deposit_paid', 'completed', 'expired']) || !empty($b->order_id) || !empty($b->draft_order_id);
         });
 
         // --- Expiring Soon (Next 7 days, independent of date filter) ---
@@ -1432,6 +1432,12 @@ class DashboardController extends Controller
                                     node {
                                         title
                                         quantity
+                                        sellingPlanAllocation {
+                                            sellingPlan {
+                                                id
+                                                name
+                                            }
+                                        }
                                         variant {
                                             id
                                             product {
