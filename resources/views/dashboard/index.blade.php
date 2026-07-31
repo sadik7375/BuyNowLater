@@ -3879,10 +3879,14 @@ function filterBookings() {
         let matchesStatus = false;
         if (statusVal === 'all') {
             matchesStatus = true;
+        } else if (statusVal === 'deposit_paid') {
+            matchesStatus = (status === 'deposit_paid' || paymentStatus === 'partially_paid' || paymentStatus === 'pending') && paymentStatus !== 'refunded';
+        } else if (statusVal === 'completed') {
+            matchesStatus = (status === 'completed' || paymentStatus === 'paid') && paymentStatus !== 'refunded';
         } else if (statusVal === 'expired') {
-            matchesStatus = (status === 'expired' || paymentStatus === 'refunded');
+            matchesStatus = (status === 'expired' || paymentStatus === 'refunded' || paymentStatus === 'voided');
         } else {
-            matchesStatus = (status === statusVal && paymentStatus !== 'refunded');
+            matchesStatus = (status === statusVal);
         }
         const matchesDate = !window.currentDateStart || (createdAt >= window.currentDateStart && createdAt <= window.currentDateEnd);
 

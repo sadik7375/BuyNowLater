@@ -176,9 +176,7 @@ class DashboardController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $bookings = $allBookings->filter(function($b) {
-            return in_array($b->status, ['deposit_paid', 'completed', 'expired']) || !empty($b->order_id) || !empty($b->draft_order_id);
-        });
+        $bookings = $allBookings;
 
         // --- Expiring Soon (Next 7 days, independent of date filter) ---
         $todayStart = Carbon::today()->startOfDay();
@@ -1475,18 +1473,29 @@ class DashboardController extends Controller
                 if (!$node) continue;
 
                 $numericOrderId = preg_replace('/[^0-9]/', '', $node['id'] ?? '');
-                $financialStatus = strtoupper($node['displayFinancialStatus'] ?? '');
+                $financialStatus = strtoupper(str_replace([' ', '-'], '_', $node['displayFinancialStatus'] ?? ''));
                 $isRemaining = $this->isRemainingBalanceNode($node);
                 $orderName = $node['name'] ?? null;
+                $orderNameNumber = preg_replace('/[^0-9]/', '', $orderName ?? '');
                 $fulfillmentStatus = strtolower($node['displayFulfillmentStatus'] ?? '');
 
-                // 1. Try to match by order_id or balance_order_id first
+                // 1. Try to match by order_id, order_name, or balance_order_id first
                 $booking = null;
-                if ($numericOrderId) {
+                if (!empty($numericOrderId) || !empty($orderName) || !empty($orderNameNumber)) {
                     if ($isRemaining) {
-                        $booking = Booking::where('shop_id', $shop->id)->where('balance_order_id', $numericOrderId)->first();
+                        $booking = Booking::where('shop_id', $shop->id)
+                            ->where(function($q) use ($numericOrderId, $orderName, $orderNameNumber) {
+                                if ($numericOrderId) $q->orWhere('balance_order_id', $numericOrderId);
+                                if ($orderName) $q->orWhere('balance_order_name', $orderName)->orWhere('balance_order_id', $orderName);
+                                if ($orderNameNumber) $q->orWhere('balance_order_id', $orderNameNumber);
+                            })->first();
                     } else {
-                        $booking = Booking::where('shop_id', $shop->id)->where('order_id', $numericOrderId)->first();
+                        $booking = Booking::where('shop_id', $shop->id)
+                            ->where(function($q) use ($numericOrderId, $orderName, $orderNameNumber) {
+                                if ($numericOrderId) $q->orWhere('order_id', $numericOrderId);
+                                if ($orderName) $q->orWhere('order_name', $orderName)->orWhere('order_id', $orderName);
+                                if ($orderNameNumber) $q->orWhere('order_id', $orderNameNumber);
+                            })->first();
                     }
                 }
 
@@ -1512,7 +1521,7 @@ class DashboardController extends Controller
                     $customerName = explode('@', $email)[0];
                 }
                 if (empty($customerName)) {
-                    $customerName = 'Customer ' . ($orderName ?: '#' . $numericOrderId);
+                    $customerName = 'Customer ' . ($orderName ?: '#' . ($orderNameNumber ?: $numericOrderId));
                 }
 
                 // 3. Auto-create booking if it doesn't exist yet
@@ -1540,12 +1549,12 @@ class DashboardController extends Controller
                             $isWidgetOrSellingPlanOrder = true;
                         }
                         // Check financial status for partial payments
-                        if (!$isWidgetOrSellingPlanOrder && ($financialStatus === 'PARTIALLY_PAID' || $financialStatus === 'PENDING')) {
+                        if (!$isWidgetOrSellingPlanOrder && in_array($financialStatus, ['PARTIALLY_PAID', 'PENDING', 'AUTHORIZED', 'PAID'])) {
                             $isWidgetOrSellingPlanOrder = true;
                         }
 
                         if ($isWidgetOrSellingPlanOrder) {
-                            $token = 'bnl_' . $numericOrderId;
+                            $token = 'bnl_' . ($orderNameNumber ?: $numericOrderId);
                         }
                     }
 
