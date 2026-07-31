@@ -1701,9 +1701,12 @@ class DashboardController extends Controller
                         }
                         $booking->update($updateData);
                     } else {
+                        $savedOrderId = !empty($numericOrderId) ? $numericOrderId : $orderNameNumber;
+                        $savedOrderName = !empty($orderName) ? $orderName : ('#' . $savedOrderId);
+
                         $updateData = [
-                            'order_id' => $numericOrderId,
-                            'order_name' => $orderName,
+                            'order_id' => $savedOrderId,
+                            'order_name' => $savedOrderName,
                             'payment_status' => strtolower($financialStatus),
                             'fulfillment_status' => $fulfillmentStatus,
                         ];
@@ -1731,13 +1734,15 @@ class DashboardController extends Controller
                                 $updateData['completed_at'] = now();
                                 \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} marked completed via full Order payment.");
                             }
-                        } elseif ($booking->status === 'pending' && ($financialStatus === 'PAID' || $financialStatus === 'PARTIALLY_PAID')) {
-                            $updateData['status'] = 'deposit_paid';
-                            $updateData['expires_at'] = now()->addDays($holdDurationDays);
-                            $updateData['deposit_paid_at'] = now();
-                            $updateData['draft_order_id'] = null;
-                            $updateData['checkout_url'] = null;
-                            \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} marked deposit_paid via deposit Order payment.");
+                        } else {
+                            if ($booking->status === 'pending' || empty($booking->status)) {
+                                $updateData['status'] = 'deposit_paid';
+                                $updateData['expires_at'] = now()->addDays($holdDurationDays);
+                                $updateData['deposit_paid_at'] = now();
+                                $updateData['draft_order_id'] = null;
+                                $updateData['checkout_url'] = null;
+                                \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} marked deposit_paid via deposit Order payment.");
+                            }
                         }
                         $booking->update($updateData);
                     }
