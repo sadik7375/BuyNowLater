@@ -2318,23 +2318,39 @@
                                     $createdAtTimestamp = $booking->created_at ? $booking->created_at->timestamp : 0;
                                     $shopHandle = str_replace('.myshopify.com', '', $shop->name);
 
-                                    // Payment Status Logic
-                                    $statusLower = strtolower($booking->payment_status ?? '');
-                                    if ($statusLower === 'refunded' || $booking->status === 'expired') {
-                                        $paymentStatusText = 'Refunded';
-                                        $paymentTone = 'critical';
-                                    } elseif ($statusLower === 'voided') {
-                                        $paymentStatusText = 'Voided';
-                                        $paymentTone = 'critical';
-                                    } elseif ($booking->status === 'completed' || $statusLower === 'paid') {
+                                    // Payment Status Logic directly from Shopify GraphQL API payment_status
+                                    $paymentStatusText = 'Pending';
+                                    $paymentTone = 'warning';
+                                    if (!empty($booking->payment_status)) {
+                                        $statusLower = strtolower($booking->payment_status);
+                                        if ($statusLower === 'paid') {
+                                            $paymentStatusText = 'Paid';
+                                            $paymentTone = 'success';
+                                        } elseif ($statusLower === 'partially_paid') {
+                                            $paymentStatusText = 'Partially paid';
+                                            $paymentTone = 'info';
+                                        } elseif ($statusLower === 'pending') {
+                                            $paymentStatusText = 'Pending';
+                                            $paymentTone = 'warning';
+                                        } elseif ($statusLower === 'refunded') {
+                                            $paymentStatusText = 'Refunded';
+                                            $paymentTone = 'critical';
+                                        } elseif ($statusLower === 'voided') {
+                                            $paymentStatusText = 'Voided';
+                                            $paymentTone = 'critical';
+                                        } else {
+                                            $paymentStatusText = ucfirst(str_replace('_', ' ', $booking->payment_status));
+                                            $paymentTone = 'info';
+                                        }
+                                    } elseif ($booking->status === 'completed') {
                                         $paymentStatusText = 'Paid';
                                         $paymentTone = 'success';
-                                    } elseif ($booking->status === 'deposit_paid' || $statusLower === 'partially_paid') {
+                                    } elseif ($booking->status === 'deposit_paid') {
                                         $paymentStatusText = 'Partially paid';
                                         $paymentTone = 'info';
-                                    } else {
-                                        $paymentStatusText = 'Pending';
-                                        $paymentTone = 'warning';
+                                    } elseif ($booking->status === 'expired') {
+                                        $paymentStatusText = 'Refunded';
+                                        $paymentTone = 'critical';
                                     }
 
                                     // Fulfillment Status Logic
