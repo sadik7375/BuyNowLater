@@ -126,8 +126,9 @@ class OrdersPaidJob implements ShouldQueue
         // Check for selling plan line items or partial payments
         $hasSellingPlan = false;
         foreach ($lineItems as $item) {
-            $sp = is_object($item) ? ($item->selling_plan_allocation ?? null) : ($item['selling_plan_allocation'] ?? null);
-            if (!empty($sp)) {
+            $spAllocation = is_object($item) ? ($item->selling_plan_allocation ?? null) : ($item['selling_plan_allocation'] ?? null);
+            $spId = is_object($item) ? ($item->selling_plan_id ?? null) : ($item['selling_plan_id'] ?? null);
+            if (!empty($spAllocation) || !empty($spId)) {
                 $hasSellingPlan = true;
                 break;
             }
