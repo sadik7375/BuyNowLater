@@ -3470,8 +3470,8 @@ document.addEventListener('DOMContentLoaded', function() {
             tabId = 'tab-support';
             subTabId = 'sub-tab-how-it-works';
         } else if (path === '/price-plan') {
-            tabId = 'tab-support';
-            subTabId = 'sub-tab-pricing';
+            tabId = 'tab-pricing';
+            subTabId = null;
         }
         
         const targetEl = document.getElementById(tabId);

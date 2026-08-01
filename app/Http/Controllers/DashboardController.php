@@ -129,7 +129,9 @@ class DashboardController extends Controller
 
         // ---------- Self-Healing: Verify Subscription & Sync Status of Active Bookings ----------
         $this->verifySubscriptionWithShopify($shop);
-        $this->syncBookingsWithShopify($shop);
+        if (!$request->is('price-plan') && !$request->is('app-settings') && !$request->is('support') && !$request->is('how-it-works') && !$request->is('benefits')) {
+            $this->syncBookingsWithShopify($shop);
+        }
 
         // ---------- Date Filter Handling ----------
         $dateFilter = $request->query('date_filter', 'all'); // all, today, week, custom
