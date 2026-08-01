@@ -64,8 +64,8 @@ Route::get('/debug-json', function(\Illuminate\Http\Request $request) {
                                     title
                                     quantity
                                     sellingPlan {
-                                        id
                                         name
+                                        sellingPlanId
                                     }
                                 }
                             }

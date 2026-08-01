@@ -1447,8 +1447,8 @@ class DashboardController extends Controller
                                         title
                                         quantity
                                         sellingPlan {
-                                             id
                                              name
+                                             sellingPlanId
                                          }
                                         variant {
                                             id
