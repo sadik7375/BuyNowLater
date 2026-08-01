@@ -63,11 +63,9 @@ Route::get('/debug-json', function(\Illuminate\Http\Request $request) {
                                 node {
                                     title
                                     quantity
-                                    sellingPlanAllocation {
-                                        sellingPlan {
-                                            id
-                                            name
-                                        }
+                                    sellingPlan {
+                                        id
+                                        name
                                     }
                                 }
                             }

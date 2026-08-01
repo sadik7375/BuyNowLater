@@ -1446,12 +1446,10 @@ class DashboardController extends Controller
                                     node {
                                         title
                                         quantity
-                                        sellingPlanAllocation {
-                                            sellingPlan {
-                                                id
-                                                name
-                                            }
-                                        }
+                                        sellingPlan {
+                                             id
+                                             name
+                                         }
                                         variant {
                                             id
                                             product {
