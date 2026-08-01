@@ -613,12 +613,42 @@ class AppProxyController extends Controller
             return response()->json(['message' => 'Shop not found.'], 404);
         }
 
-        $settings = Setting::where('shop_id', $shop->id)->first();
+        $settings = Setting::firstOrCreate(
+            ['shop_id' => $shop->id],
+            [
+                'sender_display_name'      => $shop->name . ' via BuyLater',
+                'deposit_percentage'       => 10,
+                'button_text'              => 'Buy Later — not ready yet?',
+                'button_color'             => '#1a1a1a',
+                'button_text_color'        => '#ffffff',
+                'reminder_email_subject'   => 'Reminder: You wanted to buy this later!',
+                'discount_email_subject'   => 'Price Drop Alert: A product you wanted is now on sale!',
+                'show_deposit'             => true,
+                'show_reminders'           => true,
+                'show_alerts'              => true,
+                'hold_duration_days'       => 14,
+                'use_selling_plan'         => true,
+            ]
+        );
+
+        // Auto-initialize Selling Plan Group if missing so native checkout works out-of-the-box on new stores
+        if (empty($settings->selling_plan_group_id) && $settings->use_selling_plan) {
+            try {
+                $sellingPlanService = app(\App\Services\SellingPlanService::class);
+                $res = $sellingPlanService->createOrUpdatePlanGroup($shop, (int)($settings->deposit_percentage ?? 10), (int)($settings->hold_duration_days ?? 14));
+                if ($res && !empty($res['group_id'])) {
+                    $settings->refresh();
+                }
+            } catch (\Exception $e) {
+                Log::error("Auto SellingPlan setup in getSettings failed: " . $e->getMessage());
+            }
+        }
 
         \Illuminate\Support\Facades\Log::info('AppProxy settings found:', [
             'settings_exists' => $settings ? true : false,
             'deposit_percentage' => $settings ? $settings->deposit_percentage : null,
             'hold_duration_days' => $settings ? $settings->hold_duration_days : null,
+            'selling_plan_group_id' => $settings ? $settings->selling_plan_group_id : null,
         ]);
 
         // Pricing limit check: If on Free Plan (no plan_id), limit to 10 total deposit reservations
@@ -663,11 +693,6 @@ class AppProxyController extends Controller
             }
         }
 
-        $sellingPlanId = ($settings && !$isLimitReached) ? $settings->selling_plan_id : null;
-        if ($sellingPlanId && preg_match('/SellingPlan\/(\d+)/', $sellingPlanId, $m)) {
-            $sellingPlanId = $m[1];
-        }
-
         $currentProductId = $request->query('product_id') ?: $request->input('product_id');
         if ($shop && $settings && !$isLimitReached && $settings->use_selling_plan && $settings->selling_plan_group_id && $currentProductId) {
             $cleanId = preg_replace('/[^0-9]/', '', $currentProductId);
@@ -675,10 +700,16 @@ class AppProxyController extends Controller
                 try {
                     $sellingPlanService = app(\App\Services\SellingPlanService::class);
                     $sellingPlanService->attachProducts($shop, $settings->selling_plan_group_id, ["gid://shopify/Product/{$cleanId}"]);
+                    $settings->refresh();
                 } catch (\Exception $ex) {
                     Log::warning('Auto attach product exception in getSettings: ' . $ex->getMessage());
                 }
             }
+        }
+
+        $sellingPlanId = ($settings && !$isLimitReached) ? $settings->selling_plan_id : null;
+        if ($sellingPlanId && preg_match('/SellingPlan\/(\d+)/', $sellingPlanId, $m)) {
+            $sellingPlanId = $m[1];
         }
 
         return response()->json([

@@ -652,9 +652,17 @@ function initBuyLaterWidget() {
       .then(data => {
         showMessage('Success! Redirecting you to checkout to pay the deposit...', 'success');
         if (data.checkout_url) {
+          let targetUrl = data.checkout_url;
+          // Ensure draft order invoice URLs stay on current shop domain to keep storefront password session
+          if (targetUrl.includes('/invoices/')) {
+            try {
+              const urlObj = new URL(targetUrl, window.location.origin);
+              targetUrl = urlObj.pathname + urlObj.search;
+            } catch (e) {}
+          }
           setTimeout(() => {
-            window.top.location.href = data.checkout_url;
-          }, 1500);
+            window.top.location.href = targetUrl;
+          }, 1200);
         }
       })
       .catch(error => {
