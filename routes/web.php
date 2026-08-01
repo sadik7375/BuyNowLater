@@ -136,6 +136,62 @@ Route::get('/reset-plan', function() {
         return 'Reset plan error: ' . $e->getMessage();
     }
 });
+Route::get('/register-webhooks', function(\Illuminate\Http\Request $request) {
+    $shopDomain = $request->query('shop', 'canny-apps.myshopify.com');
+    $user = \App\Models\User::where('name', $shopDomain)->orWhere('name', 'like', '%' . explode('.', $shopDomain)[0] . '%')->first();
+    if (!$user) {
+        return response()->json(['error' => 'Shop not found for domain ' . $shopDomain], 404);
+    }
+
+    $baseUrl = config('app.url') ?: 'https://buylater.cannyapps.com';
+    $topics = [
+        'ORDERS_CREATE' => $baseUrl . '/webhook/orders-paid',
+        'ORDERS_PAID'   => $baseUrl . '/webhook/orders-paid',
+        'ORDERS_UPDATED' => $baseUrl . '/webhook/orders-paid',
+    ];
+
+    $results = [];
+    foreach ($topics as $topic => $callbackUrl) {
+        $mutation = 'mutation webhookSubscriptionCreate($topic: WebhookSubscriptionTopic!, $webhookSubscription: WebhookSubscriptionInput!) {
+          webhookSubscriptionCreate(topic: $topic, webhookSubscription: $webhookSubscription) {
+            userErrors {
+              field
+              message
+            }
+            webhookSubscription {
+              id
+              topic
+              endpoint {
+                ... on WebhookHttpEndpoint {
+                  callbackUrl
+                }
+              }
+            }
+          }
+        }';
+
+        $variables = [
+            'topic' => $topic,
+            'webhookSubscription' => [
+                'callbackUrl' => $callbackUrl,
+                'format' => 'JSON',
+            ]
+        ];
+
+        try {
+            $res = $user->api()->graph($mutation, $variables);
+            $results[$topic] = $res['body']['data']['webhookSubscriptionCreate'] ?? $res;
+        } catch (\Exception $e) {
+            $results[$topic] = ['exception' => $e->getMessage()];
+        }
+    }
+
+    return response()->json([
+        'shop' => $user->name,
+        'app_url' => $baseUrl,
+        'webhook_registration_results' => $results
+    ]);
+});
 
 
 
