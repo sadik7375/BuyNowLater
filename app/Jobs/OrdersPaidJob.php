@@ -55,8 +55,13 @@ class OrdersPaidJob implements ShouldQueue
     {
         $this->shopDomain = ShopDomain::fromNative($this->shopDomain)->toNative();
 
+        $orderId   = $this->data->id ?? null;
+        $orderName = $this->data->name ?? ($orderId ? '#' . $orderId : null);
+
         Log::info("OrdersPaidJob: Processing for shop {$this->shopDomain}", [
-            'order_id' => $this->data->id ?? null,
+            'order_id' => $orderId,
+            'order_name' => $orderName,
+            'financial_status' => $this->data->financial_status ?? '',
             'tags'     => $this->data->tags ?? '',
         ]);
 
@@ -135,13 +140,13 @@ class OrdersPaidJob implements ShouldQueue
         }
 
         $financialStatus = strtoupper($this->data->financial_status ?? '');
-        if (!$isDeposit && empty($token) && !$hasSellingPlan && !in_array($financialStatus, ['PARTIALLY_PAID', 'PENDING'])) {
+        if (!$isDeposit && empty($token) && !$hasSellingPlan && !in_array($financialStatus, ['PARTIALLY_PAID', 'PENDING', 'PAID', 'AUTHORIZED'])) {
             Log::info('OrdersPaidJob: Order is neither a BuyLater deposit nor a balance payment, skipping.');
             return;
         }
 
         if (empty($token)) {
-            $token = 'bnl_' . $orderId;
+            $token = 'bnl_' . ($orderId ?: uniqid());
             $isDeposit = true;
         }
 
@@ -151,10 +156,7 @@ class OrdersPaidJob implements ShouldQueue
             return;
         }
 
-        $orderId   = $this->data->id;
-        $orderName = $this->data->name ?? '#' . $orderId;
-
-        Log::info('OrdersPaidJob: Processing token', ['token' => $token, 'is_deposit' => $isDeposit]);
+        Log::info('OrdersPaidJob: Processing token', ['token' => $token, 'is_deposit' => $isDeposit, 'order_id' => $orderId]);
 
         // Customer name resolution
         $customer = $this->data->customer ?? null;
@@ -195,35 +197,36 @@ class OrdersPaidJob implements ShouldQueue
 
         // Update or create booking status
         if ($token) {
-            $booking = Booking::where('token', $token)->where('shop_id', $shop->id)->first();
-            if (!$booking) {
-                // Also try matching by order_id
-                $booking = Booking::where('shop_id', $shop->id)->where('order_id', $orderId)->first();
-            }
+            $booking = Booking::where('shop_id', $shop->id)
+                ->where(function($q) use ($token, $orderId, $orderName) {
+                    $q->where('token', $token);
+                    if ($orderId) {
+                        $q->orWhere('order_id', $orderId);
+                    }
+                    if ($orderName) {
+                        $q->orWhere('order_name', $orderName);
+                    }
+                })->first();
 
             $settings = Setting::where('shop_id', $shop->id)->first();
             $holdDurationDays = $settings ? (int) ($settings->hold_duration_days ?? 14) : 14;
 
             if ($booking) {
                 if ($isDeposit) {
-                    if ($booking->status === 'pending' || empty($booking->order_id)) {
-                        $booking->update([
-                            'status'        => 'deposit_paid',
-                            'order_id'      => $orderId,
-                            'order_name'    => $orderName,
-                            'customer_name' => $customerName,
-                            'email'         => $email,
-                            'expires_at'    => now()->addDays($holdDurationDays),
-                            'deposit_paid_at' => now(),
-                            'draft_order_id'=> null,
-                            'checkout_url'  => null,
-                            'payment_status'=> strtolower($financialStatus ?: 'partially_paid'),
-                            'fulfillment_status' => strtolower($this->data->fulfillment_status ?? 'unfulfilled'),
-                        ]);
-                        Log::info('OrdersPaidJob: Booking updated to deposit_paid', ['booking_id' => $booking->id]);
-                    } else {
-                        Log::info('OrdersPaidJob: Booking is already ' . $booking->status . ', ignoring duplicate deposit webhook.', ['booking_id' => $booking->id]);
-                    }
+                    $booking->update([
+                        'status'        => ($financialStatus === 'PAID' && (float)$booking->remaining_balance == 0) ? 'completed' : 'deposit_paid',
+                        'order_id'      => $orderId,
+                        'order_name'    => $orderName,
+                        'customer_name' => $customerName ?: $booking->customer_name,
+                        'email'         => ($email && $email !== 'N/A') ? $email : $booking->email,
+                        'expires_at'    => $booking->expires_at ?? now()->addDays($holdDurationDays),
+                        'deposit_paid_at' => $booking->deposit_paid_at ?? now(),
+                        'draft_order_id'=> null,
+                        'checkout_url'  => null,
+                        'payment_status'=> strtolower($financialStatus ?: 'partially_paid'),
+                        'fulfillment_status' => strtolower($this->data->fulfillment_status ?? 'unfulfilled'),
+                    ]);
+                    Log::info('OrdersPaidJob: Booking updated to deposit_paid', ['booking_id' => $booking->id]);
                 } else {
                     // This is the remaining balance order being paid!
                     if ($booking->status === 'deposit_paid') {
