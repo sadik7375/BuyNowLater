@@ -1565,7 +1565,7 @@ class DashboardController extends Controller
                         $lineItemsNode = $node['lineItems']['edges'] ?? [];
                         foreach ($lineItemsNode as $itemEdge) {
                             $itemNode = $itemEdge['node'] ?? [];
-                            if (!empty($itemNode['sellingPlanAllocation']) || !empty($itemNode['customAttributes'])) {
+                            if (!empty($itemNode['sellingPlanAllocation']) || !empty($itemNode['sellingPlan']) || !empty($itemNode['customAttributes'])) {
                                 $isWidgetOrSellingPlanOrder = true;
                                 break;
                             }
