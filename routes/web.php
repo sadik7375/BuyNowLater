@@ -30,7 +30,63 @@ Route::get('/debug-json', function(\Illuminate\Http\Request $request) {
         return response()->json(['error' => 'Shop not found for domain ' . $shopDomain, 'all_shops' => \App\Models\User::pluck('name')], 404);
     }
     
-    // Trigger live GraphQL sync from Shopify
+    // 1. Fetch raw orders directly from Shopify GraphQL API
+    $rawShopifyOrders = [];
+    $graphqlError = null;
+    try {
+        $gqlOrdersQuery = 'query {
+            orders(first: 50, reverse: true) {
+                edges {
+                    node {
+                        id
+                        name
+                        displayFinancialStatus
+                        displayFulfillmentStatus
+                        tags
+                        note
+                        createdAt
+                        email
+                        totalPriceSet {
+                            shopMoney {
+                                amount
+                                currencyCode
+                            }
+                        }
+                        netPaymentSet {
+                            shopMoney {
+                                amount
+                                currencyCode
+                            }
+                        }
+                        lineItems(first: 5) {
+                            edges {
+                                node {
+                                    title
+                                    quantity
+                                    sellingPlanAllocation {
+                                        sellingPlan {
+                                            id
+                                            name
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }';
+        $res = $user->api()->graph($gqlOrdersQuery);
+        if (isset($res['body']['data']['orders']['edges'])) {
+            $rawShopifyOrders = array_column($res['body']['data']['orders']['edges'], 'node');
+        } else {
+            $graphqlError = $res;
+        }
+    } catch (\Exception $e) {
+        $graphqlError = $e->getMessage();
+    }
+
+    // 2. Also trigger sync
     try {
         $controller = new \App\Http\Controllers\DashboardController();
         $controller->syncBookingsWithShopify($user);
@@ -39,10 +95,13 @@ Route::get('/debug-json', function(\Illuminate\Http\Request $request) {
     }
 
     $bookings = \App\Models\Booking::where('shop_id', $user->id)->orderBy('created_at', 'desc')->get();
+
     return response()->json([
         'shop' => $user->name,
-        'count' => $bookings->count(),
-        'bookings' => $bookings
+        'shopify_graphql_orders_count' => count($rawShopifyOrders),
+        'shopify_graphql_orders' => $rawShopifyOrders,
+        'graphql_error' => $graphqlError,
+        'database_bookings' => $bookings
     ]);
 });
 
