@@ -1718,12 +1718,19 @@
     }
 
     /* Hide custom sidebar to use Shopify's native sidebar instead */
+    .app-layout {
+        display: block !important;
+        width: 100% !important;
+    }
     .sidebar {
         display: none !important;
     }
     .main-content {
         margin-left: 0 !important;
         padding: 24px;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
     }
     /* s-button layout overrides to ensure proper spacing and prevent line wrapping */
     s-button {
@@ -2729,6 +2736,7 @@
             <div style="text-align: right; margin-top: 20px; margin-bottom: 20px;">
                 <button type="submit" class="btn-save">Save All Settings</button>
             </div>
+        </form>
     </div>
 
     <!-- Tab 6: Support (Consolidated View More) -->
@@ -3091,7 +3099,6 @@
             </div>
         </div>
     </div>
-</div>
 
 <script>
 const CURRENT_SHOP_DOMAIN = "{{ auth()->user()->name }}";
