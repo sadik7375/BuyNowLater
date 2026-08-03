@@ -395,12 +395,24 @@ class DashboardController extends Controller
     public function searchProducts(Request $request)
     {
         $shop = auth()->user();
-        $query = $request->query('q');
+        if (!$shop) {
+            $shopDomain = $request->query('shop');
+            if ($shopDomain) {
+                $shop = \App\Models\User::where('name', $shopDomain)->first();
+            }
+        }
 
-        // GraphQL Query for partial/fuzzy title search
+        if (!$shop) {
+            return response()->json([], 401);
+        }
+
+        $rawQuery = trim($request->query('q', ''));
+        // Clean query for Shopify GraphQL Lucene syntax (avoid invalid leading wildcards)
+        $cleanQuery = preg_replace('/[^\w\s\-\.]/u', '', $rawQuery);
+
         $gqlQuery = '
             query searchProducts($queryStr: String) {
-                products(first: 20, query: $queryStr) {
+                products(first: 25, query: $queryStr) {
                     edges {
                         node {
                             id
@@ -415,17 +427,25 @@ class DashboardController extends Controller
             }
         ';
 
-        // Construct wildcard query for title search (Lucene syntax)
-        $queryStr = !empty($query) ? 'title:*' . $query . '*' : null;
+        // Shopify GraphQL requires trailing wildcard e.g. "title:the*", leading wildcards "*the*" are invalid
+        $queryStr = !empty($cleanQuery) ? "title:{$cleanQuery}*" : null;
 
         try {
             $response = $shop->api()->graph($gqlQuery, ['queryStr' => $queryStr]);
             
+            // If primary query had errors or returned empty, fallback to simple title search
+            if (($response['errors'] ?? false) || empty($response['body']['data']['products']['edges'])) {
+                $fallbackQueryStr = !empty($cleanQuery) ? "{$cleanQuery}*" : null;
+                $response = $shop->api()->graph($gqlQuery, ['queryStr' => $fallbackQueryStr]);
+            }
+
             $products = [];
-            if (!$response['errors']) {
-                $edges = $response['body']['data']['products']['edges'] ?? [];
+            if (!($response['errors'] ?? false) && isset($response['body']['data']['products']['edges'])) {
+                $edges = $response['body']['data']['products']['edges'];
                 foreach ($edges as $edge) {
-                    $node = $edge['node'];
+                    $node = $edge['node'] ?? [];
+                    if (empty($node['id'])) continue;
+
                     $numericId = preg_replace('/[^0-9]/', '', $node['id']);
                     $products[] = [
                         'id' => (string) $numericId,
@@ -434,7 +454,13 @@ class DashboardController extends Controller
                         'image' => $node['featuredImage']['url'] ?? null,
                     ];
                 }
+            } else {
+                \Illuminate\Support\Facades\Log::warning("searchProducts: Shopify returned GraphQL errors", [
+                    'errors' => $response['errors'] ?? null,
+                    'queryStr' => $queryStr
+                ]);
             }
+
             return response()->json($products);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error("Failed to search products in searchProducts() via GraphQL: " . $e->getMessage());
