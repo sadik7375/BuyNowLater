@@ -296,69 +296,122 @@ class DashboardController extends Controller
 
         $monthlyUsageCount = $monthlyReminders + $monthlySubscribers;
 
+        $parseBody = function($res) {
+            if (empty($res['body'])) return null;
+            $raw = $res['body'];
+            if (is_object($raw)) {
+                if (method_exists($raw, 'getBody')) {
+                    $raw = (string) $raw->getBody();
+                } else {
+                    $raw = json_encode($raw);
+                }
+            }
+            if (is_string($raw)) {
+                $raw = json_decode($raw, true);
+            }
+            if (is_array($raw)) {
+                return $raw['data'] ?? ($raw['container']['data'] ?? $raw);
+            }
+            return null;
+        };
+
         $targetedProducts = [];
         if (in_array($settings->product_targeting_type ?? 'all', ['specific', 'exclude']) && !empty($settings->targeted_product_ids)) {
             $ids = array_values(array_filter(array_map('trim', explode(',', $settings->targeted_product_ids))));
             if (!empty($ids)) {
-                $productCacheKey = "shop_{$shop->id}_targeted_products_" . md5($settings->targeted_product_ids);
-                $targetedProducts = \Illuminate\Support\Facades\Cache::remember($productCacheKey, now()->addMinutes(10), function() use ($shop, $ids) {
+                // Invalidate older cache keys to ensure fresh title/image resolution
+                \Illuminate\Support\Facades\Cache::forget("shop_{$shop->id}_targeted_products_" . md5($settings->targeted_product_ids));
+                \Illuminate\Support\Facades\Cache::forget("shop_{$shop->id}_targeted_products");
+
+                $productCacheKey = "shop_{$shop->id}_targeted_products_v3_" . md5($settings->targeted_product_ids);
+                $targetedProducts = \Illuminate\Support\Facades\Cache::remember($productCacheKey, now()->addMinutes(10), function() use ($shop, $ids, $parseBody) {
                     $productsList = [];
                     try {
-                        $gqlIds = array_map(function($id) {
-                            return str_starts_with($id, 'gid://') ? $id : "gid://shopify/Product/{$id}";
+                        $numericIds = array_map(function($id) {
+                            return preg_replace('/[^0-9]/', '', $id);
                         }, $ids);
+                        $numericIds = array_values(array_filter($numericIds));
 
-                        $gqlQuery = 'query getProductsByIds($ids: [ID!]!) {
-                            nodes(ids: $ids) {
-                                ... on Product {
-                                    id
-                                    title
-                                    handle
-                                    featuredImage {
-                                        url
+                        if (!empty($numericIds)) {
+                            // Primary Method: Query via products(query: "id:... OR id:...") - matching search endpoint format
+                            $queryStr = implode(' OR ', array_map(fn($id) => "id:{$id}", $numericIds));
+                            $gqlQuery = 'query getProductsByQuery($queryStr: String!) {
+                                products(first: 50, query: $queryStr) {
+                                    edges {
+                                        node {
+                                            id
+                                            title
+                                            handle
+                                            featuredImage {
+                                                url
+                                                originalSrc
+                                            }
+                                        }
                                     }
                                 }
-                            }
-                        }';
+                            }';
 
-                        $response = $shop->api()->graph($gqlQuery, ['ids' => $gqlIds]);
-                        $bodyData = null;
-                        if (!empty($response['body'])) {
-                            $raw = $response['body'];
-                            if (is_object($raw)) {
-                                if (method_exists($raw, 'getBody')) {
-                                    $raw = (string) $raw->getBody();
-                                } else {
-                                    $raw = json_encode($raw);
+                            $response = $shop->api()->graph($gqlQuery, ['queryStr' => $queryStr]);
+                            $bodyData = $parseBody($response);
+                            $edges = $bodyData['products']['edges'] ?? [];
+
+                            if (is_array($edges)) {
+                                foreach ($edges as $edge) {
+                                    $node = $edge['node'] ?? [];
+                                    if (empty($node['id'])) continue;
+                                    $numericId = preg_replace('/[^0-9]/', '', $node['id']);
+                                    $imgUrl = $node['featuredImage']['url'] ?? ($node['featuredImage']['originalSrc'] ?? null);
+                                    $productsList[] = [
+                                        'id' => (string) $numericId,
+                                        'title' => $node['title'] ?? '',
+                                        'handle' => $node['handle'] ?? '',
+                                        'image' => $imgUrl,
+                                    ];
                                 }
                             }
-                            if (is_string($raw)) {
-                                $raw = json_decode($raw, true);
-                            }
-                            if (is_array($raw)) {
-                                $bodyData = $raw['data'] ?? ($raw['container']['data'] ?? $raw);
-                            }
-                        }
 
-                        $nodes = $bodyData['nodes'] ?? [];
-                        if (is_array($nodes)) {
-                            foreach ($nodes as $node) {
-                                if (!$node || empty($node['id'])) continue;
-                                $numericId = preg_replace('/[^0-9]/', '', $node['id']);
-                                $imgUrl = $node['featuredImage']['url'] ?? ($node['featuredImage']['originalSrc'] ?? null);
-                                $productsList[] = [
-                                    'id' => (string) $numericId,
-                                    'title' => $node['title'] ?? ('Product #' . $numericId),
-                                    'handle' => $node['handle'] ?? '',
-                                    'image' => $imgUrl,
-                                ];
+                            // Secondary Method: Fallback to nodes query for any IDs not matched by Lucene search
+                            $fetchedIds = array_column($productsList, 'id');
+                            $missingIds = array_diff($numericIds, $fetchedIds);
+
+                            if (!empty($missingIds)) {
+                                $gqlIds = array_map(fn($id) => "gid://shopify/Product/{$id}", $missingIds);
+                                $nodesQuery = 'query getNodesByIds($ids: [ID!]!) {
+                                    nodes(ids: $ids) {
+                                        ... on Product {
+                                            id
+                                            title
+                                            handle
+                                            featuredImage {
+                                                url
+                                                originalSrc
+                                            }
+                                        }
+                                    }
+                                }';
+                                $nodesResponse = $shop->api()->graph($nodesQuery, ['ids' => array_values($gqlIds)]);
+                                $nodesBody = $parseBody($nodesResponse);
+                                $nodes = $nodesBody['nodes'] ?? [];
+                                if (is_array($nodes)) {
+                                    foreach ($nodes as $node) {
+                                        if (!$node || empty($node['id'])) continue;
+                                        $numericId = preg_replace('/[^0-9]/', '', $node['id']);
+                                        $imgUrl = $node['featuredImage']['url'] ?? ($node['featuredImage']['originalSrc'] ?? null);
+                                        $productsList[] = [
+                                            'id' => (string) $numericId,
+                                            'title' => $node['title'] ?? '',
+                                            'handle' => $node['handle'] ?? '',
+                                            'image' => $imgUrl,
+                                        ];
+                                    }
+                                }
                             }
                         }
                     } catch (\Exception $e) {
                         \Illuminate\Support\Facades\Log::error("Failed to fetch targeted products in index(): " . $e->getMessage());
                     }
 
-                    // Fallback: Ensure any product ID in targeted_product_ids is included in the list
+                    // Final Fallback: Ensure any product ID in targeted_product_ids is included
                     $fetchedIds = array_column($productsList, 'id');
                     foreach ($ids as $id) {
                         $numericId = (string) preg_replace('/[^0-9]/', '', $id);
