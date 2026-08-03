@@ -3292,7 +3292,8 @@ async function handleProductSearch() {
                 `;
 
                 if (!isAlreadySelected) {
-                    item.querySelector('button').addEventListener('click', (e) => {
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
                         e.stopPropagation();
                         selectedProducts.push(prod);
                         renderSelectedProducts();
