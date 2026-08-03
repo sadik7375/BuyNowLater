@@ -1766,7 +1766,7 @@
     <a href="/" rel="home">Overview</a>
     <a href="/bookings">Bookings & Deposits</a>
     <a href="/app-settings">Settings</a>
-    <a href="/how-it-works">Support</a>
+    <a href="/how-it-works">Support & Setup</a>
     <a href="/price-plan">Price Plan</a>
 </ui-nav-menu>
 
@@ -2621,42 +2621,6 @@
 
     <!-- Tab 5: Settings -->
     <div id="tab-settings" class="tab-content" style="display: {{ $activeTab === 'tab-settings' ? 'block' : 'none' }};">
-        <!-- Theme App Extension Onboarding Card -->
-        <div class="onboarding-card">
-            <div class="onboarding-card-header">
-                <h3>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #3b82f6;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                    Activate Buy Now Later on Storefront
-                </h3>
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span class="onboarding-badge">Setup Required</span>
-                    <button type="button" class="onboarding-dismiss-btn" onclick="dismissOnboarding()" style="background: none; border: none; color: #94a3b8; cursor: pointer; display: flex; align-items: center; padding: 4px; transition: color 0.2s;" onmouseover="this.style.color='#f1f5f9'" onmouseout="this.style.color='#94a3b8'">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                </div>
-            </div>
-            <div class="onboarding-steps">
-                <div class="onboarding-step-item">
-                    <div class="onboarding-step-number">1</div>
-                    <p class="onboarding-step-text">Click the <strong>Open Theme Editor</strong> button below to go to your active theme's product template page.</p>
-                </div>
-                <div class="onboarding-step-item">
-                    <div class="onboarding-step-number">2</div>
-                    <p class="onboarding-step-text">Click <strong>Add block</strong> or <strong>Add section</strong> on the left side panel under "Product information".</p>
-                </div>
-                <div class="onboarding-step-item">
-                    <div class="onboarding-step-number">3</div>
-                    <p class="onboarding-step-text">Select <strong>Buy Later Button</strong> from the list, position it under your main buy buttons, and click <strong>Save</strong> at the top right.</p>
-                </div>
-            </div>
-            <div class="onboarding-actions">
-                <a href="https://{{ $shop->name }}/admin/themes/current/editor?context=apps&template=product" target="_blank" class="onboarding-btn-primary">
-                    Open Theme Editor
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
-                </a>
-            </div>
-        </div>
-
         <form action="{{ route('settings.save', request()->query()) }}" method="POST">
             @csrf
             <input type="hidden" name="token" class="session-token" value="">
@@ -2665,7 +2629,7 @@
                 <h3>Storefront Widget & Payment Customization</h3>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
                     <p style="margin: 0; font-size: 13.5px; color: var(--text-muted);">Customize the storefront widget details and deposit settings.</p>
-                    <button type="button" onclick="showOnboardingAgain()" style="background: none; border: none; color: var(--accent-blue); cursor: pointer; font-size: 13px; font-weight: 500; text-decoration: underline; padding: 0;">Show Storefront Setup Guide</button>
+                    <a href="/how-it-works" style="color: var(--accent-blue); font-size: 13px; font-weight: 500; text-decoration: underline;">View Storefront Setup Guide</a>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -2746,10 +2710,46 @@
         <div class="sub-tab-bar" style="display: none;">
         </div>
 
-        <!-- Sub Tab 1: Support (previously How It Works) -->
+        <!-- Sub Tab 1: Support & Setup (previously How It Works) -->
         <div id="sub-tab-how-it-works" class="sub-tab-content" style="display: {{ $subTab === 'support' ? 'block' : 'none' }};">
+            <!-- Theme App Extension Onboarding Card -->
+            <div class="onboarding-card" style="margin-bottom: 24px;">
+                <div class="onboarding-card-header">
+                    <h3>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #3b82f6;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        Activate Buy Now Later on Storefront
+                    </h3>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span class="onboarding-badge">Setup Required</span>
+                        <button type="button" class="onboarding-dismiss-btn" onclick="dismissOnboarding()" style="background: none; border: none; color: #94a3b8; cursor: pointer; display: flex; align-items: center; padding: 4px; transition: color 0.2s;" onmouseover="this.style.color='#f1f5f9'" onmouseout="this.style.color='#94a3b8'">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="onboarding-steps">
+                    <div class="onboarding-step-item">
+                        <div class="onboarding-step-number">1</div>
+                        <p class="onboarding-step-text">Click the <strong>Open Theme Editor</strong> button below to go to your active theme's product template page.</p>
+                    </div>
+                    <div class="onboarding-step-item">
+                        <div class="onboarding-step-number">2</div>
+                        <p class="onboarding-step-text">Click <strong>Add block</strong> or <strong>Add section</strong> on the left side panel under "Product information".</p>
+                    </div>
+                    <div class="onboarding-step-item">
+                        <div class="onboarding-step-number">3</div>
+                        <p class="onboarding-step-text">Select <strong>Buy Later Button</strong> from the list, position it under your main buy buttons, and click <strong>Save</strong> at the top right.</p>
+                    </div>
+                </div>
+                <div class="onboarding-actions">
+                    <a href="https://{{ $shop->name }}/admin/themes/current/editor?context=apps&template=product" target="_blank" class="onboarding-btn-primary">
+                        Open Theme Editor
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+                    </a>
+                </div>
+            </div>
+
             <div class="guide-header">
-                <h2>Support</h2>
+                <h2>Support &amp; Setup</h2>
                 <p>Learn how Buy Now Later helps your customers reserve products with a deposit and complete their purchase later.</p>
             </div>
 
@@ -4765,7 +4765,7 @@ function filterSubscribers() {
         document.querySelectorAll('.onboarding-card').forEach(el => {
             el.style.display = 'block';
         });
-        alert('Setup guide is now visible at the top of your Overview, Bookings, and Settings tabs.');
+        alert('Setup guide is now visible at the top of your Support & Setup page.');
     };
 
     if (localStorage.getItem('hideOnboarding') === 'true') {
