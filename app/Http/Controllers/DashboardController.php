@@ -482,40 +482,41 @@ class DashboardController extends Controller
                 'terms_text'              => $request->input('terms_text'),
                 'product_targeting_type'  => $request->input('product_targeting_type', 'all') ?: 'all',
                 'targeted_product_ids'    => $request->input('targeted_product_ids'),
+                'use_selling_plan'        => true,
             ]
         );
+
         $settings = Setting::where('shop_id', $shop->id)->first();
-        if ($settings && $settings->use_selling_plan) {
-            try {
-                $sellingPlanService = app(\App\Services\SellingPlanService::class);
-                $result = $sellingPlanService->createOrUpdatePlanGroup(
-                    $shop,
-                    (int) $settings->deposit_percentage,
-                    (int) $settings->hold_duration_days
-                );
-                if ($result && !empty($result['group_id'])) {
-                    $productGqlIds = [];
-                    $gqlQuery = 'query getProducts($first: Int!) {
-                        products(first: $first) {
-                            edges { node { id } }
-                        }
-                    }';
-                    $response = $shop->api()->graph($gqlQuery, ['first' => 250]);
-                    if ($response['errors'] === false && isset($response['body']['data']['products']['edges'])) {
-                        foreach ($response['body']['data']['products']['edges'] as $edge) {
-                            if (isset($edge['node']['id'])) {
-                                $productGqlIds[] = $edge['node']['id'];
-                            }
-                        }
+
+        try {
+            $sellingPlanService = app(\App\Services\SellingPlanService::class);
+            $result = $sellingPlanService->createOrUpdatePlanGroup(
+                $shop,
+                (int) $settings->deposit_percentage,
+                (int) $settings->hold_duration_days
+            );
+            if ($result && !empty($result['group_id'])) {
+                $productGqlIds = [];
+                $gqlQuery = 'query getProducts($first: Int!) {
+                    products(first: $first) {
+                        edges { node { id } }
                     }
-                    if (!empty($productGqlIds)) {
-                        $sellingPlanService->attachProducts($shop, $result['group_id'], $productGqlIds);
+                }';
+                $response = $shop->api()->graph($gqlQuery, ['first' => 250]);
+                if ($response['errors'] === false && isset($response['body']['data']['products']['edges'])) {
+                    foreach ($response['body']['data']['products']['edges'] as $edge) {
+                        if (isset($edge['node']['id'])) {
+                            $productGqlIds[] = $edge['node']['id'];
+                        }
                     }
                 }
-                \Illuminate\Support\Facades\Log::info("saveSettings: Synced Selling Plan Group on Shopify to deposit {$settings->deposit_percentage}%");
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error("saveSettings: Failed to update Selling Plan Group on Shopify: " . $e->getMessage());
+                if (!empty($productGqlIds)) {
+                    $sellingPlanService->attachProducts($shop, $result['group_id'], $productGqlIds);
+                }
             }
+            \Illuminate\Support\Facades\Log::info("saveSettings: Synced Selling Plan Group on Shopify to deposit {$settings->deposit_percentage}%");
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("saveSettings: Failed to update Selling Plan Group on Shopify: " . $e->getMessage());
         }
 
         return redirect()->to(route('home', request()->query()) . '#settings')->with('success', 'Settings updated successfully.');
