@@ -302,34 +302,32 @@ class DashboardController extends Controller
             $targetedProducts = \Illuminate\Support\Facades\Cache::remember($productCacheKey, now()->addMinutes(10), function() use ($shop, $settings) {
                 $productsList = [];
                 try {
-                    $ids = array_filter(explode(',', $settings->targeted_product_ids));
+                    $ids = array_values(array_filter(array_map('trim', explode(',', $settings->targeted_product_ids))));
                     if (!empty($ids)) {
-                        $idsQuery = implode(' OR ', array_map(function($id) {
-                            return 'id:' . $id;
-                        }, $ids));
+                        $gqlIds = array_map(function($id) {
+                            return str_starts_with($id, 'gid://') ? $id : "gid://shopify/Product/{$id}";
+                        }, $ids);
 
-                        $gqlQuery = 'query getProducts($query: String!) {
-                            products(first: 100, query: $query) {
-                                edges {
-                                    node {
-                                        id
-                                        title
-                                        handle
-                                        featuredImage {
-                                            url
-                                        }
+                        $gqlQuery = 'query getProductsByIds($ids: [ID!]!) {
+                            nodes(ids: $ids) {
+                                ... on Product {
+                                    id
+                                    title
+                                    handle
+                                    featuredImage {
+                                        url
                                     }
                                 }
                             }
                         }';
 
-                        $response = $shop->api()->graph($gqlQuery, ['query' => $idsQuery]);
+                        $response = $shop->api()->graph($gqlQuery, ['ids' => $gqlIds]);
 
-                        if (!$response['errors'] && isset($response['body']['data']['products']['edges'])) {
-                            $edges = $response['body']['data']['products']['edges'];
-                            foreach ($edges as $edge) {
-                                $node = $edge['node'] ?? [];
-                                $numericId = preg_replace('/[^0-9]/', '', $node['id'] ?? '');
+                        if (!($response['errors'] ?? false) && isset($response['body']['data']['nodes'])) {
+                            $nodes = $response['body']['data']['nodes'];
+                            foreach ($nodes as $node) {
+                                if (!$node || empty($node['id'])) continue;
+                                $numericId = preg_replace('/[^0-9]/', '', $node['id']);
                                 $productsList[] = [
                                     'id' => (string) $numericId,
                                     'title' => $node['title'] ?? '',
@@ -337,6 +335,11 @@ class DashboardController extends Controller
                                     'image' => $node['featuredImage']['url'] ?? null,
                                 ];
                             }
+                        } else {
+                            \Illuminate\Support\Facades\Log::warning("index: Failed to fetch nodes for targeted products", [
+                                'errors' => $response['errors'] ?? null,
+                                'ids' => $gqlIds
+                            ]);
                         }
                     }
                 } catch (\Exception $e) {
@@ -511,6 +514,13 @@ class DashboardController extends Controller
                 'use_selling_plan'        => true,
             ]
         );
+
+        if ($existingSettings && !empty($existingSettings->targeted_product_ids)) {
+            \Illuminate\Support\Facades\Cache::forget("shop_{$shop->id}_targeted_products_" . md5($existingSettings->targeted_product_ids));
+        }
+        if ($request->input('targeted_product_ids')) {
+            \Illuminate\Support\Facades\Cache::forget("shop_{$shop->id}_targeted_products_" . md5($request->input('targeted_product_ids')));
+        }
 
         $settings = Setting::where('shop_id', $shop->id)->first();
 
