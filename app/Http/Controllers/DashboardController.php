@@ -298,12 +298,12 @@ class DashboardController extends Controller
 
         $targetedProducts = [];
         if (in_array($settings->product_targeting_type ?? 'all', ['specific', 'exclude']) && !empty($settings->targeted_product_ids)) {
-            $productCacheKey = "shop_{$shop->id}_targeted_products";
-            $targetedProducts = \Illuminate\Support\Facades\Cache::remember($productCacheKey, now()->addMinutes(10), function() use ($shop, $settings) {
-                $productsList = [];
-                try {
-                    $ids = array_values(array_filter(array_map('trim', explode(',', $settings->targeted_product_ids))));
-                    if (!empty($ids)) {
+            $ids = array_values(array_filter(array_map('trim', explode(',', $settings->targeted_product_ids))));
+            if (!empty($ids)) {
+                $productCacheKey = "shop_{$shop->id}_targeted_products_" . md5($settings->targeted_product_ids);
+                $targetedProducts = \Illuminate\Support\Facades\Cache::remember($productCacheKey, now()->addMinutes(10), function() use ($shop, $ids) {
+                    $productsList = [];
+                    try {
                         $gqlIds = array_map(function($id) {
                             return str_starts_with($id, 'gid://') ? $id : "gid://shopify/Product/{$id}";
                         }, $ids);
@@ -322,45 +322,59 @@ class DashboardController extends Controller
                         }';
 
                         $response = $shop->api()->graph($gqlQuery, ['ids' => $gqlIds]);
-
                         $bodyData = null;
-                        if (is_array($response['body'] ?? null) && isset($response['body']['data'])) {
-                            $bodyData = $response['body']['data'];
-                        } elseif (is_object($response['body'] ?? null) && isset($response['body']->data)) {
-                            $bodyData = json_decode(json_encode($response['body']->data), true);
-                        } elseif (is_string($response['body'] ?? null)) {
-                            $decoded = json_decode($response['body'], true);
-                            $bodyData = $decoded['data'] ?? null;
+                        if (!empty($response['body'])) {
+                            $raw = $response['body'];
+                            if (is_object($raw)) {
+                                if (method_exists($raw, 'getBody')) {
+                                    $raw = (string) $raw->getBody();
+                                } else {
+                                    $raw = json_encode($raw);
+                                }
+                            }
+                            if (is_string($raw)) {
+                                $raw = json_decode($raw, true);
+                            }
+                            if (is_array($raw)) {
+                                $bodyData = $raw['data'] ?? ($raw['container']['data'] ?? $raw);
+                            }
                         }
 
-                        $hasError = !empty($response['errors']) || !empty($bodyData['errors']);
                         $nodes = $bodyData['nodes'] ?? [];
-
-                        if (!$hasError && !empty($nodes)) {
+                        if (is_array($nodes)) {
                             foreach ($nodes as $node) {
                                 if (!$node || empty($node['id'])) continue;
                                 $numericId = preg_replace('/[^0-9]/', '', $node['id']);
                                 $imgUrl = $node['featuredImage']['url'] ?? ($node['featuredImage']['originalSrc'] ?? null);
                                 $productsList[] = [
                                     'id' => (string) $numericId,
-                                    'title' => $node['title'] ?? '',
+                                    'title' => $node['title'] ?? ('Product #' . $numericId),
                                     'handle' => $node['handle'] ?? '',
                                     'image' => $imgUrl,
                                 ];
                             }
-                        } else {
-                            \Illuminate\Support\Facades\Log::warning("index: Failed to fetch nodes for targeted products", [
-                                'errors' => $response['errors'] ?? null,
-                                'ids' => $gqlIds,
-                                'body' => $response['body'] ?? null
-                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error("Failed to fetch targeted products in index(): " . $e->getMessage());
+                    }
+
+                    // Fallback: Ensure any product ID in targeted_product_ids is included in the list
+                    $fetchedIds = array_column($productsList, 'id');
+                    foreach ($ids as $id) {
+                        $numericId = (string) preg_replace('/[^0-9]/', '', $id);
+                        if (!empty($numericId) && !in_array($numericId, $fetchedIds)) {
+                            $productsList[] = [
+                                'id' => $numericId,
+                                'title' => 'Product #' . $numericId,
+                                'handle' => '',
+                                'image' => null,
+                            ];
                         }
                     }
-                } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error("Failed to fetch targeted products in index(): " . $e->getMessage());
-                }
-                return $productsList;
-            });
+
+                    return $productsList;
+                });
+            }
         }
 
         // Count bookings created per day for the last 7 days (Downpay orders)
@@ -450,25 +464,49 @@ class DashboardController extends Controller
         try {
             $response = $shop->api()->graph($gqlQuery, ['queryStr' => $queryStr]);
             
+            $parseBody = function($res) {
+                if (empty($res['body'])) return null;
+                $raw = $res['body'];
+                if (is_object($raw)) {
+                    if (method_exists($raw, 'getBody')) {
+                        $raw = (string) $raw->getBody();
+                    } else {
+                        $raw = json_encode($raw);
+                    }
+                }
+                if (is_string($raw)) {
+                    $raw = json_decode($raw, true);
+                }
+                if (is_array($raw)) {
+                    return $raw['data'] ?? ($raw['container']['data'] ?? $raw);
+                }
+                return null;
+            };
+
+            $bodyData = $parseBody($response);
+            $edges = $bodyData['products']['edges'] ?? [];
+
             // If primary query had errors or returned empty, fallback to simple title search
-            if (($response['errors'] ?? false) || empty($response['body']['data']['products']['edges'])) {
+            if (empty($edges)) {
                 $fallbackQueryStr = !empty($cleanQuery) ? "{$cleanQuery}*" : null;
                 $response = $shop->api()->graph($gqlQuery, ['queryStr' => $fallbackQueryStr]);
+                $bodyData = $parseBody($response);
+                $edges = $bodyData['products']['edges'] ?? [];
             }
 
             $products = [];
-            if (!($response['errors'] ?? false) && isset($response['body']['data']['products']['edges'])) {
-                $edges = $response['body']['data']['products']['edges'];
+            if (!empty($edges) && is_array($edges)) {
                 foreach ($edges as $edge) {
                     $node = $edge['node'] ?? [];
                     if (empty($node['id'])) continue;
 
                     $numericId = preg_replace('/[^0-9]/', '', $node['id']);
+                    $imgUrl = $node['featuredImage']['url'] ?? ($node['featuredImage']['originalSrc'] ?? null);
                     $products[] = [
                         'id' => (string) $numericId,
                         'title' => $node['title'] ?? '',
                         'handle' => $node['handle'] ?? '',
-                        'image' => $node['featuredImage']['url'] ?? null,
+                        'image' => $imgUrl,
                     ];
                 }
             } else {
