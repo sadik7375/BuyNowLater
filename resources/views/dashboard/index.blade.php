@@ -2623,6 +2623,7 @@
                     </div>
 
                     <input type="hidden" id="targeted_product_ids" name="targeted_product_ids" value="{{ $settings->targeted_product_ids }}">
+                    <input type="hidden" id="targeted_products_json" name="targeted_products_json" value="{{ $settings->targeted_products_json ?? json_encode($targetedProducts) }}">
                 </div>
             </div>
             <div style="text-align: right; margin-top: 20px; margin-bottom: 20px;">
@@ -3176,6 +3177,7 @@ function toggleProductSelector() {
 function renderSelectedProducts() {
     const listEl = document.getElementById('selected-products-list');
     const hiddenInput = document.getElementById('targeted_product_ids');
+    const jsonInput = document.getElementById('targeted_products_json');
     if (!listEl || !hiddenInput) return;
 
     listEl.innerHTML = '';
@@ -3183,6 +3185,7 @@ function renderSelectedProducts() {
     if (selectedProducts.length === 0) {
         listEl.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 12px 0;">No products selected. Search above to add products.</div>';
         hiddenInput.value = '';
+        if (jsonInput) jsonInput.value = '[]';
         return;
     }
 
@@ -3207,6 +3210,7 @@ function renderSelectedProducts() {
     });
 
     hiddenInput.value = selectedProducts.map(p => p.id).join(',');
+    if (jsonInput) jsonInput.value = JSON.stringify(selectedProducts);
 }
 
 function removeProduct(id) {

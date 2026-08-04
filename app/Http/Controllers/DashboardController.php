@@ -318,12 +318,26 @@ class DashboardController extends Controller
         $targetedProducts = [];
         if (in_array($settings->product_targeting_type ?? 'all', ['specific', 'exclude']) && !empty($settings->targeted_product_ids)) {
             $ids = array_values(array_filter(array_map('trim', explode(',', $settings->targeted_product_ids))));
-            if (!empty($ids)) {
-                // Invalidate older cache keys to ensure fresh title/image resolution
-                \Illuminate\Support\Facades\Cache::forget("shop_{$shop->id}_targeted_products_" . md5($settings->targeted_product_ids));
-                \Illuminate\Support\Facades\Cache::forget("shop_{$shop->id}_targeted_products");
+            
+            // Step 1: Try reading directly from stored targeted_products_json for instant rendering
+            if (!empty($settings->targeted_products_json)) {
+                $decoded = json_decode($settings->targeted_products_json, true);
+                if (is_array($decoded) && !empty($decoded)) {
+                    $validDecoded = [];
+                    foreach ($decoded as $p) {
+                        if (!empty($p['id']) && in_array((string)$p['id'], $ids) && !empty($p['title']) && !str_starts_with($p['title'], 'Product #')) {
+                            $validDecoded[] = $p;
+                        }
+                    }
+                    if (count($validDecoded) === count($ids)) {
+                        $targetedProducts = $validDecoded;
+                    }
+                }
+            }
 
-                $productCacheKey = "shop_{$shop->id}_targeted_products_v3_" . md5($settings->targeted_product_ids);
+            // Step 2: If JSON storage was empty or contained generic titles ("Product #..."), fetch real product titles and images via Shopify GraphQL nodes query
+            if (empty($targetedProducts) && !empty($ids)) {
+                $productCacheKey = "shop_{$shop->id}_targeted_products_v5_" . md5($settings->targeted_product_ids);
                 $targetedProducts = \Illuminate\Support\Facades\Cache::remember($productCacheKey, now()->addMinutes(10), function() use ($shop, $ids, $parseBody) {
                     $productsList = [];
                     try {
@@ -333,77 +347,35 @@ class DashboardController extends Controller
                         $numericIds = array_values(array_filter($numericIds));
 
                         if (!empty($numericIds)) {
-                            // Primary Method: Query via products(query: "id:... OR id:...") - matching search endpoint format
-                            $queryStr = implode(' OR ', array_map(fn($id) => "id:{$id}", $numericIds));
-                            $gqlQuery = 'query getProductsByQuery($queryStr: String!) {
-                                products(first: 50, query: $queryStr) {
-                                    edges {
-                                        node {
-                                            id
-                                            title
-                                            handle
-                                            featuredImage {
-                                                url
-                                                originalSrc
-                                            }
+                            $gqlIds = array_map(fn($id) => "gid://shopify/Product/{$id}", $numericIds);
+                            $nodesQuery = 'query getNodesByIds($ids: [ID!]!) {
+                                nodes(ids: $ids) {
+                                    ... on Product {
+                                        id
+                                        title
+                                        handle
+                                        featuredImage {
+                                            url
+                                            originalSrc
                                         }
                                     }
                                 }
                             }';
-
-                            $response = $shop->api()->graph($gqlQuery, ['queryStr' => $queryStr]);
+                            $response = $shop->api()->graph($nodesQuery, ['ids' => array_values($gqlIds)]);
                             $bodyData = $parseBody($response);
-                            $edges = $bodyData['products']['edges'] ?? [];
+                            $nodes = $bodyData['nodes'] ?? ($bodyData['data']['nodes'] ?? []);
 
-                            if (is_array($edges)) {
-                                foreach ($edges as $edge) {
-                                    $node = $edge['node'] ?? [];
-                                    if (empty($node['id'])) continue;
+                            if (is_array($nodes)) {
+                                foreach ($nodes as $node) {
+                                    if (!$node || empty($node['id'])) continue;
                                     $numericId = preg_replace('/[^0-9]/', '', $node['id']);
                                     $imgUrl = $node['featuredImage']['url'] ?? ($node['featuredImage']['originalSrc'] ?? null);
                                     $productsList[] = [
                                         'id' => (string) $numericId,
-                                        'title' => $node['title'] ?? '',
+                                        'title' => $node['title'] ?? ('Product #' . $numericId),
                                         'handle' => $node['handle'] ?? '',
                                         'image' => $imgUrl,
                                     ];
-                                }
-                            }
-
-                            // Secondary Method: Fallback to nodes query for any IDs not matched by Lucene search
-                            $fetchedIds = array_column($productsList, 'id');
-                            $missingIds = array_diff($numericIds, $fetchedIds);
-
-                            if (!empty($missingIds)) {
-                                $gqlIds = array_map(fn($id) => "gid://shopify/Product/{$id}", $missingIds);
-                                $nodesQuery = 'query getNodesByIds($ids: [ID!]!) {
-                                    nodes(ids: $ids) {
-                                        ... on Product {
-                                            id
-                                            title
-                                            handle
-                                            featuredImage {
-                                                url
-                                                originalSrc
-                                            }
-                                        }
-                                    }
-                                }';
-                                $nodesResponse = $shop->api()->graph($nodesQuery, ['ids' => array_values($gqlIds)]);
-                                $nodesBody = $parseBody($nodesResponse);
-                                $nodes = $nodesBody['nodes'] ?? [];
-                                if (is_array($nodes)) {
-                                    foreach ($nodes as $node) {
-                                        if (!$node || empty($node['id'])) continue;
-                                        $numericId = preg_replace('/[^0-9]/', '', $node['id']);
-                                        $imgUrl = $node['featuredImage']['url'] ?? ($node['featuredImage']['originalSrc'] ?? null);
-                                        $productsList[] = [
-                                            'id' => (string) $numericId,
-                                            'title' => $node['title'] ?? '',
-                                            'handle' => $node['handle'] ?? '',
-                                            'image' => $imgUrl,
-                                        ];
-                                    }
                                 }
                             }
                         }
@@ -427,6 +399,14 @@ class DashboardController extends Controller
 
                     return $productsList;
                 });
+
+                // Auto-update targeted_products_json in DB if real titles were retrieved
+                $hasRealTitles = count(array_filter($targetedProducts, fn($p) => !str_starts_with($p['title'] ?? '', 'Product #'))) > 0;
+                if ($hasRealTitles && $settings) {
+                    $settings->update([
+                        'targeted_products_json' => json_encode($targetedProducts)
+                    ]);
+                }
             }
         }
 
@@ -595,6 +575,7 @@ class DashboardController extends Controller
             'terms_text'               => 'nullable|string',
             'product_targeting_type'   => 'nullable|string|in:all,specific,exclude',
             'targeted_product_ids'     => 'nullable|string',
+            'targeted_products_json'   => 'nullable|string',
         ]);
 
         $existingSettings = Setting::where('shop_id', $shop->id)->first();
@@ -616,6 +597,7 @@ class DashboardController extends Controller
                 'terms_text'              => $request->input('terms_text'),
                 'product_targeting_type'  => $request->input('product_targeting_type', 'all') ?: 'all',
                 'targeted_product_ids'    => $request->input('targeted_product_ids'),
+                'targeted_products_json'  => $request->input('targeted_products_json'),
                 'use_selling_plan'        => true,
             ]
         );
@@ -623,9 +605,13 @@ class DashboardController extends Controller
         \Illuminate\Support\Facades\Cache::forget("shop_{$shop->id}_targeted_products");
         if ($existingSettings && !empty($existingSettings->targeted_product_ids)) {
             \Illuminate\Support\Facades\Cache::forget("shop_{$shop->id}_targeted_products_" . md5($existingSettings->targeted_product_ids));
+            \Illuminate\Support\Facades\Cache::forget("shop_{$shop->id}_targeted_products_v4_" . md5($existingSettings->targeted_product_ids));
+            \Illuminate\Support\Facades\Cache::forget("shop_{$shop->id}_targeted_products_v5_" . md5($existingSettings->targeted_product_ids));
         }
         if ($request->input('targeted_product_ids')) {
             \Illuminate\Support\Facades\Cache::forget("shop_{$shop->id}_targeted_products_" . md5($request->input('targeted_product_ids')));
+            \Illuminate\Support\Facades\Cache::forget("shop_{$shop->id}_targeted_products_v4_" . md5($request->input('targeted_product_ids')));
+            \Illuminate\Support\Facades\Cache::forget("shop_{$shop->id}_targeted_products_v5_" . md5($request->input('targeted_product_ids')));
         }
 
         $settings = Setting::where('shop_id', $shop->id)->first();

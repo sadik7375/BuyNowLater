@@ -29,6 +29,7 @@ class Setting extends Model
         'terms_text',
         'product_targeting_type',
         'targeted_product_ids',
+        'targeted_products_json',
         'selling_plan_group_id',
         'selling_plan_id',
         'use_selling_plan',
