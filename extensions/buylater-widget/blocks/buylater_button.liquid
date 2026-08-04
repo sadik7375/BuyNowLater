@@ -22,13 +22,12 @@
             font-weight: {{ block.settings.button_font_weight | default: '500' }};
             color: {{ text_color }};
             border-radius: {{ block.settings.button_border_radius | default: 30 }}px;
+            padding: {{ block.settings.button_padding_vertical | default: 8 }}px {{ block.settings.button_padding_horizontal | default: 18 }}px;
             {% if bg_color != blank and bg_color != 'transparent' and bg_color != 'rgba(0,0,0,0)' %}
               background-color: {{ bg_color }};
-              padding: 8px 18px;
               text-decoration: none;
             {% else %}
               background-color: transparent;
-              padding: 0;
               text-decoration: underline;
               text-underline-offset: 4px;
             {% endif %}
@@ -384,6 +383,8 @@
     { "type": "color", "id": "button_text_color", "label": "Button Text Color", "default": "#2563eb" },
     { "type": "color", "id": "button_bg_color", "label": "Button Background Color" },
     { "type": "range", "id": "button_border_radius", "min": 0, "max": 50, "step": 1, "unit": "px", "label": "Button Corner Radius", "default": 30 },
+    { "type": "range", "id": "button_padding_vertical", "min": 0, "max": 40, "step": 1, "unit": "px", "label": "Vertical Padding (Top/Bottom)", "default": 8 },
+    { "type": "range", "id": "button_padding_horizontal", "min": 0, "max": 60, "step": 1, "unit": "px", "label": "Horizontal Padding (Left/Right)", "default": 18 },
     { "type": "range", "id": "button_font_size", "min": 12, "max": 24, "step": 1, "unit": "px", "label": "Button Font Size", "default": 15 },
     {
       "type": "select",
