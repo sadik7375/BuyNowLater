@@ -21,10 +21,10 @@
             font-size: {{ block.settings.button_font_size | default: 15 }}px;
             font-weight: {{ block.settings.button_font_weight | default: '500' }};
             color: {{ text_color }};
+            border-radius: {{ block.settings.button_border_radius | default: 30 }}px;
             {% if bg_color != blank and bg_color != 'transparent' and bg_color != 'rgba(0,0,0,0)' %}
               background-color: {{ bg_color }};
               padding: 8px 18px;
-              border-radius: 30px;
               text-decoration: none;
             {% else %}
               background-color: transparent;
@@ -380,9 +380,10 @@
   "name": "Buy Later Button",
   "target": "section",
   "settings": [
-    { "type": "text", "id": "button_text", "label": "Button Text", "default": "Not ready to buy? Reserve with a deposit" },
+    { "type": "text", "id": "button_text", "label": "Button Text", "default": "Buy Now Later — Not ready yet?" },
     { "type": "color", "id": "button_text_color", "label": "Button Text Color", "default": "#2563eb" },
     { "type": "color", "id": "button_bg_color", "label": "Button Background Color" },
+    { "type": "range", "id": "button_border_radius", "min": 0, "max": 50, "step": 1, "unit": "px", "label": "Button Corner Radius", "default": 30 },
     { "type": "range", "id": "button_font_size", "min": 12, "max": 24, "step": 1, "unit": "px", "label": "Button Font Size", "default": 15 },
     {
       "type": "select",
