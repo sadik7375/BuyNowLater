@@ -1818,15 +1818,39 @@
     @endphp
 
     @if(session('success'))
-        <div class="alert success">
-            {{ session('success') }}
+        <div class="alert success" id="flash-alert-msg" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; margin-bottom: 20px; border-radius: 6px; background-color: #e3fbeb; color: #108043; border: 1px solid rgba(48, 209, 88, 0.3);">
+            <span>{{ session('success') }}</span>
+            <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; font-size: 18px; line-height: 1; color: #108043; cursor: pointer; padding: 0 4px;" title="Dismiss">&times;</button>
         </div>
+        <script>
+            setTimeout(function() {
+                var el = document.getElementById('flash-alert-msg');
+                if (el) {
+                    el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                    el.style.opacity = '0';
+                    el.style.transform = 'translateY(-6px)';
+                    setTimeout(function() { if (el) el.remove(); }, 400);
+                }
+            }, 3500);
+        </script>
     @endif
 
     @if(session('error'))
-        <div class="alert error">
-            {{ session('error') }}
+        <div class="alert error" id="flash-alert-err" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; margin-bottom: 20px; border-radius: 6px; background-color: #fff0f0; color: #d82c0d; border: 1px solid rgba(255, 69, 58, 0.3);">
+            <span>{{ session('error') }}</span>
+            <button type="button" onclick="this.parentElement.remove()" style="background: none; border: none; font-size: 18px; line-height: 1; color: #d82c0d; cursor: pointer; padding: 0 4px;" title="Dismiss">&times;</button>
         </div>
+        <script>
+            setTimeout(function() {
+                var el = document.getElementById('flash-alert-err');
+                if (el) {
+                    el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                    el.style.opacity = '0';
+                    el.style.transform = 'translateY(-6px)';
+                    setTimeout(function() { if (el) el.remove(); }, 400);
+                }
+            }, 4500);
+        </script>
     @endif
 
     <!-- Hidden tab buttons for JS compatibility -->
