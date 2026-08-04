@@ -172,12 +172,7 @@ function initBuyLaterWidget() {
           termsNote.textContent = data.terms_text;
         }
       }
-      if (data.button_text) {
-        const btnTextSpan = triggerBtn.querySelector('span');
-        if (btnTextSpan) {
-          btnTextSpan.textContent = data.button_text;
-        }
-      }
+
       
       // Control options visibility based on shop settings
       const depositCard = document.querySelector('.buylater-option-card[data-option="book"]');

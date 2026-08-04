@@ -42,11 +42,6 @@
           data-product-price="{{ product.price | divided_by: 100.0 }}"
           data-product-compare-price="{% if product.compare_at_price %}{{ product.compare_at_price | divided_by: 100.0 }}{% else %}{% endif %}"
           data-product-image="{{ product.featured_image | image_url: width: 240 }}">
-    <!-- Clock SVG Icon -->
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="buylater-btn-icon">
-      <circle cx="12" cy="12" r="10"></circle>
-      <polyline points="12 6 12 12 16 14"></polyline>
-    </svg>
     <span>{{ block.settings.button_text }}</span>
   </button>
 </div>
@@ -312,13 +307,6 @@
           window.buylaterHoldDurationDays = parseInt(data.hold_duration_days, 10);
         }
 
-        // Apply settings directly to the DOM to prevent delay or cache issues
-        if (data.button_text) {
-          const btnTextSpan = triggerBtn.querySelector('span');
-          if (btnTextSpan) {
-            btnTextSpan.textContent = data.button_text;
-          }
-        }
 
         if (data.hold_duration_days) {
           const holdDaysSpan = document.getElementById('buylater-hold-days-display');
