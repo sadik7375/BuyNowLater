@@ -3651,15 +3651,8 @@ function setClientDateFilter(preset, startDate = null, endDate = null, pushState
         history.pushState(null, '', newUrl);
     }
     
-    // Trigger filters on all lists/tables
-    if (typeof filterBookings === 'function') filterBookings();
-    if (typeof filterReminders === 'function') filterReminders();
-    if (typeof filterSubscribers === 'function') filterSubscribers();
-    
-    // Filter recent bookings list (Overview tab)
+    // Overview date filter only affects Overview stats and Recent Bookings list
     filterRecentBookingsList();
-    
-    // Recalculate statistics cards and breakdown chart
     recalculateStatsAndChart();
 }
 
@@ -3849,9 +3842,7 @@ function filterBookings() {
         } else {
             matchesStatus = (status === statusVal);
         }
-        const matchesDate = !window.currentDateStart || (createdAt >= window.currentDateStart && createdAt <= window.currentDateEnd);
-
-        if (matchesSearch && matchesStatus && matchesDate) {
+        if (matchesSearch && matchesStatus) {
             row.style.display = '';
             visibleCount++;
         } else {
