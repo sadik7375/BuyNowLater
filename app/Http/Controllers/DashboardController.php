@@ -578,13 +578,18 @@ class DashboardController extends Controller
             'targeted_products_json'   => 'nullable|string',
         ]);
 
-        $existingSettings = Setting::where('shop_id', $shop->id)->first();
+        $newDeposit = (int) $request->input('deposit_percentage');
+        $newHoldDays = (int) $request->input('hold_duration_days');
+        $needsSellingPlanSync = !$existingSettings 
+            || empty($existingSettings->selling_plan_group_id)
+            || ((int)($existingSettings->deposit_percentage ?? 0) !== $newDeposit)
+            || ((int)($existingSettings->hold_duration_days ?? 0) !== $newHoldDays);
 
         Setting::updateOrCreate(
             ['shop_id' => $shop->id],
             [
                 'sender_display_name'     => $request->input('sender_display_name') ?: ($existingSettings->sender_display_name ?? ($shop->name . ' via BuyLater')),
-                'deposit_percentage'      => $request->input('deposit_percentage'),
+                'deposit_percentage'      => $newDeposit,
                 'button_text'             => $request->input('button_text') ?: ($existingSettings->button_text ?? 'Buy Later'),
                 'reminder_email_subject'  => $request->input('reminder_email_subject') ?: ($existingSettings->reminder_email_subject ?? 'Reminder: You wanted to buy this later!'),
                 'reminder_email_template' => $request->input('reminder_email_template') ?: ($existingSettings->reminder_email_template ?? ''),
@@ -593,7 +598,7 @@ class DashboardController extends Controller
                 'show_deposit'            => $request->has('show_deposit') ? $request->has('show_deposit') : true,
                 'show_reminders'          => false,
                 'show_alerts'             => false,
-                'hold_duration_days'      => $request->input('hold_duration_days'),
+                'hold_duration_days'      => $newHoldDays,
                 'terms_text'              => $request->input('terms_text'),
                 'product_targeting_type'  => $request->input('product_targeting_type', 'all') ?: 'all',
                 'targeted_product_ids'    => $request->input('targeted_product_ids'),
@@ -616,35 +621,38 @@ class DashboardController extends Controller
 
         $settings = Setting::where('shop_id', $shop->id)->first();
 
-        try {
-            $sellingPlanService = app(\App\Services\SellingPlanService::class);
-            $result = $sellingPlanService->createOrUpdatePlanGroup(
-                $shop,
-                (int) $settings->deposit_percentage,
-                (int) $settings->hold_duration_days
-            );
-            if ($result && !empty($result['group_id'])) {
-                $productGqlIds = [];
-                $gqlQuery = 'query getProducts($first: Int!) {
-                    products(first: $first) {
-                        edges { node { id } }
-                    }
-                }';
-                $response = $shop->api()->graph($gqlQuery, ['first' => 250]);
-                if ($response['errors'] === false && isset($response['body']['data']['products']['edges'])) {
-                    foreach ($response['body']['data']['products']['edges'] as $edge) {
-                        if (isset($edge['node']['id'])) {
-                            $productGqlIds[] = $edge['node']['id'];
+        // Sync Selling Plan Group on Shopify ONLY if deposit % or hold days changed or group is missing
+        if ($needsSellingPlanSync) {
+            try {
+                $sellingPlanService = app(\App\Services\SellingPlanService::class);
+                $result = $sellingPlanService->createOrUpdatePlanGroup(
+                    $shop,
+                    (int) $settings->deposit_percentage,
+                    (int) $settings->hold_duration_days
+                );
+                if ($result && !empty($result['group_id'])) {
+                    $productGqlIds = [];
+                    $gqlQuery = 'query getProducts($first: Int!) {
+                        products(first: $first) {
+                            edges { node { id } }
+                        }
+                    }';
+                    $response = $shop->api()->graph($gqlQuery, ['first' => 250]);
+                    if ($response['errors'] === false && isset($response['body']['data']['products']['edges'])) {
+                        foreach ($response['body']['data']['products']['edges'] as $edge) {
+                            if (isset($edge['node']['id'])) {
+                                $productGqlIds[] = $edge['node']['id'];
+                            }
                         }
                     }
+                    if (!empty($productGqlIds)) {
+                        $sellingPlanService->attachProducts($shop, $result['group_id'], $productGqlIds);
+                    }
                 }
-                if (!empty($productGqlIds)) {
-                    $sellingPlanService->attachProducts($shop, $result['group_id'], $productGqlIds);
-                }
+                \Illuminate\Support\Facades\Log::info("saveSettings: Synced Selling Plan Group on Shopify to deposit {$settings->deposit_percentage}%");
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("saveSettings: Failed to update Selling Plan Group on Shopify: " . $e->getMessage());
             }
-            \Illuminate\Support\Facades\Log::info("saveSettings: Synced Selling Plan Group on Shopify to deposit {$settings->deposit_percentage}%");
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("saveSettings: Failed to update Selling Plan Group on Shopify: " . $e->getMessage());
         }
 
         return redirect()->to(route('home', request()->query()) . '#settings')->with('success', 'Settings updated successfully.');
