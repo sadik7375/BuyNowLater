@@ -578,6 +578,8 @@ class DashboardController extends Controller
             'targeted_products_json'   => 'nullable|string',
         ]);
 
+        $existingSettings = Setting::where('shop_id', $shop->id)->first();
+
         $newDeposit = (int) $request->input('deposit_percentage');
         $newHoldDays = (int) $request->input('hold_duration_days');
         $needsSellingPlanSync = !$existingSettings 
