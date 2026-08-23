@@ -482,29 +482,41 @@ export default function Dashboard(props) {
                                         <Divider />
 
                                         <BlockStack gap="250">
-                                            <InlineStack gap="200" blockAlign="center">
-                                                <Icon source={CheckIcon} tone="success" />
-                                                <Text>Up to 10 active deposit reservations</Text>
+                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                    <Icon source={CheckIcon} tone="success" />
+                                                </Box>
+                                                <Text as="span">Up to 10 active deposit reservations</Text>
                                             </InlineStack>
-                                            <InlineStack gap="200" blockAlign="center">
-                                                <Icon source={CheckIcon} tone="success" />
-                                                <Text>Buy Now Later widget on product pages</Text>
+                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                    <Icon source={CheckIcon} tone="success" />
+                                                </Box>
+                                                <Text as="span">Buy Now Later widget on product pages</Text>
                                             </InlineStack>
-                                            <InlineStack gap="200" blockAlign="center">
-                                                <Icon source={CheckIcon} tone="success" />
-                                                <Text>Configurable deposit percentage</Text>
+                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                    <Icon source={CheckIcon} tone="success" />
+                                                </Box>
+                                                <Text as="span">Configurable deposit percentage</Text>
                                             </InlineStack>
-                                            <InlineStack gap="200" blockAlign="center">
-                                                <Icon source={CheckIcon} tone="success" />
-                                                <Text>Shopify Draft Order integration</Text>
+                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                    <Icon source={CheckIcon} tone="success" />
+                                                </Box>
+                                                <Text as="span">Shopify Draft Order integration</Text>
                                             </InlineStack>
-                                            <InlineStack gap="200" blockAlign="center">
-                                                <Icon source={CheckIcon} tone="success" />
-                                                <Text>Reservation dashboard & tracking</Text>
+                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                    <Icon source={CheckIcon} tone="success" />
+                                                </Box>
+                                                <Text as="span">Reservation dashboard & tracking</Text>
                                             </InlineStack>
-                                            <InlineStack gap="200" blockAlign="center">
-                                                <Icon source={CheckIcon} tone="success" />
-                                                <Text>Email support</Text>
+                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                    <Icon source={CheckIcon} tone="success" />
+                                                </Box>
+                                                <Text as="span">Email support</Text>
                                             </InlineStack>
                                         </BlockStack>
 
@@ -542,37 +554,53 @@ export default function Dashboard(props) {
                                         <Divider />
 
                                         <BlockStack gap="250">
-                                            <InlineStack gap="200" blockAlign="center">
-                                                <Icon source={CheckIcon} tone="success" />
-                                                <Text fontWeight="bold">Unlimited deposit reservations & holds</Text>
+                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                    <Icon source={CheckIcon} tone="success" />
+                                                </Box>
+                                                <Text as="span" fontWeight="bold">Unlimited deposit reservations & holds</Text>
                                             </InlineStack>
-                                            <InlineStack gap="200" blockAlign="center">
-                                                <Icon source={CheckIcon} tone="success" />
-                                                <Text fontWeight="bold">Custom deposit percentage per product or store-wide</Text>
+                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                    <Icon source={CheckIcon} tone="success" />
+                                                </Box>
+                                                <Text as="span" fontWeight="bold">Custom deposit percentage per product or store-wide</Text>
                                             </InlineStack>
-                                            <InlineStack gap="200" blockAlign="center">
-                                                <Icon source={CheckIcon} tone="success" />
-                                                <Text fontWeight="bold">Balance payment links sent directly to customers</Text>
+                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                    <Icon source={CheckIcon} tone="success" />
+                                                </Box>
+                                                <Text as="span" fontWeight="bold">Balance payment links sent directly to customers</Text>
                                             </InlineStack>
-                                            <InlineStack gap="200" blockAlign="center">
-                                                <Icon source={CheckIcon} tone="success" />
-                                                <Text fontWeight="bold">Automated Draft Order Sync with Shopify admin</Text>
+                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                    <Icon source={CheckIcon} tone="success" />
+                                                </Box>
+                                                <Text as="span" fontWeight="bold">Automated Draft Order Sync with Shopify admin</Text>
                                             </InlineStack>
-                                            <InlineStack gap="200" blockAlign="center">
-                                                <Icon source={CheckIcon} tone="success" />
-                                                <Text fontWeight="bold">Fulfillment Hold — auto-holds order until balance is paid</Text>
+                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                    <Icon source={CheckIcon} tone="success" />
+                                                </Box>
+                                                <Text as="span" fontWeight="bold">Fulfillment Hold — auto-holds order until balance is paid</Text>
                                             </InlineStack>
-                                            <InlineStack gap="200" blockAlign="center">
-                                                <Icon source={CheckIcon} tone="success" />
-                                                <Text fontWeight="bold">Configurable hold expiry — set how long reservations last</Text>
+                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                    <Icon source={CheckIcon} tone="success" />
+                                                </Box>
+                                                <Text as="span" fontWeight="bold">Configurable hold expiry — set how long reservations last</Text>
                                             </InlineStack>
-                                            <InlineStack gap="200" blockAlign="center">
-                                                <Icon source={CheckIcon} tone="success" />
-                                                <Text fontWeight="bold">Theme App Extension — no code edits required</Text>
+                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                    <Icon source={CheckIcon} tone="success" />
+                                                </Box>
+                                                <Text as="span" fontWeight="bold">Theme App Extension — no code edits required</Text>
                                             </InlineStack>
-                                            <InlineStack gap="200" blockAlign="center">
-                                                <Icon source={CheckIcon} tone="success" />
-                                                <Text fontWeight="bold">Priority Support — 24/7 Email & Live Chat</Text>
+                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                    <Icon source={CheckIcon} tone="success" />
+                                                </Box>
+                                                <Text as="span" fontWeight="bold">Priority Support — 24/7 Email & Live Chat</Text>
                                             </InlineStack>
                                         </BlockStack>
 
