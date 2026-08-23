@@ -251,7 +251,7 @@ export default function Dashboard(props) {
                     <BlockStack gap="400">
                         {/* Summary Metrics */}
                         <Grid>
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3, xl: 3 }}>
+                            <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4, xl: 4 }}>
                                 <Card>
                                     <BlockStack gap="200">
                                         <Text variant="headingSm" as="h3" tone="subdued">
@@ -267,7 +267,7 @@ export default function Dashboard(props) {
                                 </Card>
                             </Grid.Cell>
 
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3, xl: 3 }}>
+                            <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4, xl: 4 }}>
                                 <Card>
                                     <BlockStack gap="200">
                                         <Text variant="headingSm" as="h3" tone="subdued">
@@ -283,7 +283,7 @@ export default function Dashboard(props) {
                                 </Card>
                             </Grid.Cell>
 
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3, xl: 3 }}>
+                            <Grid.Cell columnSpan={{ xs: 6, sm: 4, md: 4, lg: 4, xl: 4 }}>
                                 <Card>
                                     <BlockStack gap="200">
                                         <Text variant="headingSm" as="h3" tone="subdued">
@@ -294,22 +294,6 @@ export default function Dashboard(props) {
                                         </Text>
                                         <Text variant="bodyXs" tone="critical">
                                             Requires reminder action
-                                        </Text>
-                                    </BlockStack>
-                                </Card>
-                            </Grid.Cell>
-
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 3, md: 3, lg: 3, xl: 3 }}>
-                                <Card>
-                                    <BlockStack gap="200">
-                                        <Text variant="headingSm" as="h3" tone="subdued">
-                                            Price Drop Subscribers
-                                        </Text>
-                                        <Text variant="headingLg" as="p">
-                                            {alertSubscribersCount}
-                                        </Text>
-                                        <Text variant="bodyXs" tone="subdued">
-                                            Interested customers
                                         </Text>
                                     </BlockStack>
                                 </Card>
