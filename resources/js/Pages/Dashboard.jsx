@@ -323,7 +323,16 @@ export default function Dashboard(props) {
                                     <Text variant="headingMd" as="h2">
                                         Recent Deferred Orders
                                     </Text>
-                                    <Button variant="tertiary" onClick={() => setSelectedTab(1)}>
+                                    <Button
+                                        variant="tertiary"
+                                        onClick={() => {
+                                            setSelectedTab(1);
+                                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            if (window.history && window.history.pushState) {
+                                                window.history.pushState({}, '', '/bookings');
+                                            }
+                                        }}
+                                    >
                                         View All ({bookings.length})
                                     </Button>
                                 </InlineStack>
