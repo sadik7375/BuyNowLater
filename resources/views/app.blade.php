@@ -14,6 +14,7 @@
         <ui-nav-menu>
             <a href="/" rel="home">Overview</a>
             <a href="/bookings">Orders</a>
+            <a href="/price-plan">Price Plan</a>
             <a href="/app-settings">General Settings</a>
             <a href="/support">Support & Helpdesk</a>
         </ui-nav-menu>

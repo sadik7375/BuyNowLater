@@ -9,6 +9,7 @@ name = "Buy Now Later"
 links = [
   { label = "Overview", destination = "/" },
   { label = "Orders", destination = "/bookings" },
+  { label = "Price Plan", destination = "/price-plan" },
   { label = "General Settings", destination = "/app-settings" },
   { label = "Support & Helpdesk", destination = "/support" }
 ]
