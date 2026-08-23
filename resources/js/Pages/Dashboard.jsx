@@ -129,10 +129,25 @@ export default function Dashboard(props) {
         setTargetedProductIds(updated.map((p) => p.id).join(','));
     };
 
+    // Helper to get App Bridge v3 Session Token
+    const getSessionToken = async () => {
+        if (window.shopify && typeof window.shopify.idToken === 'function') {
+            try {
+                return await window.shopify.idToken();
+            } catch (e) {
+                console.warn('Failed to get shopify idToken:', e);
+            }
+        }
+        return null;
+    };
+
     // Handle Settings Submit
-    const handleSaveSettings = (e) => {
-        e.preventDefault();
+    const handleSaveSettings = async (e) => {
+        if (e) e.preventDefault();
         setIsSaving(true);
+        const token = await getSessionToken();
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
         router.post(
             '/admin/settings',
             {
@@ -145,19 +160,24 @@ export default function Dashboard(props) {
                 targeted_products_json: JSON.stringify(selectedProductsList),
             },
             {
+                headers,
                 onFinish: () => setIsSaving(false),
             }
         );
     };
 
     // Handle Sending Balance Link / Reminder
-    const handleSendAction = (bookingId, actionType) => {
+    const handleSendAction = async (bookingId, actionType) => {
         setActionLoading((prev) => ({ ...prev, [bookingId]: true }));
         const endpoint = actionType === 'link' ? `/admin/bookings/${bookingId}/send-balance-link` : `/admin/bookings/${bookingId}/send-reminder`;
+        const token = await getSessionToken();
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
         router.post(
             endpoint,
             {},
             {
+                headers,
                 onFinish: () => setActionLoading((prev) => ({ ...prev, [bookingId]: false })),
             }
         );
