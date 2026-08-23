@@ -5,6 +5,14 @@ application_url = "https://buylater.cannyapps.com"
 embedded = true
 name = "Buy Now Later"
 
+[navigation]
+links = [
+  { label = "Overview", destination = "/" },
+  { label = "Orders", destination = "/bookings" },
+  { label = "General Settings", destination = "/app-settings" },
+  { label = "Support & Helpdesk", destination = "/support" }
+]
+
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "read_products,write_products,read_orders,write_orders,read_all_orders,read_customers,read_themes,read_customer_payment_methods,read_draft_orders,write_draft_orders,read_purchase_options,write_purchase_options,read_payment_mandate,write_payment_mandate"

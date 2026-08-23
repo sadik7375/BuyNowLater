@@ -198,9 +198,7 @@ export default function Dashboard(props) {
                 )}
 
                 {/* Main Navigation Tabs */}
-                <Card padding="0">
-                    <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
-                </Card>
+                <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
 
                 {/* TAB 0: OVERVIEW */}
                 {selectedTab === 0 && (
