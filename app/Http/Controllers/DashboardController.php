@@ -238,15 +238,24 @@ class DashboardController extends Controller
         $alertSubscribersCount = Subscriber::where('shop_id', $shop->id)
             ->count();
 
-        $conversionRate = 0.0;
+        $reminders = Reminder::where('shop_id', $shop->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+        $subscribers = Subscriber::where('shop_id', $shop->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         // --- Wished Products (100% Dynamic from Database) ---
         $wishes = [];
         foreach ($reminders as $r) {
-            $wishes[$r->product_title] = ($wishes[$r->product_title] ?? 0) + 1;
+            if (!empty($r->product_title)) {
+                $wishes[$r->product_title] = ($wishes[$r->product_title] ?? 0) + 1;
+            }
         }
         foreach ($subscribers as $s) {
-            $wishes[$s->product_title] = ($wishes[$s->product_title] ?? 0) + 1;
+            if (!empty($s->product_title)) {
+                $wishes[$s->product_title] = ($wishes[$s->product_title] ?? 0) + 1;
+            }
         }
         arsort($wishes);
         $wishes = array_slice($wishes, 0, 5, true);
