@@ -17,8 +17,21 @@ class DashboardController extends Controller
     {
         $shop = auth()->user();
 
+        if (!$shop) {
+            $shopDomain = $request->get('shop');
+            if ($shopDomain) {
+                return redirect()->route('authenticate', ['shop' => $shopDomain, 'host' => $request->get('host')]);
+            }
+        }
+
         // Validate access token on dashboard load to guarantee fresh token before any billing action
-        if ($shop && !empty($shop->password)) {
+        if ($shop) {
+            if (empty($shop->password)) {
+                $shopHandle = explode('.', $shop->name)[0];
+                $host = $request->get('host') ?: base64_encode("admin.shopify.com/store/" . $shopHandle);
+                return redirect()->route('authenticate', ['shop' => $shop->name, 'host' => $host]);
+            }
+
             try {
                 $shop->apiHelper()->make();
             } catch (\Throwable $t) {
@@ -1445,7 +1458,7 @@ class DashboardController extends Controller
      */
     private function verifySubscriptionWithShopify($shop)
     {
-        if (app()->environment() === 'testing' || !$shop || !$shop->plan_id) {
+        if (app()->environment() === 'testing' || !$shop || !$shop->plan_id || empty($shop->password)) {
             return;
         }
 
@@ -1498,7 +1511,7 @@ class DashboardController extends Controller
      */
     private function syncBookingsWithShopify($shop)
     {
-        if (app()->environment() === 'testing') {
+        if (app()->environment() === 'testing' || !$shop || empty($shop->password)) {
             return;
         }
 
