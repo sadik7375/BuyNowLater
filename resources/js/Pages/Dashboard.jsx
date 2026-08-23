@@ -347,8 +347,6 @@ export default function Dashboard(props) {
                                             { title: 'Deposit Paid' },
                                             { title: 'Balance Due' },
                                             { title: 'Payment status' },
-                                            { title: 'Fulfillment status' },
-                                            { title: 'Action' },
                                         ]}
                                     >
                                         {bookings.slice(0, 5).map((booking, index) => (
@@ -382,19 +380,6 @@ export default function Dashboard(props) {
                                                     </Text>
                                                 </IndexTable.Cell>
                                                 <IndexTable.Cell>{renderPaymentStatusBadge(booking)}</IndexTable.Cell>
-                                                <IndexTable.Cell>{renderFulfillmentStatusBadge(booking)}</IndexTable.Cell>
-                                                <IndexTable.Cell>
-                                                    {booking.status === 'deposit_paid' && (
-                                                        <Button
-                                                            size="micro"
-                                                            variant="primary"
-                                                            loading={actionLoading[booking.id]}
-                                                            onClick={() => handleSendAction(booking.id, 'reminder')}
-                                                        >
-                                                            Send Balance Link
-                                                        </Button>
-                                                    )}
-                                                </IndexTable.Cell>
                                             </IndexTable.Row>
                                         ))}
                                     </IndexTable>
@@ -433,8 +418,6 @@ export default function Dashboard(props) {
                                         { title: 'Deposit Paid' },
                                         { title: 'Balance Due' },
                                         { title: 'Payment status' },
-                                        { title: 'Fulfillment status' },
-                                        { title: 'Action' },
                                     ]}
                                 >
                                     {bookings.map((booking, index) => (
@@ -460,21 +443,6 @@ export default function Dashboard(props) {
                                             </IndexTable.Cell>
                                             <IndexTable.Cell>${Number(booking.remaining_balance).toFixed(2)}</IndexTable.Cell>
                                             <IndexTable.Cell>{renderPaymentStatusBadge(booking)}</IndexTable.Cell>
-                                            <IndexTable.Cell>{renderFulfillmentStatusBadge(booking)}</IndexTable.Cell>
-                                            <IndexTable.Cell>
-                                                <InlineStack gap="200">
-                                                    {booking.status === 'deposit_paid' && (
-                                                        <Button
-                                                            size="micro"
-                                                            variant="primary"
-                                                            loading={actionLoading[booking.id]}
-                                                            onClick={() => handleSendAction(booking.id, 'reminder')}
-                                                        >
-                                                            Send Balance Link
-                                                        </Button>
-                                                    )}
-                                                </InlineStack>
-                                            </IndexTable.Cell>
                                         </IndexTable.Row>
                                     ))}
                                 </IndexTable>
