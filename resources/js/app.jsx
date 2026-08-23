@@ -10,22 +10,33 @@ import enTranslations from '@shopify/polaris/locales/en.json';
 
 const appName = window.document.getElementsByTagName('title')[0]?.innerText || 'Buy Now Later';
 
-createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
-    resolve: (name) =>
-        resolvePageComponent(
-            `./Pages/${name}.jsx`,
-            import.meta.glob('./Pages/**/*.jsx')
-        ),
-    setup({ el, App, props }) {
-        if (!el) return;
-        createRoot(el).render(
-            <AppProvider i18n={enTranslations}>
-                <App {...props} />
-            </AppProvider>
-        );
-    },
-    progress: {
-        color: '#4B5563',
-    },
-});
+const el = document.getElementById('app');
+if (el && el.dataset && el.dataset.page) {
+    try {
+        const initialPage = JSON.parse(el.dataset.page);
+        if (initialPage && typeof initialPage === 'object' && initialPage.component) {
+            createInertiaApp({
+                page: initialPage,
+                title: (title) => `${title} - ${appName}`,
+                resolve: (name) =>
+                    resolvePageComponent(
+                        `./Pages/${name}.jsx`,
+                        import.meta.glob('./Pages/**/*.jsx')
+                    ),
+                setup({ el, App, props }) {
+                    if (!el) return;
+                    createRoot(el).render(
+                        <AppProvider i18n={enTranslations}>
+                            <App {...props} />
+                        </AppProvider>
+                    );
+                },
+                progress: {
+                    color: '#4B5563',
+                },
+            });
+        }
+    } catch (e) {
+        console.warn('Inertia page data is invalid or missing component:', e);
+    }
+}
