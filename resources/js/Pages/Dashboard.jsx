@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
     Page,
     Layout,
@@ -56,6 +57,7 @@ export default function Dashboard(props) {
         activeTab: serverActiveTab = 'tab-overview',
         hasPlan = false,
         shopName = '',
+        shopEmail = '',
     } = props;
 
     // Mapping tab strings to index
@@ -90,6 +92,61 @@ export default function Dashboard(props) {
 
     // Booking action loading state
     const [actionLoading, setActionLoading] = useState({});
+
+    // Feedback Form state
+    const [feedbackType, setFeedbackType] = useState('General Feedback');
+    const [feedbackContact, setFeedbackContact] = useState(shopEmail || '');
+    const [feedbackSubject, setFeedbackSubject] = useState('');
+    const [feedbackMessage, setFeedbackMessage] = useState('');
+    const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+    const [feedbackSuccess, setFeedbackSuccess] = useState(false);
+    const [feedbackError, setFeedbackError] = useState('');
+
+    useEffect(() => {
+        if (shopEmail && !feedbackContact) {
+            setFeedbackContact(shopEmail);
+        }
+    }, [shopEmail]);
+
+    const handleFeedbackSubmit = async (e) => {
+        e.preventDefault();
+        if (!feedbackSubject.trim() || !feedbackMessage.trim()) {
+            setFeedbackError('Please enter both subject and message before submitting.');
+            return;
+        }
+
+        setIsSubmittingFeedback(true);
+        setFeedbackError('');
+        setFeedbackSuccess(false);
+
+        try {
+            const token = await getSessionToken();
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+            const res = await axios.post(
+                '/admin/feedback',
+                {
+                    feedback_type: feedbackType,
+                    feedback_contact: feedbackContact,
+                    feedback_subject: feedbackSubject,
+                    feedback_message: feedbackMessage,
+                },
+                { headers }
+            );
+
+            if (res.data && res.data.success) {
+                setFeedbackSuccess(true);
+                setFeedbackSubject('');
+                setFeedbackMessage('');
+            } else {
+                setFeedbackError(res.data?.message || 'Failed to send feedback.');
+            }
+        } catch (err) {
+            setFeedbackError(err.response?.data?.message || 'Unable to submit feedback. Please try again.');
+        } finally {
+            setIsSubmittingFeedback(false);
+        }
+    };
 
     const tabs = [
         { id: 'tab-overview', content: 'Overview', icon: OrderIcon },
@@ -852,35 +909,148 @@ export default function Dashboard(props) {
                 {/* TAB 4: SUPPORT & HELP */}
                 {selectedTab === 4 && (
                     <BlockStack gap="400">
-                        <Card title="How It Works">
+                        {/* Quick 2-Step Installation Banner */}
+                        <Banner tone="info" title="Quick 2-Step Installation">
+                            <p>No coding required! Simply activate the app block in your Shopify Theme Editor.</p>
+                        </Banner>
+
+                        {/* Step 1 Card */}
+                        <Card padding="500">
                             <BlockStack gap="300">
-                                <Text variant="headingMd" as="h2">
-                                    How Buy Now Later Works
+                                <Text variant="headingMd" as="h3">
+                                    Step 1: Open Theme Editor
                                 </Text>
-                                <Divider />
-                                <Text variant="bodyMd">
-                                    1. <strong>Storefront Widget:</strong> When enabled, customers see the Buy Now Later option on targeted product pages.
+                                <Text tone="subdued">
+                                    Click the button below to navigate to your live Shopify Online Store Theme Editor.
                                 </Text>
-                                <Text variant="bodyMd">
-                                    2. <strong>Shopify Selling Plan Checkout:</strong> Customers pay the configured deposit (e.g. 10%) directly via native Shopify checkout.
-                                </Text>
-                                <Text variant="bodyMd">
-                                    3. <strong>Automatic Tracking & Invoicing:</strong> Deposit orders appear in your Dashboard. You can send automated balance invoices when ready to fulfill.
-                                </Text>
+                                <Box paddingTop="200">
+                                    <Button
+                                        variant="primary"
+                                        onClick={() => {
+                                            const myshopifyDomain = shopName ? (shopName.includes('.myshopify.com') ? shopName : `${shopName}.myshopify.com`) : '';
+                                            const themeEditorUrl = myshopifyDomain
+                                                ? `https://${myshopifyDomain}/admin/themes/current/editor?template=product`
+                                                : '/admin/themes/current/editor?template=product';
+                                            window.open(themeEditorUrl, '_blank');
+                                        }}
+                                    >
+                                        Open Shopify Theme Editor ↗
+                                    </Button>
+                                </Box>
                             </BlockStack>
                         </Card>
 
-                        <Card title="Support & Contact">
+                        {/* Step 2 Card */}
+                        <Card padding="500">
+                            <BlockStack gap="300">
+                                <Text variant="headingMd" as="h3">
+                                    Step 2: Add App Block to Product Template
+                                </Text>
+                                <BlockStack gap="200">
+                                    <Text variant="bodyMd">
+                                        1. In the Theme Editor dropdown, select <strong>Products → Default product</strong>.
+                                    </Text>
+                                    <Text variant="bodyMd">
+                                        2. In the left sidebar, click <strong>Add block</strong> under Product Information.
+                                    </Text>
+                                    <Text variant="bodyMd">
+                                        3. Select <strong>Buy Now Later Widget</strong> under the Apps tab.
+                                    </Text>
+                                    <Text variant="bodyMd">
+                                        4. Click <strong>Save</strong> in the top right corner.
+                                    </Text>
+                                </BlockStack>
+                            </BlockStack>
+                        </Card>
+
+                        {/* Feedback & Complaint Form Card */}
+                        <Card padding="500">
+                            <form onSubmit={handleFeedbackSubmit}>
+                                <FormLayout>
+                                    <BlockStack gap="200">
+                                        <Text variant="headingMd" as="h2">
+                                            📩 Feedback & Complaint Form
+                                        </Text>
+                                        <Text tone="subdued">
+                                            Have a feature suggestion, found a bug, or want to register a complaint? Let us know directly. We value your input and respond to support messages within 24 hours.
+                                        </Text>
+                                    </BlockStack>
+
+                                    {feedbackSuccess && (
+                                        <Banner tone="success" onDismiss={() => setFeedbackSuccess(false)}>
+                                            <p>Thank you! Your feedback has been sent successfully. We will get back to you within 24 hours.</p>
+                                        </Banner>
+                                    )}
+
+                                    {feedbackError && (
+                                        <Banner tone="critical" onDismiss={() => setFeedbackError('')}>
+                                            <p>{feedbackError}</p>
+                                        </Banner>
+                                    )}
+
+                                    <Grid>
+                                        <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+                                            <Select
+                                                label="Feedback Type"
+                                                options={[
+                                                    { label: 'General Feedback', value: 'General Feedback' },
+                                                    { label: 'Bug Report', value: 'Bug Report' },
+                                                    { label: 'Feature Request', value: 'Feature Request' },
+                                                    { label: 'Complaint', value: 'Complaint' },
+                                                ]}
+                                                value={feedbackType}
+                                                onChange={(val) => setFeedbackType(val)}
+                                            />
+                                        </Grid.Cell>
+                                        <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+                                            <TextField
+                                                label="Contact Email"
+                                                type="email"
+                                                value={feedbackContact}
+                                                onChange={(val) => setFeedbackContact(val)}
+                                                autoComplete="email"
+                                            />
+                                        </Grid.Cell>
+                                    </Grid>
+
+                                    <TextField
+                                        label="Subject"
+                                        value={feedbackSubject}
+                                        onChange={(val) => setFeedbackSubject(val)}
+                                        placeholder="What is this about?"
+                                        autoComplete="off"
+                                    />
+
+                                    <TextField
+                                        label="Message"
+                                        value={feedbackMessage}
+                                        onChange={(val) => setFeedbackMessage(val)}
+                                        placeholder="Detail your feedback, suggestion or complaint..."
+                                        multiline={4}
+                                        autoComplete="off"
+                                    />
+
+                                    <Box paddingTop="200">
+                                        <Button variant="primary" submit loading={isSubmittingFeedback}>
+                                            Submit Feedback
+                                        </Button>
+                                    </Box>
+                                </FormLayout>
+                            </form>
+                        </Card>
+
+                        {/* Direct Email Support Info */}
+                        <Card padding="500">
                             <BlockStack gap="300">
                                 <Text variant="headingMd" as="h2">
-                                    Need Assistance?
+                                    Need Direct Assistance?
                                 </Text>
                                 <Divider />
                                 <Text variant="bodyMd">
-                                    Our support team is ready to help you with setup or custom integrations.
+                                    Our support team is ready to help you with setup or custom theme integrations.
                                 </Text>
                                 <Text variant="bodyMd" fontWeight="bold">
-                                    Email Support: support@cannyapps.com
+                                    Email Support: buynowlater@cannyapps.com
                                 </Text>
                             </BlockStack>
                         </Card>

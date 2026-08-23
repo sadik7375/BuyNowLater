@@ -437,6 +437,7 @@ class DashboardController extends Controller
             'downpayChartData' => $downpayChartData,
             'hasPlan' => (bool) ($shop->plan_id ?? false),
             'shopName' => $shop->name ?? '',
+            'shopEmail' => $shop->email ?? '',
         ]);
     }
 
