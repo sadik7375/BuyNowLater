@@ -14,8 +14,31 @@
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
         <!-- Scripts and Styles -->
-        @viteReactRefresh
-        @vite(['resources/js/app.jsx'])
+        @php
+            $hotFile = public_path('hot');
+            if (file_exists($hotFile) && (app()->environment('production') || !app()->environment('local'))) {
+                @unlink($hotFile);
+            }
+        @endphp
+        @env('local')
+            @viteReactRefresh
+            @vite(['resources/js/app.jsx'])
+        @else
+            @php
+                $manifestPath = public_path('build/manifest.json');
+                $manifest = file_exists($manifestPath) ? json_decode(file_get_contents($manifestPath), true) : [];
+                $appJs = $manifest['resources/js/app.jsx']['file'] ?? null;
+                $appCss = $manifest['resources/js/app.jsx']['css'][0] ?? null;
+            @endphp
+            @if($appCss)
+                <link rel="stylesheet" href="{{ asset('build/' . $appCss) }}">
+            @endif
+            @if($appJs)
+                <script type="module" src="{{ asset('build/' . $appJs) }}"></script>
+            @else
+                @vite(['resources/js/app.jsx'])
+            @endif
+        @endenv
         @inertiaHead
     </head>
     <body class="font-sans antialiased">

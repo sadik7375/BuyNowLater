@@ -10,6 +10,9 @@ chdir($baseDir);
 if (file_exists($baseDir . '/.git/index.lock')) {
     @unlink($baseDir . '/.git/index.lock');
 }
+if (file_exists($baseDir . '/public/hot')) {
+    @unlink($baseDir . '/public/hot');
+}
 
 echo "<pre>\n";
 echo "Current directory: " . getcwd() . "\n\n";
