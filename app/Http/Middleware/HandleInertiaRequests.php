@@ -29,6 +29,9 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $shop = $request->get('shop') ?: ($request->user() ? $request->user()->name : null);
+        $host = $request->get('host') ?: ($shop ? base64_encode("admin.shopify.com/store/" . explode('.', $shop)[0]) : null);
+
         return array_merge(parent::share($request), [
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
@@ -38,9 +41,11 @@ class HandleInertiaRequests extends Middleware
             ],
             'shopify' => [
                 'api_key' => config('shopify-app.api_key'),
-                'host' => $request->get('host'),
-                'shop' => $request->get('shop'),
+                'host' => $host,
+                'shop' => $shop,
             ],
+            'host' => $host,
+            'shop' => $shop,
         ]);
     }
 }
