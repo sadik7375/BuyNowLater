@@ -624,7 +624,7 @@ return [
     | For example, if you use SPA, you do not need to be redirected to a separate page to get the JWT token.
     |
     */
-    'frontend_type' => env('SHOPIFY_FRONTEND_TYPE', 'SPA'),
+    'frontend_type' => env('SHOPIFY_FRONTEND_TYPE', 'MPA'),
 
     'iframe_ancestors' => '',
 
