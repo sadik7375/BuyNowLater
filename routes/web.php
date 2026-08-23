@@ -372,15 +372,33 @@ Route::group(['prefix' => 'deploy'], function() {
 
     Route::get('/composer-install', function() {
         try {
+            $basePath = base_path();
+            $composerHome = storage_path('app/composer');
+            if (!file_exists($composerHome)) {
+                @mkdir($composerHome, 0755, true);
+            }
+            putenv("COMPOSER_HOME={$composerHome}");
+
+            $pharPath = $basePath . '/composer.phar';
+            if (!file_exists($pharPath)) {
+                $pharData = @file_get_contents('https://getcomposer.org/composer-stable.phar');
+                if ($pharData) {
+                    file_put_contents($pharPath, $pharData);
+                }
+            }
+
             $output = [];
             $returnCode = 0;
-            putenv('COMPOSER_HOME=' . storage_path('app/composer'));
-            $cmd = 'cd ' . escapeshellarg(base_path()) . ' && composer install --no-dev --optimize-autoloader 2>&1';
-            exec($cmd, $output, $returnCode);
-            if ($returnCode !== 0) {
-                $cmd2 = 'cd ' . escapeshellarg(base_path()) . ' && /usr/local/bin/composer install --no-dev --optimize-autoloader 2>&1';
-                exec($cmd2, $output, $returnCode);
+
+            if (file_exists($pharPath)) {
+                $phpBin = PHP_BINARY ?: '/usr/local/bin/php';
+                $cmd = "cd " . escapeshellarg($basePath) . " && {$phpBin} composer.phar install --no-dev --optimize-autoloader 2>&1";
+                exec($cmd, $output, $returnCode);
+            } else {
+                $cmd = "cd " . escapeshellarg($basePath) . " && composer install --no-dev --optimize-autoloader 2>&1";
+                exec($cmd, $output, $returnCode);
             }
+
             return 'Composer Output (Code ' . $returnCode . '): <br><pre>' . implode("\n", $output) . '</pre>';
         } catch (\Exception $e) {
             return 'Composer Install Exception: ' . $e->getMessage();
