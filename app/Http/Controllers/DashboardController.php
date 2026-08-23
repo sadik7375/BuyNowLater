@@ -142,52 +142,14 @@ class DashboardController extends Controller
             }
         }
 
-        // ---------- Self-Healing: Verify Subscription & Sync Status of Active Bookings ----------
-        $this->verifySubscriptionWithShopify($shop);
-        if (!$request->is('price-plan') && !$request->is('app-settings') && !$request->is('support') && !$request->is('how-it-works') && !$request->is('benefits')) {
-            $this->syncBookingsWithShopify($shop);
-        }
-
-        // ---------- Date Filter Handling ----------
-        $dateFilter = $request->query('date_filter', 'all'); // all, today, week, custom
-        $start = null;
-        $end = null;
-        if ($dateFilter === 'today') {
-            $start = Carbon::today();
-            $end = Carbon::today()->endOfDay();
-        } elseif ($dateFilter === 'week') {
-            $start = Carbon::now()->startOfWeek();
-            $end = Carbon::now()->endOfWeek();
-        } elseif ($dateFilter === 'custom') {
-            $startDate = $request->query('start_date');
-            $endDate = $request->query('end_date');
-            if ($startDate && $endDate) {
-                $start = Carbon::parse($startDate)->startOfDay();
-                $end = Carbon::parse($endDate)->endOfDay();
-            }
-        }
-        // Prepare filter closure for reuse
-        $filterClosure = function($query) use ($dateFilter, $start, $end) {
-            if ($dateFilter !== 'all' && $start && $end) {
-                $query->whereBetween('created_at', [$start, $end]);
-            }
-        };
-
-        $reminders   = Reminder::where('shop_id', $shop->id)
-            ->orderBy('created_at', 'desc')
-            ->get();
-        $subscribers = Subscriber::where('shop_id', $shop->id)
-            ->orderBy('created_at', 'desc')
-            ->get();
-        // Auto-expire bookings whose hold period has passed
-        Booking::where('shop_id', $shop->id)
-            ->where('status', 'deposit_paid')
-            ->whereNotNull('expires_at')
-            ->where('expires_at', '<', Carbon::now())
-            ->update(['status' => 'expired']);
-
         // Sync draft orders and orders from Shopify
-        $this->syncBookingsWithShopify($shop);
+        try {
+            if (!$request->is('price-plan') && !$request->is('app-settings') && !$request->is('support') && !$request->is('how-it-works') && !$request->is('benefits')) {
+                $this->syncBookingsWithShopify($shop);
+            }
+        } catch (\Throwable $t) {
+            \Illuminate\Support\Facades\Log::warning("Sync bookings skipped: " . $t->getMessage());
+        }
 
         $allBookings = Booking::where('shop_id', $shop->id)
             ->orderBy('created_at', 'desc')
