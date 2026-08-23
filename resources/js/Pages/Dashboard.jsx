@@ -163,6 +163,17 @@ export default function Dashboard(props) {
         );
     };
 
+    const formatOrderNumber = (b) => {
+        const raw = b.order_name || b.balance_order_name || b.draft_order_name;
+        if (raw) {
+            return raw.startsWith('#') ? raw : `#${raw}`;
+        }
+        if (b.order_id) {
+            return `#${b.order_id}`;
+        }
+        return `#${b.id}`;
+    };
+
     const renderStatusBadge = (status) => {
         switch (status) {
             case 'completed':
@@ -295,8 +306,8 @@ export default function Dashboard(props) {
                             </Grid.Cell>
                         </Grid>
 
-                        {/* Recent Bookings Table Preview */}
-                        <Card title="Recent Bookings">
+                        {/* Recent Deferred Orders Table */}
+                        <Card>
                             <BlockStack gap="300">
                                 <InlineStack align="space-between">
                                     <Text variant="headingMd" as="h2">
@@ -320,6 +331,7 @@ export default function Dashboard(props) {
                                         itemCount={Math.min(bookings.length, 5)}
                                         selectable={false}
                                         headings={[
+                                            { title: 'Order' },
                                             { title: 'Customer' },
                                             { title: 'Product' },
                                             { title: 'Deposit Paid' },
@@ -330,6 +342,11 @@ export default function Dashboard(props) {
                                     >
                                         {bookings.slice(0, 5).map((booking, index) => (
                                             <IndexTable.Row id={String(booking.id)} key={booking.id} position={index}>
+                                                <IndexTable.Cell>
+                                                    <Text variant="bodyMd" fontWeight="bold">
+                                                        {formatOrderNumber(booking)}
+                                                    </Text>
+                                                </IndexTable.Cell>
                                                 <IndexTable.Cell>
                                                     <BlockStack gap="050">
                                                         <Text variant="bodyMd" fontWeight="semibold">
@@ -398,7 +415,7 @@ export default function Dashboard(props) {
                                     itemCount={bookings.length}
                                     selectable={false}
                                     headings={[
-                                        { title: 'ID' },
+                                        { title: 'Order' },
                                         { title: 'Customer Email' },
                                         { title: 'Product' },
                                         { title: 'Product Price' },
@@ -410,7 +427,11 @@ export default function Dashboard(props) {
                                 >
                                     {bookings.map((booking, index) => (
                                         <IndexTable.Row id={String(booking.id)} key={booking.id} position={index}>
-                                            <IndexTable.Cell>#{booking.id}</IndexTable.Cell>
+                                            <IndexTable.Cell>
+                                                <Text variant="bodyMd" fontWeight="bold">
+                                                    {formatOrderNumber(booking)}
+                                                </Text>
+                                            </IndexTable.Cell>
                                             <IndexTable.Cell>
                                                 <BlockStack gap="050">
                                                     <Text variant="bodyMd" fontWeight="semibold">
