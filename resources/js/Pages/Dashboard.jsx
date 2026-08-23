@@ -202,6 +202,48 @@ export default function Dashboard(props) {
         return `#${b.id}`;
     };
 
+    const getOrderAdminUrl = (b) => {
+        const rawId = b.order_id || b.draft_order_id;
+        if (!rawId) return null;
+        const cleanId = String(rawId).replace(/[^0-9]/g, '');
+        if (!cleanId) return null;
+
+        const myshopifyDomain = shopName ? (shopName.includes('.myshopify.com') ? shopName : `${shopName}.myshopify.com`) : '';
+        const isDraft = !b.order_id && b.draft_order_id;
+        const path = isDraft ? 'draft_orders' : 'orders';
+
+        if (myshopifyDomain) {
+            return `https://${myshopifyDomain}/admin/${path}/${cleanId}`;
+        }
+        return `/admin/${path}/${cleanId}`;
+    };
+
+    const handleExportCSV = () => {
+        if (!bookings || bookings.length === 0) return;
+
+        const headers = ['Order Name', 'Customer Email', 'Date', 'Product', 'Deposit Paid ($)', 'Balance Due ($)', 'Payment Status'];
+        const rows = bookings.map((b) => [
+            `"${formatOrderNumber(b).replace(/"/g, '""')}"`,
+            `"${(b.email || '').replace(/"/g, '""')}"`,
+            `"${b.created_at ? new Date(b.created_at).toLocaleDateString() : ''}"`,
+            `"${(b.product_title || '').replace(/"/g, '""')}"`,
+            `"${Number(b.deposit_amount || 0).toFixed(2)}"`,
+            `"${Number(b.remaining_balance || 0).toFixed(2)}"`,
+            `"${(b.payment_status || b.status || '').replace(/"/g, '""')}"`,
+        ]);
+
+        const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `buy_now_later_orders_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     const renderPaymentStatusBadge = (booking) => {
         const status = (booking.payment_status || booking.status || '').toLowerCase();
         if (status === 'partially_paid' || status === 'partially paid' || booking.status === 'deposit_paid') {
@@ -303,22 +345,27 @@ export default function Dashboard(props) {
                         {/* Recent Deferred Orders Table */}
                         <Card>
                             <BlockStack gap="300">
-                                <InlineStack align="space-between">
+                                <InlineStack align="space-between" blockAlign="center">
                                     <Text variant="headingMd" as="h2">
                                         Recent Deferred Orders
                                     </Text>
-                                    <Button
-                                        variant="tertiary"
-                                        onClick={() => {
-                                            setSelectedTab(1);
-                                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                                            if (window.history && window.history.pushState) {
-                                                window.history.pushState({}, '', '/bookings');
-                                            }
-                                        }}
-                                    >
-                                        View All ({bookings.length})
-                                    </Button>
+                                    <InlineStack gap="200">
+                                        <Button icon={ExportIcon} onClick={handleExportCSV}>
+                                            Export CSV
+                                        </Button>
+                                        <Button
+                                            variant="tertiary"
+                                            onClick={() => {
+                                                setSelectedTab(1);
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                if (window.history && window.history.pushState) {
+                                                    window.history.pushState({}, '', '/bookings');
+                                                }
+                                            }}
+                                        >
+                                            View All ({bookings.length})
+                                        </Button>
+                                    </InlineStack>
                                 </InlineStack>
                                 <Divider />
 
@@ -345,9 +392,27 @@ export default function Dashboard(props) {
                                         {bookings.slice(0, 5).map((booking, index) => (
                                             <IndexTable.Row id={String(booking.id)} key={booking.id} position={index}>
                                                 <IndexTable.Cell>
-                                                    <Text variant="bodyMd" fontWeight="bold">
-                                                        {formatOrderNumber(booking)}
-                                                    </Text>
+                                                    {getOrderAdminUrl(booking) ? (
+                                                        <a
+                                                            href={getOrderAdminUrl(booking)}
+                                                            target="_top"
+                                                            rel="noopener noreferrer"
+                                                            style={{
+                                                                color: '#005bd3',
+                                                                fontWeight: '700',
+                                                                textDecoration: 'none',
+                                                                cursor: 'pointer',
+                                                            }}
+                                                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                                                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                                                        >
+                                                            {formatOrderNumber(booking)}
+                                                        </a>
+                                                    ) : (
+                                                        <Text variant="bodyMd" fontWeight="bold">
+                                                            {formatOrderNumber(booking)}
+                                                        </Text>
+                                                    )}
                                                 </IndexTable.Cell>
                                                 <IndexTable.Cell>
                                                     <BlockStack gap="050">
@@ -386,10 +451,13 @@ export default function Dashboard(props) {
                 {selectedTab === 1 && (
                     <Card>
                         <BlockStack gap="400">
-                            <InlineStack align="space-between">
+                            <InlineStack align="space-between" blockAlign="center">
                                 <Text variant="headingMd" as="h2">
                                     All Deferred Orders & Bookings
                                 </Text>
+                                <Button icon={ExportIcon} onClick={handleExportCSV}>
+                                    Export CSV
+                                </Button>
                             </InlineStack>
                             <Divider />
 
@@ -416,9 +484,27 @@ export default function Dashboard(props) {
                                     {bookings.map((booking, index) => (
                                         <IndexTable.Row id={String(booking.id)} key={booking.id} position={index}>
                                             <IndexTable.Cell>
-                                                <Text variant="bodyMd" fontWeight="bold">
-                                                    {formatOrderNumber(booking)}
-                                                </Text>
+                                                {getOrderAdminUrl(booking) ? (
+                                                    <a
+                                                        href={getOrderAdminUrl(booking)}
+                                                        target="_top"
+                                                        rel="noopener noreferrer"
+                                                        style={{
+                                                            color: '#005bd3',
+                                                            fontWeight: '700',
+                                                            textDecoration: 'none',
+                                                            cursor: 'pointer',
+                                                        }}
+                                                        onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                                                        onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                                                    >
+                                                        {formatOrderNumber(booking)}
+                                                    </a>
+                                                ) : (
+                                                    <Text variant="bodyMd" fontWeight="bold">
+                                                        {formatOrderNumber(booking)}
+                                                    </Text>
+                                                )}
                                             </IndexTable.Cell>
                                             <IndexTable.Cell>
                                                 <BlockStack gap="050">
