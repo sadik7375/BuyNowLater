@@ -17,8 +17,10 @@
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
         <!-- Scripts and Styles -->
-        @viteReactRefresh
-        @vite(['resources/css/app.css', 'resources/js/app.jsx'])
+        @env('local')
+            @viteReactRefresh
+        @endenv
+        @vite(['resources/js/app.jsx'])
         @inertiaHead
     </head>
     <body class="font-sans antialiased">
