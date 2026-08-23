@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Osiset\ShopifyApp\Exceptions\MissingShopDomainException;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -22,7 +23,7 @@ class Handler extends ExceptionHandler
      * @var array<int, class-string<\Throwable>>
      */
     protected $dontReport = [
-        //
+        MissingShopDomainException::class,
     ];
 
     /**
@@ -41,8 +42,12 @@ class Handler extends ExceptionHandler
      */
     public function register(): void
     {
-        $this->reportable(function (Throwable $e) {
-            //
+        $this->renderable(function (MissingShopDomainException $e, $request) {
+            $shop = $request->get('shop') ?? session('shopify_domain');
+            if ($shop) {
+                return redirect()->route('authenticate', ['shop' => $shop, 'host' => $request->get('host')]);
+            }
+            return redirect()->route('login');
         });
     }
 }
