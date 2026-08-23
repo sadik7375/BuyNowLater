@@ -212,9 +212,10 @@ class OrdersPaidJob implements ShouldQueue
             $holdDurationDays = $settings ? (int) ($settings->hold_duration_days ?? 14) : 14;
 
             if ($booking) {
-                if ($isDeposit) {
+                $isPaid = ($financialStatus === 'PAID' || $financialStatus === 'COMPLETED');
+                if ($isDeposit && !$isPaid) {
                     $booking->update([
-                        'status'        => ($financialStatus === 'PAID' && (float)$booking->remaining_balance == 0) ? 'completed' : 'deposit_paid',
+                        'status'        => 'deposit_paid',
                         'order_id'      => $orderId,
                         'order_name'    => $orderName,
                         'customer_name' => $customerName ?: $booking->customer_name,
@@ -228,19 +229,20 @@ class OrdersPaidJob implements ShouldQueue
                     ]);
                     Log::info('OrdersPaidJob: Booking updated to deposit_paid', ['booking_id' => $booking->id]);
                 } else {
-                    // This is the remaining balance order being paid!
-                    if ($booking->status === 'deposit_paid') {
-                        $booking->update([
-                            'status' => 'completed',
-                            'completed_at' => now(),
-                            'balance_order_id' => $orderId,
-                            'balance_order_name' => $orderName,
-                            'payment_status' => strtolower($financialStatus ?: 'paid'),
-                            'fulfillment_status' => strtolower($this->data->fulfillment_status ?? 'fulfilled'),
-                        ]);
-                        Log::info('OrdersPaidJob: Booking marked completed (balance paid)', ['booking_id' => $booking->id]);
-                        return;
-                    }
+                    // Order or Balance order is fully paid!
+                    $booking->update([
+                        'status' => 'completed',
+                        'completed_at' => $booking->completed_at ?? now(),
+                        'remaining_balance' => 0.0,
+                        'order_id' => $booking->order_id ?: $orderId,
+                        'order_name' => $booking->order_name ?: $orderName,
+                        'balance_order_id' => $orderId,
+                        'balance_order_name' => $orderName,
+                        'payment_status' => 'paid',
+                        'fulfillment_status' => strtolower($this->data->fulfillment_status ?? 'fulfilled'),
+                    ]);
+                    Log::info('OrdersPaidJob: Booking marked completed (paid)', ['booking_id' => $booking->id]);
+                    return;
                 }
             } else {
                 // Auto-create booking record from webhook order

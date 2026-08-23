@@ -1843,9 +1843,11 @@ class DashboardController extends Controller
                             'payment_status' => strtolower($financialStatus),
                             'fulfillment_status' => $fulfillmentStatus,
                         ];
-                        if ($booking->status !== 'completed' && ($financialStatus === 'PAID' || $financialStatus === 'PARTIALLY_PAID')) {
+                        if ($financialStatus === 'PAID' || $financialStatus === 'COMPLETED') {
                             $updateData['status'] = 'completed';
-                            $updateData['completed_at'] = now();
+                            $updateData['completed_at'] = $booking->completed_at ?? now();
+                            $updateData['remaining_balance'] = 0.0;
+                            $updateData['payment_status'] = 'paid';
                             \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} marked completed via final Order payment.");
                         }
                         $booking->update($updateData);
@@ -1877,12 +1879,12 @@ class DashboardController extends Controller
                             $updateData['remaining_balance'] = $calcOutstanding;
                         }
 
-                        if ($calcOutstanding === 0.0 && ($financialStatus === 'PAID' || $financialStatus === 'PARTIALLY_PAID')) {
-                            if ($booking->status !== 'completed') {
-                                $updateData['status'] = 'completed';
-                                $updateData['completed_at'] = now();
-                                \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} marked completed via full Order payment.");
-                            }
+                        if ($financialStatus === 'PAID' || $financialStatus === 'COMPLETED' || ($calcOutstanding === 0.0 && $financialStatus !== 'PENDING' && $financialStatus !== 'PARTIALLY_PAID')) {
+                            $updateData['status'] = 'completed';
+                            $updateData['completed_at'] = $booking->completed_at ?? now();
+                            $updateData['remaining_balance'] = 0.0;
+                            $updateData['payment_status'] = 'paid';
+                            \Illuminate\Support\Facades\Log::info("Sync: Booking ID {$booking->id} marked completed via full Order payment.");
                         } else {
                             if ($booking->status === 'pending' || empty($booking->status)) {
                                 $updateData['status'] = 'deposit_paid';

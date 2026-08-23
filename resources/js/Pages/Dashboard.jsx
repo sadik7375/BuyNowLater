@@ -304,15 +304,25 @@ export default function Dashboard(props) {
         URL.revokeObjectURL(url);
     };
 
-    const renderPaymentStatusBadge = (booking) => {
-        const status = (booking.payment_status || booking.status || '').toLowerCase();
-        if (status === 'partially_paid' || status === 'partially paid' || booking.status === 'deposit_paid') {
-            return <Badge tone="warning">Partially paid</Badge>;
+    const getRemainingBalanceFormatted = (booking) => {
+        const pStatus = (booking.payment_status || '').toLowerCase();
+        if (booking.status === 'completed' || pStatus === 'paid' || pStatus === 'completed') {
+            return '0.00';
         }
-        if (status === 'paid' || booking.status === 'completed') {
+        return Number(booking.remaining_balance || 0).toFixed(2);
+    };
+
+    const renderPaymentStatusBadge = (booking) => {
+        const pStatus = (booking.payment_status || '').toLowerCase();
+        const bStatus = (booking.status || '').toLowerCase();
+
+        if (pStatus === 'paid' || pStatus === 'completed' || bStatus === 'completed' || Number(booking.remaining_balance) <= 0) {
             return <Badge tone="success">Paid</Badge>;
         }
-        if (booking.status === 'expired') {
+        if (pStatus === 'partially_paid' || pStatus === 'partially paid' || bStatus === 'deposit_paid') {
+            return <Badge tone="warning">Partially paid</Badge>;
+        }
+        if (bStatus === 'expired') {
             return <Badge tone="critical">Expired</Badge>;
         }
         return <Badge tone="subdued">Unpaid</Badge>;
@@ -513,7 +523,7 @@ export default function Dashboard(props) {
                                                 </IndexTable.Cell>
                                                 <IndexTable.Cell>
                                                     <Text variant="bodyMd">
-                                                        ${Number(booking.remaining_balance).toFixed(2)}
+                                                        ${getRemainingBalanceFormatted(booking)}
                                                     </Text>
                                                 </IndexTable.Cell>
                                                 <IndexTable.Cell>{renderPaymentStatusBadge(booking)}</IndexTable.Cell>
@@ -599,7 +609,7 @@ export default function Dashboard(props) {
                                             <IndexTable.Cell fontWeight="bold">
                                                 ${Number(booking.deposit_amount).toFixed(2)}
                                             </IndexTable.Cell>
-                                            <IndexTable.Cell>${Number(booking.remaining_balance).toFixed(2)}</IndexTable.Cell>
+                                            <IndexTable.Cell>${getRemainingBalanceFormatted(booking)}</IndexTable.Cell>
                                             <IndexTable.Cell>{renderPaymentStatusBadge(booking)}</IndexTable.Cell>
                                         </IndexTable.Row>
                                     ))}
