@@ -4,19 +4,15 @@
     "isEntry": true,
     "src": "resources/css/app.css"
   },
-  "resources/js/Pages/Dashboard.jsx": {
-    "file": "assets/Dashboard-c8d0824d.js",
-    "imports": [
-      "resources/js/app.jsx"
-    ],
-    "isDynamicEntry": true,
-    "src": "resources/js/Pages/Dashboard.jsx"
+  "resources/js/app.css": {
+    "file": "assets/app-0f7e0694.css",
+    "src": "resources/js/app.css"
   },
   "resources/js/app.jsx": {
-    "dynamicImports": [
-      "resources/js/Pages/Dashboard.jsx"
+    "css": [
+      "assets/app-0f7e0694.css"
     ],
-    "file": "assets/app-1086024f.js",
+    "file": "assets/app-6110a17d.js",
     "isEntry": true,
     "src": "resources/js/app.jsx"
   }
