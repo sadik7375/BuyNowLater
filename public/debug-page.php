@@ -4,12 +4,7 @@ ini_set('display_errors', 1);
 
 require __DIR__ . '/../vendor/autoload.php';
 $app = require_once __DIR__ . '/../bootstrap/app.php';
-
-$user = \App\Models\User::where('name', 'canny-apps.myshopify.com')->first();
-if ($user) {
-    auth()->login($user);
-    session(['shopify_domain' => $user->name]);
-}
+$kernel = $app->make(\Illuminate\Contracts\Http\Kernel::class);
 
 $request = \Illuminate\Http\Request::create('/', 'GET', [
     'shop' => 'canny-apps.myshopify.com',
@@ -17,8 +12,17 @@ $request = \Illuminate\Http\Request::create('/', 'GET', [
     'embedded' => '1',
 ]);
 
-$controller = new \App\Http\Controllers\DashboardController();
+// Boot HTTP Kernel without fully executing request to initialize database connection and sessions
+$kernel->bootstrap();
+
+$user = \App\Models\User::where('name', 'canny-apps.myshopify.com')->first();
+if ($user) {
+    auth()->login($user);
+    session(['shopify_domain' => $user->name]);
+}
+
 try {
+    $controller = new \App\Http\Controllers\DashboardController();
     $response = $controller->index($request);
 
     if (is_object($response) && method_exists($response, 'toResponse')) {
