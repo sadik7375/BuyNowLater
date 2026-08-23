@@ -197,8 +197,33 @@ export default function Dashboard(props) {
                     </Banner>
                 )}
 
-                {/* Main Navigation Tabs */}
-                <Tabs tabs={tabs} selected={selectedTab} onSelect={handleTabChange} />
+                {/* Main Navigation Buttons */}
+                <InlineStack gap="200">
+                    <Button
+                        variant={selectedTab === 0 ? 'primary' : 'tertiary'}
+                        onClick={() => setSelectedTab(0)}
+                    >
+                        Overview
+                    </Button>
+                    <Button
+                        variant={selectedTab === 1 ? 'primary' : 'tertiary'}
+                        onClick={() => setSelectedTab(1)}
+                    >
+                        Bookings ({bookings.length})
+                    </Button>
+                    <Button
+                        variant={selectedTab === 2 ? 'primary' : 'tertiary'}
+                        onClick={() => setSelectedTab(2)}
+                    >
+                        App Settings
+                    </Button>
+                    <Button
+                        variant={selectedTab === 3 ? 'primary' : 'tertiary'}
+                        onClick={() => setSelectedTab(3)}
+                    >
+                        Help & Support
+                    </Button>
+                </InlineStack>
 
                 {/* TAB 0: OVERVIEW */}
                 {selectedTab === 0 && (
