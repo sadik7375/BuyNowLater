@@ -12,20 +12,27 @@ const appName = window.document.getElementsByTagName('title')[0]?.innerText || '
 
 const el = document.getElementById('app');
 if (el && el.dataset && el.dataset.page) {
-    createInertiaApp({
-        title: (title) => `${title} - ${appName}`,
-        resolve: (name) => resolvePageComponent(`./Pages/${name}.jsx`, import.meta.glob('./Pages/**/*.jsx')),
-        setup({ el, App, props }) {
-            const root = createRoot(el);
+    try {
+        const initialPage = JSON.parse(el.dataset.page);
+        if (initialPage && initialPage.component) {
+            createInertiaApp({
+                title: (title) => `${title} - ${appName}`,
+                resolve: (name) => resolvePageComponent(`./Pages/${name}.jsx`, import.meta.glob('./Pages/**/*.jsx')),
+                setup({ el, App, props }) {
+                    const root = createRoot(el);
 
-            root.render(
-                <AppProvider i18n={enTranslations}>
-                    <App {...props} />
-                </AppProvider>
-            );
-        },
-        progress: {
-            color: '#4B5563',
-        },
-    });
+                    root.render(
+                        <AppProvider i18n={enTranslations}>
+                            <App {...props} />
+                        </AppProvider>
+                    );
+                },
+                progress: {
+                    color: '#4B5563',
+                },
+            });
+        }
+    } catch (e) {
+        console.warn('Inertia page data invalid or missing component:', e);
+    }
 }
