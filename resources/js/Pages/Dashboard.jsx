@@ -202,19 +202,29 @@ export default function Dashboard(props) {
         return `#${b.id}`;
     };
 
-    const renderStatusBadge = (status) => {
-        switch (status) {
-            case 'completed':
-                return <Badge tone="success">Completed</Badge>;
-            case 'deposit_paid':
-                return <Badge tone="attention">Deposit Paid</Badge>;
-            case 'pending':
-                return <Badge tone="warning">Pending</Badge>;
-            case 'expired':
-                return <Badge tone="critical">Expired</Badge>;
-            default:
-                return <Badge tone="subdued">{status}</Badge>;
+    const renderPaymentStatusBadge = (booking) => {
+        const status = (booking.payment_status || booking.status || '').toLowerCase();
+        if (status === 'partially_paid' || status === 'partially paid' || booking.status === 'deposit_paid') {
+            return <Badge tone="warning">Partially paid</Badge>;
         }
+        if (status === 'paid' || booking.status === 'completed') {
+            return <Badge tone="success">Paid</Badge>;
+        }
+        if (booking.status === 'expired') {
+            return <Badge tone="critical">Expired</Badge>;
+        }
+        return <Badge tone="subdued">Unpaid</Badge>;
+    };
+
+    const renderFulfillmentStatusBadge = (booking) => {
+        const status = (booking.fulfillment_status || '').toLowerCase();
+        if (status === 'on_hold' || status === 'on hold' || booking.status === 'deposit_paid') {
+            return <Badge tone="attention">On hold</Badge>;
+        }
+        if (status === 'fulfilled' || booking.status === 'completed') {
+            return <Badge tone="info">Fulfilled</Badge>;
+        }
+        return <Badge tone="subdued">Unfulfilled</Badge>;
     };
 
     return (
@@ -336,7 +346,8 @@ export default function Dashboard(props) {
                                             { title: 'Product' },
                                             { title: 'Deposit Paid' },
                                             { title: 'Balance Due' },
-                                            { title: 'Status' },
+                                            { title: 'Payment status' },
+                                            { title: 'Fulfillment status' },
                                             { title: 'Action' },
                                         ]}
                                     >
@@ -370,7 +381,8 @@ export default function Dashboard(props) {
                                                         ${Number(booking.remaining_balance).toFixed(2)}
                                                     </Text>
                                                 </IndexTable.Cell>
-                                                <IndexTable.Cell>{renderStatusBadge(booking.status)}</IndexTable.Cell>
+                                                <IndexTable.Cell>{renderPaymentStatusBadge(booking)}</IndexTable.Cell>
+                                                <IndexTable.Cell>{renderFulfillmentStatusBadge(booking)}</IndexTable.Cell>
                                                 <IndexTable.Cell>
                                                     {booking.status === 'deposit_paid' && (
                                                         <Button
@@ -416,13 +428,13 @@ export default function Dashboard(props) {
                                     selectable={false}
                                     headings={[
                                         { title: 'Order' },
-                                        { title: 'Customer Email' },
+                                        { title: 'Customer' },
                                         { title: 'Product' },
-                                        { title: 'Product Price' },
                                         { title: 'Deposit Paid' },
-                                        { title: 'Remaining Balance' },
-                                        { title: 'Status' },
-                                        { title: 'Actions' },
+                                        { title: 'Balance Due' },
+                                        { title: 'Payment status' },
+                                        { title: 'Fulfillment status' },
+                                        { title: 'Action' },
                                     ]}
                                 >
                                     {bookings.map((booking, index) => (
@@ -443,12 +455,12 @@ export default function Dashboard(props) {
                                                 </BlockStack>
                                             </IndexTable.Cell>
                                             <IndexTable.Cell>{booking.product_title}</IndexTable.Cell>
-                                            <IndexTable.Cell>${Number(booking.product_price).toFixed(2)}</IndexTable.Cell>
                                             <IndexTable.Cell fontWeight="bold">
                                                 ${Number(booking.deposit_amount).toFixed(2)}
                                             </IndexTable.Cell>
                                             <IndexTable.Cell>${Number(booking.remaining_balance).toFixed(2)}</IndexTable.Cell>
-                                            <IndexTable.Cell>{renderStatusBadge(booking.status)}</IndexTable.Cell>
+                                            <IndexTable.Cell>{renderPaymentStatusBadge(booking)}</IndexTable.Cell>
+                                            <IndexTable.Cell>{renderFulfillmentStatusBadge(booking)}</IndexTable.Cell>
                                             <IndexTable.Cell>
                                                 <InlineStack gap="200">
                                                     {booking.status === 'deposit_paid' && (
@@ -458,7 +470,7 @@ export default function Dashboard(props) {
                                                             loading={actionLoading[booking.id]}
                                                             onClick={() => handleSendAction(booking.id, 'reminder')}
                                                         >
-                                                            Send Balance Invoice
+                                                            Send Balance Link
                                                         </Button>
                                                     )}
                                                 </InlineStack>
