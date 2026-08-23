@@ -193,7 +193,7 @@ return [
     |
     */
 
-    'api_scopes' => env('SHOPIFY_API_SCOPES', 'read_products,write_products,read_orders,write_orders,read_all_orders,read_customers,read_themes,read_own_subscription_contracts,write_own_subscription_contracts,read_customer_payment_methods,read_draft_orders,write_draft_orders,write_purchase_options,read_purchase_options'),
+    'api_scopes' => env('SHOPIFY_API_SCOPES', 'read_products,write_products,read_orders,write_orders,read_all_orders,read_customers,read_themes,read_customer_payment_methods,read_draft_orders,write_draft_orders,read_purchase_options,write_purchase_options,read_payment_mandate,write_payment_mandate'),
 
     /*
     |--------------------------------------------------------------------------

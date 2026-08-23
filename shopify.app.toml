@@ -7,7 +7,7 @@ name = "Buy Now Later"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_products,write_products,read_orders,write_orders,read_all_orders,read_customers,read_themes,read_own_subscription_contracts,write_own_subscription_contracts,read_customer_payment_methods,read_draft_orders,write_draft_orders,write_purchase_options,read_purchase_options"
+scopes = "read_products,write_products,read_orders,write_orders,read_all_orders,read_customers,read_themes,read_customer_payment_methods,read_draft_orders,write_draft_orders,read_purchase_options,write_purchase_options,read_payment_mandate,write_payment_mandate"
 
 [auth]
 redirect_urls = [
@@ -29,13 +29,6 @@ uri = "/webhook/orders-paid"
 topics = [ "products/update" ]
 uri = "/webhook/products-update"
 
-[[webhooks.subscriptions]]
-topics = [ "subscription_contracts/create" ]
-uri = "/webhook/subscription-contract-create"
-
-[[webhooks.subscriptions]]
-topics = [ "subscription_billing_attempts/success" ]
-uri = "/webhook/subscription-billing-success"
 
 [webhooks.privacy_compliance]
 customer_deletion_url = "https://buylater.cannyapps.com/webhook/customers-redact"

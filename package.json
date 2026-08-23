@@ -13,8 +13,14 @@
         "vite": "^4.0.0"
     },
     "dependencies": {
+        "@inertiajs/react": "^3.7.0",
         "@preact/signals": "^2.10.0",
+        "@shopify/polaris": "^13.9.5",
+        "@shopify/polaris-icons": "^9.3.1",
         "@shopify/ui-extensions": "2026.4.4",
-        "preact": "^10.29.7"
+        "@vitejs/plugin-react": "^4.7.0",
+        "preact": "^10.29.7",
+        "react": "^19.2.8",
+        "react-dom": "^19.2.8"
     }
 }

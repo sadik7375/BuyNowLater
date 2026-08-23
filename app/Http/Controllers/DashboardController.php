@@ -8,6 +8,8 @@ use App\Models\Subscriber;
 use App\Models\Booking;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Inertia\Inertia;
+
 
 class DashboardController extends Controller
 {
@@ -422,15 +424,31 @@ class DashboardController extends Controller
                 ->count();
         }
 
-        return view('dashboard.index', compact(
-            'settings', 'reminders', 'subscribers', 'bookings',
-            'revenueRecovered', 'activeBookings', 'expiringSoonCount', 'alertSubscribersCount',
-            'conversionRate', 'wishes', 'liveAlerts',
-            'expiringToday', 'expiringTomorrow', 'expiringThisWeek', 'isMockExpiring',
-            'statusCounts', 'isMockStatus', 'todayRemindersCount',
-            'dateFilter', 'start', 'end', 'monthlyUsageCount', 'targetedProducts',
-            'activeTab', 'subTab', 'downpayChartLabels', 'downpayChartData'
-        ));
+        return Inertia::render('Dashboard', [
+            'settings' => $settings,
+            'reminders' => $reminders,
+            'subscribers' => $subscribers,
+            'bookings' => $bookings->values(),
+            'revenueRecovered' => $revenueRecovered,
+            'activeBookings' => $activeBookings,
+            'expiringSoonCount' => $expiringSoonCount,
+            'alertSubscribersCount' => $alertSubscribersCount,
+            'conversionRate' => $conversionRate,
+            'wishes' => $wishes,
+            'liveAlerts' => $liveAlerts,
+            'expiringToday' => $expiringToday->values(),
+            'expiringTomorrow' => $expiringTomorrow->values(),
+            'expiringThisWeek' => $expiringThisWeek->values(),
+            'statusCounts' => $statusCounts,
+            'todayRemindersCount' => $todayRemindersCount,
+            'dateFilter' => $dateFilter,
+            'monthlyUsageCount' => $monthlyUsageCount,
+            'targetedProducts' => $targetedProducts,
+            'activeTab' => $activeTab,
+            'subTab' => $subTab,
+            'downpayChartLabels' => $downpayChartLabels,
+            'downpayChartData' => $downpayChartData,
+        ]);
     }
 
 
