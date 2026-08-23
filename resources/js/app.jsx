@@ -11,11 +11,12 @@ import enTranslations from '@shopify/polaris/locales/en.json';
 const appName = window.document.getElementsByTagName('title')[0]?.innerText || 'Buy Now Later';
 
 const el = document.getElementById('app');
-if (el && el.dataset && el.dataset.page) {
+if (el) {
     try {
-        const initialPage = JSON.parse(el.dataset.page);
+        const initialPage = el.dataset && el.dataset.page ? JSON.parse(el.dataset.page) : null;
         if (initialPage && initialPage.component) {
             createInertiaApp({
+                page: initialPage,
                 title: (title) => `${title} - ${appName}`,
                 resolve: (name) => resolvePageComponent(`./Pages/${name}.jsx`, import.meta.glob('./Pages/**/*.jsx')),
                 setup({ el, App, props }) {
@@ -31,8 +32,10 @@ if (el && el.dataset && el.dataset.page) {
                     color: '#4B5563',
                 },
             });
+        } else {
+            console.error('Inertia root element found, but data-page component is missing or null.');
         }
     } catch (e) {
-        console.warn('Inertia page data invalid or missing component:', e);
+        console.error('Inertia page data parse error:', e);
     }
 }
