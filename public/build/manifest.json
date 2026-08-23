@@ -5,7 +5,7 @@
     "src": "resources/css/app.css"
   },
   "resources/js/Pages/Dashboard.jsx": {
-    "file": "assets/Dashboard-c96a4945.js",
+    "file": "assets/Dashboard-a8519bd3.js",
     "imports": [
       "resources/js/app.jsx"
     ],
@@ -23,7 +23,7 @@
     "dynamicImports": [
       "resources/js/Pages/Dashboard.jsx"
     ],
-    "file": "assets/app-d55af4db.js",
+    "file": "assets/app-bb3c3cd9.js",
     "isEntry": true,
     "src": "resources/js/app.jsx"
   }

@@ -90,6 +90,9 @@ export default function Dashboard(props) {
     const [isSearching, setIsSearching] = useState(false);
     const [selectedProductsList, setSelectedProductsList] = useState(targetedProducts || []);
 
+    // Free plan limit check (10 deposit reservations)
+    const isFreeLimitReached = !hasPlan && (bookings.length >= 10 || activeBookings >= 10);
+
     // Booking action loading state
     const [actionLoading, setActionLoading] = useState({});
 
@@ -342,6 +345,25 @@ export default function Dashboard(props) {
                 {flash.error && (
                     <Banner tone="critical" onDismiss={() => {}}>
                         <p>{flash.error}</p>
+                    </Banner>
+                )}
+
+                {/* Free Plan Limit Warning Banner */}
+                {isFreeLimitReached && (
+                    <Banner
+                        tone="warning"
+                        title={`Free Plan Reservation Limit Reached (${bookings.length} / 10 Active Deposits)`}
+                        action={{
+                            content: 'Upgrade to Premium ($5/mo)',
+                            onAction: () => {
+                                setSelectedTab(2);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            },
+                        }}
+                    >
+                        <p>
+                            You have reached or exceeded the <strong>10 active deposit reservations limit</strong> on the Free Plan (currently <strong>{bookings.length}</strong> deposit reservations). Storefront deposit reservations may be paused until you upgrade. Upgrade to the <strong>Premium Plan ($5/month)</strong> for unlimited deposit reservations, balance payment links, and 24/7 priority support.
+                        </p>
                     </Banner>
                 )}
 
@@ -601,171 +623,179 @@ export default function Dashboard(props) {
 
                         <Grid>
                             {/* Free Plan */}
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-                                <Card padding="500">
-                                    <BlockStack gap="400">
-                                        <InlineStack align="space-between">
-                                            <Text variant="headingMd" as="h3">
-                                                Free Plan
-                                            </Text>
-                                            {!hasPlan && <Badge tone="info">Active Plan</Badge>}
-                                        </InlineStack>
+                            <Grid.Cell columnSpan={{ xs: 12, sm: 12, md: 6, lg: 6, xl: 6 }}>
+                                <Box style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                    <Card padding="500">
+                                        <Box style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', minHeight: '520px' }}>
+                                            <BlockStack gap="400">
+                                                <InlineStack align="space-between">
+                                                    <Text variant="headingMd" as="h3">
+                                                        Free Plan
+                                                    </Text>
+                                                    {!hasPlan && <Badge tone="info">Active Plan</Badge>}
+                                                </InlineStack>
 
-                                        <Text tone="subdued">
-                                            Perfect for getting started with deposit-based product reservations.
-                                        </Text>
+                                                <Text tone="subdued">
+                                                    Perfect for getting started with deposit-based product reservations.
+                                                </Text>
 
-                                        <InlineStack align="start" blockAlign="baseline" gap="100">
-                                            <Text variant="heading2xl" as="span" fontWeight="bold">
-                                                $0
-                                            </Text>
-                                            <Text tone="subdued">/ month</Text>
-                                        </InlineStack>
+                                                <InlineStack align="start" blockAlign="baseline" gap="100">
+                                                    <Text variant="heading2xl" as="span" fontWeight="bold">
+                                                        $0
+                                                    </Text>
+                                                    <Text tone="subdued">/ month</Text>
+                                                </InlineStack>
 
-                                        <Divider />
+                                                <Divider />
 
-                                        <BlockStack gap="250">
-                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
-                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
-                                                    <Icon source={CheckIcon} tone="success" />
-                                                </Box>
-                                                <Text as="span">Up to 10 active deposit reservations</Text>
-                                            </InlineStack>
-                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
-                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
-                                                    <Icon source={CheckIcon} tone="success" />
-                                                </Box>
-                                                <Text as="span">Buy Now Later widget on product pages</Text>
-                                            </InlineStack>
-                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
-                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
-                                                    <Icon source={CheckIcon} tone="success" />
-                                                </Box>
-                                                <Text as="span">Configurable deposit percentage</Text>
-                                            </InlineStack>
-                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
-                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
-                                                    <Icon source={CheckIcon} tone="success" />
-                                                </Box>
-                                                <Text as="span">Shopify Draft Order integration</Text>
-                                            </InlineStack>
-                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
-                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
-                                                    <Icon source={CheckIcon} tone="success" />
-                                                </Box>
-                                                <Text as="span">Reservation dashboard & tracking</Text>
-                                            </InlineStack>
-                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
-                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
-                                                    <Icon source={CheckIcon} tone="success" />
-                                                </Box>
-                                                <Text as="span">Email support</Text>
-                                            </InlineStack>
-                                        </BlockStack>
+                                                <BlockStack gap="250">
+                                                    <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                        <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                            <Icon source={CheckIcon} tone="success" />
+                                                        </Box>
+                                                        <Text as="span">Up to 10 active deposit reservations</Text>
+                                                    </InlineStack>
+                                                    <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                        <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                            <Icon source={CheckIcon} tone="success" />
+                                                        </Box>
+                                                        <Text as="span">Buy Now Later widget on product pages</Text>
+                                                    </InlineStack>
+                                                    <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                        <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                            <Icon source={CheckIcon} tone="success" />
+                                                        </Box>
+                                                        <Text as="span">Configurable deposit percentage</Text>
+                                                    </InlineStack>
+                                                    <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                        <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                            <Icon source={CheckIcon} tone="success" />
+                                                        </Box>
+                                                        <Text as="span">Shopify Draft Order integration</Text>
+                                                    </InlineStack>
+                                                    <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                        <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                            <Icon source={CheckIcon} tone="success" />
+                                                        </Box>
+                                                        <Text as="span">Reservation dashboard & tracking</Text>
+                                                    </InlineStack>
+                                                    <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                        <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                            <Icon source={CheckIcon} tone="success" />
+                                                        </Box>
+                                                        <Text as="span">Email support</Text>
+                                                    </InlineStack>
+                                                </BlockStack>
+                                            </BlockStack>
 
-                                        <Box paddingTop="400">
-                                            <Button disabled fullWidth>
-                                                {!hasPlan ? 'Current Plan' : 'Free Tier'}
-                                            </Button>
+                                            <Box paddingTop="400">
+                                                <Button disabled fullWidth>
+                                                    {!hasPlan ? 'Current Plan' : 'Free Tier'}
+                                                </Button>
+                                            </Box>
                                         </Box>
-                                    </BlockStack>
-                                </Card>
+                                    </Card>
+                                </Box>
                             </Grid.Cell>
 
                             {/* Premium Plan */}
-                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-                                <Card padding="500">
-                                    <BlockStack gap="400">
-                                        <InlineStack align="space-between">
-                                            <Text variant="headingMd" as="h3">
-                                                Premium Plan
-                                            </Text>
-                                            <Badge tone="success">Most Popular</Badge>
-                                        </InlineStack>
+                            <Grid.Cell columnSpan={{ xs: 12, sm: 12, md: 6, lg: 6, xl: 6 }}>
+                                <Box style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                    <Card padding="500">
+                                        <Box style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', minHeight: '520px' }}>
+                                            <BlockStack gap="400">
+                                                <InlineStack align="space-between">
+                                                    <Text variant="headingMd" as="h3">
+                                                        Premium Plan
+                                                    </Text>
+                                                    <Badge tone="success">Most Popular</Badge>
+                                                </InlineStack>
 
-                                        <Text tone="subdued">
-                                            Unlimited deposit reservations with full controls and priority support.
-                                        </Text>
+                                                <Text tone="subdued">
+                                                    Unlimited deposit reservations with full controls and priority support.
+                                                </Text>
 
-                                        <InlineStack align="start" blockAlign="baseline" gap="100">
-                                            <Text variant="heading2xl" as="span" fontWeight="bold">
-                                                $5
-                                            </Text>
-                                            <Text tone="subdued">/ month</Text>
-                                        </InlineStack>
+                                                <InlineStack align="start" blockAlign="baseline" gap="100">
+                                                    <Text variant="heading2xl" as="span" fontWeight="bold">
+                                                        $5
+                                                    </Text>
+                                                    <Text tone="subdued">/ month</Text>
+                                                </InlineStack>
 
-                                        <Divider />
+                                                <Divider />
 
-                                        <BlockStack gap="250">
-                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
-                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
-                                                    <Icon source={CheckIcon} tone="success" />
-                                                </Box>
-                                                <Text as="span" fontWeight="bold">Unlimited deposit reservations & holds</Text>
-                                            </InlineStack>
-                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
-                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
-                                                    <Icon source={CheckIcon} tone="success" />
-                                                </Box>
-                                                <Text as="span" fontWeight="bold">Custom deposit percentage per product or store-wide</Text>
-                                            </InlineStack>
-                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
-                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
-                                                    <Icon source={CheckIcon} tone="success" />
-                                                </Box>
-                                                <Text as="span" fontWeight="bold">Balance payment links sent directly to customers</Text>
-                                            </InlineStack>
-                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
-                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
-                                                    <Icon source={CheckIcon} tone="success" />
-                                                </Box>
-                                                <Text as="span" fontWeight="bold">Automated Draft Order Sync with Shopify admin</Text>
-                                            </InlineStack>
-                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
-                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
-                                                    <Icon source={CheckIcon} tone="success" />
-                                                </Box>
-                                                <Text as="span" fontWeight="bold">Fulfillment Hold — auto-holds order until balance is paid</Text>
-                                            </InlineStack>
-                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
-                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
-                                                    <Icon source={CheckIcon} tone="success" />
-                                                </Box>
-                                                <Text as="span" fontWeight="bold">Configurable hold expiry — set how long reservations last</Text>
-                                            </InlineStack>
-                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
-                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
-                                                    <Icon source={CheckIcon} tone="success" />
-                                                </Box>
-                                                <Text as="span" fontWeight="bold">Theme App Extension — no code edits required</Text>
-                                            </InlineStack>
-                                            <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
-                                                <Box style={{ flexShrink: 0, marginTop: '2px' }}>
-                                                    <Icon source={CheckIcon} tone="success" />
-                                                </Box>
-                                                <Text as="span" fontWeight="bold">Priority Support — 24/7 Email & Live Chat</Text>
-                                            </InlineStack>
-                                        </BlockStack>
+                                                <BlockStack gap="250">
+                                                    <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                        <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                            <Icon source={CheckIcon} tone="success" />
+                                                        </Box>
+                                                        <Text as="span" fontWeight="bold">Unlimited deposit reservations & holds</Text>
+                                                    </InlineStack>
+                                                    <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                        <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                            <Icon source={CheckIcon} tone="success" />
+                                                        </Box>
+                                                        <Text as="span" fontWeight="bold">Custom deposit percentage per product or store-wide</Text>
+                                                    </InlineStack>
+                                                    <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                        <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                            <Icon source={CheckIcon} tone="success" />
+                                                        </Box>
+                                                        <Text as="span" fontWeight="bold">Balance payment links sent directly to customers</Text>
+                                                    </InlineStack>
+                                                    <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                        <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                            <Icon source={CheckIcon} tone="success" />
+                                                        </Box>
+                                                        <Text as="span" fontWeight="bold">Automated Draft Order Sync with Shopify admin</Text>
+                                                    </InlineStack>
+                                                    <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                        <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                            <Icon source={CheckIcon} tone="success" />
+                                                        </Box>
+                                                        <Text as="span" fontWeight="bold">Fulfillment Hold — auto-holds order until balance is paid</Text>
+                                                    </InlineStack>
+                                                    <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                        <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                            <Icon source={CheckIcon} tone="success" />
+                                                        </Box>
+                                                        <Text as="span" fontWeight="bold">Configurable hold expiry — set how long reservations last</Text>
+                                                    </InlineStack>
+                                                    <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                        <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                            <Icon source={CheckIcon} tone="success" />
+                                                        </Box>
+                                                        <Text as="span" fontWeight="bold">Theme App Extension — no code edits required</Text>
+                                                    </InlineStack>
+                                                    <InlineStack gap="200" align="start" blockAlign="start" wrap={false}>
+                                                        <Box style={{ flexShrink: 0, marginTop: '2px' }}>
+                                                            <Icon source={CheckIcon} tone="success" />
+                                                        </Box>
+                                                        <Text as="span" fontWeight="bold">Priority Support — 24/7 Email & Live Chat</Text>
+                                                    </InlineStack>
+                                                </BlockStack>
+                                            </BlockStack>
 
-                                        <Box paddingTop="400">
-                                            {hasPlan ? (
-                                                <Button disabled fullWidth>Current Plan</Button>
-                                            ) : (
-                                                <Button
-                                                    variant="primary"
-                                                    fullWidth
-                                                    onClick={() => {
-                                                        const urlParams = new URLSearchParams(window.location.search);
-                                                        const shop = urlParams.get('shop') || shopName;
-                                                        window.location.href = `/billing?plan=1&shop=${encodeURIComponent(shop)}`;
-                                                    }}
-                                                >
-                                                    Upgrade to Premium ($5/mo)
-                                                </Button>
-                                            )}
+                                            <Box paddingTop="400">
+                                                {hasPlan ? (
+                                                    <Button disabled fullWidth>Current Plan</Button>
+                                                ) : (
+                                                    <Button
+                                                        variant="primary"
+                                                        fullWidth
+                                                        onClick={() => {
+                                                            const urlParams = new URLSearchParams(window.location.search);
+                                                            const shop = urlParams.get('shop') || shopName;
+                                                            window.location.href = `/billing?plan=1&shop=${encodeURIComponent(shop)}`;
+                                                        }}
+                                                    >
+                                                        Upgrade to Premium ($5/mo)
+                                                    </Button>
+                                                )}
+                                            </Box>
                                         </Box>
-                                    </BlockStack>
-                                </Card>
+                                    </Card>
+                                </Box>
                             </Grid.Cell>
                         </Grid>
                     </BlockStack>
