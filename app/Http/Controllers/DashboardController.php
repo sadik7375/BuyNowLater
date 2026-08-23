@@ -150,6 +150,7 @@ class DashboardController extends Controller
         } catch (\Throwable $t) {
             \Illuminate\Support\Facades\Log::warning("Sync bookings skipped: " . $t->getMessage());
         }
+        $dateFilter = $request->query('date_filter', 'all');
 
         $allBookings = Booking::where('shop_id', $shop->id)
             ->orderBy('created_at', 'desc')
@@ -237,6 +238,8 @@ class DashboardController extends Controller
 
         $alertSubscribersCount = Subscriber::where('shop_id', $shop->id)
             ->count();
+
+        $conversionRate = 0.0;
 
         $reminders = Reminder::where('shop_id', $shop->id)
             ->orderBy('created_at', 'desc')
