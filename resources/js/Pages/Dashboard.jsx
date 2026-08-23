@@ -31,6 +31,7 @@ import {
     RefreshIcon,
     AlertCircleIcon,
     CheckCircleIcon,
+    CheckIcon,
     SearchIcon,
 } from '@shopify/polaris-icons';
 import { router, usePage } from '@inertiajs/react';
@@ -53,16 +54,22 @@ export default function Dashboard(props) {
         targetedProducts = [],
         flash = {},
         activeTab: serverActiveTab = 'tab-overview',
+        hasPlan = false,
+        shopName = '',
     } = props;
 
     // Mapping tab strings to index
     const tabMap = {
         'tab-overview': 0,
         'tab-bookings-list': 1,
-        'tab-settings': 2,
-        'tab-support': 3,
+        'tab-pricing': 2,
+        'tab-price-plan': 2,
+        'price-plan': 2,
+        'pricing': 2,
+        'tab-settings': 3,
+        'tab-support': 4,
     };
-    const indexTabMap = ['tab-overview', 'tab-bookings-list', 'tab-settings', 'tab-support'];
+    const indexTabMap = ['tab-overview', 'tab-bookings-list', 'tab-pricing', 'tab-settings', 'tab-support'];
 
     const [selectedTab, setSelectedTab] = useState(tabMap[serverActiveTab] || 0);
 
@@ -87,6 +94,7 @@ export default function Dashboard(props) {
     const tabs = [
         { id: 'tab-overview', content: 'Overview', icon: OrderIcon },
         { id: 'tab-bookings-list', content: `Bookings (${bookings.length})`, icon: OrderIcon },
+        { id: 'tab-pricing', content: 'Price Plan', icon: InfoIcon },
         { id: 'tab-settings', content: 'App Settings', icon: SettingsIcon },
         { id: 'tab-support', content: 'Help & Support', icon: InfoIcon },
     ];
@@ -246,11 +254,17 @@ export default function Dashboard(props) {
                         variant={selectedTab === 2 ? 'primary' : 'tertiary'}
                         onClick={() => setSelectedTab(2)}
                     >
-                        App Settings
+                        Price Plan
                     </Button>
                     <Button
                         variant={selectedTab === 3 ? 'primary' : 'tertiary'}
                         onClick={() => setSelectedTab(3)}
+                    >
+                        App Settings
+                    </Button>
+                    <Button
+                        variant={selectedTab === 4 ? 'primary' : 'tertiary'}
+                        onClick={() => setSelectedTab(4)}
                     >
                         Help & Support
                     </Button>
@@ -491,8 +505,164 @@ export default function Dashboard(props) {
                     </Card>
                 )}
 
-                {/* TAB 2: APP SETTINGS */}
+                {/* TAB 2: PRICE PLAN */}
                 {selectedTab === 2 && (
+                    <BlockStack gap="400">
+                        <BlockStack gap="100">
+                            <Text variant="headingLg" as="h2">
+                                Select Your Plan
+                            </Text>
+                            <Text tone="subdued">
+                                Start for free or upgrade to unlock unlimited deposit reservations and priority support.
+                            </Text>
+                        </BlockStack>
+
+                        <Grid>
+                            {/* Free Plan */}
+                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+                                <Card padding="500">
+                                    <BlockStack gap="400">
+                                        <InlineStack align="space-between">
+                                            <Text variant="headingMd" as="h3">
+                                                Free Plan
+                                            </Text>
+                                            {!hasPlan && <Badge tone="info">Active Plan</Badge>}
+                                        </InlineStack>
+
+                                        <Text tone="subdued">
+                                            Perfect for getting started with deposit-based product reservations.
+                                        </Text>
+
+                                        <InlineStack align="start" blockAlign="baseline" gap="100">
+                                            <Text variant="heading2xl" as="span" fontWeight="bold">
+                                                $0
+                                            </Text>
+                                            <Text tone="subdued">/ month</Text>
+                                        </InlineStack>
+
+                                        <Divider />
+
+                                        <BlockStack gap="250">
+                                            <InlineStack gap="200" blockAlign="center">
+                                                <Icon source={CheckIcon} tone="success" />
+                                                <Text>Up to 10 active deposit reservations</Text>
+                                            </InlineStack>
+                                            <InlineStack gap="200" blockAlign="center">
+                                                <Icon source={CheckIcon} tone="success" />
+                                                <Text>Buy Now Later widget on product pages</Text>
+                                            </InlineStack>
+                                            <InlineStack gap="200" blockAlign="center">
+                                                <Icon source={CheckIcon} tone="success" />
+                                                <Text>Configurable deposit percentage</Text>
+                                            </InlineStack>
+                                            <InlineStack gap="200" blockAlign="center">
+                                                <Icon source={CheckIcon} tone="success" />
+                                                <Text>Shopify Draft Order integration</Text>
+                                            </InlineStack>
+                                            <InlineStack gap="200" blockAlign="center">
+                                                <Icon source={CheckIcon} tone="success" />
+                                                <Text>Reservation dashboard & tracking</Text>
+                                            </InlineStack>
+                                            <InlineStack gap="200" blockAlign="center">
+                                                <Icon source={CheckIcon} tone="success" />
+                                                <Text>Email support</Text>
+                                            </InlineStack>
+                                        </BlockStack>
+
+                                        <Box paddingTop="400">
+                                            <Button disabled fullWidth>
+                                                {!hasPlan ? 'Current Plan' : 'Free Tier'}
+                                            </Button>
+                                        </Box>
+                                    </BlockStack>
+                                </Card>
+                            </Grid.Cell>
+
+                            {/* Premium Plan */}
+                            <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
+                                <Card padding="500">
+                                    <BlockStack gap="400">
+                                        <InlineStack align="space-between">
+                                            <Text variant="headingMd" as="h3">
+                                                Premium Plan
+                                            </Text>
+                                            <Badge tone="success">Most Popular</Badge>
+                                        </InlineStack>
+
+                                        <Text tone="subdued">
+                                            Unlimited deposit reservations with full controls and priority support.
+                                        </Text>
+
+                                        <InlineStack align="start" blockAlign="baseline" gap="100">
+                                            <Text variant="heading2xl" as="span" fontWeight="bold">
+                                                $5
+                                            </Text>
+                                            <Text tone="subdued">/ month</Text>
+                                        </InlineStack>
+
+                                        <Divider />
+
+                                        <BlockStack gap="250">
+                                            <InlineStack gap="200" blockAlign="center">
+                                                <Icon source={CheckIcon} tone="success" />
+                                                <Text fontWeight="bold">Unlimited deposit reservations & holds</Text>
+                                            </InlineStack>
+                                            <InlineStack gap="200" blockAlign="center">
+                                                <Icon source={CheckIcon} tone="success" />
+                                                <Text fontWeight="bold">Custom deposit percentage per product or store-wide</Text>
+                                            </InlineStack>
+                                            <InlineStack gap="200" blockAlign="center">
+                                                <Icon source={CheckIcon} tone="success" />
+                                                <Text fontWeight="bold">Balance payment links sent directly to customers</Text>
+                                            </InlineStack>
+                                            <InlineStack gap="200" blockAlign="center">
+                                                <Icon source={CheckIcon} tone="success" />
+                                                <Text fontWeight="bold">Automated Draft Order Sync with Shopify admin</Text>
+                                            </InlineStack>
+                                            <InlineStack gap="200" blockAlign="center">
+                                                <Icon source={CheckIcon} tone="success" />
+                                                <Text fontWeight="bold">Fulfillment Hold — auto-holds order until balance is paid</Text>
+                                            </InlineStack>
+                                            <InlineStack gap="200" blockAlign="center">
+                                                <Icon source={CheckIcon} tone="success" />
+                                                <Text fontWeight="bold">Configurable hold expiry — set how long reservations last</Text>
+                                            </InlineStack>
+                                            <InlineStack gap="200" blockAlign="center">
+                                                <Icon source={CheckIcon} tone="success" />
+                                                <Text fontWeight="bold">Theme App Extension — no code edits required</Text>
+                                            </InlineStack>
+                                            <InlineStack gap="200" blockAlign="center">
+                                                <Icon source={CheckIcon} tone="success" />
+                                                <Text fontWeight="bold">Priority Support — 24/7 Email & Live Chat</Text>
+                                            </InlineStack>
+                                        </BlockStack>
+
+                                        <Box paddingTop="400">
+                                            {hasPlan ? (
+                                                <Button disabled fullWidth>Current Plan</Button>
+                                            ) : (
+                                                <Button
+                                                    variant="primary"
+                                                    fullWidth
+                                                    onClick={() => {
+                                                        const urlParams = new URLSearchParams(window.location.search);
+                                                        const shop = urlParams.get('shop') || shopName;
+                                                        window.location.href = `/billing?plan=1&shop=${encodeURIComponent(shop)}`;
+                                                    }}
+                                                >
+                                                    Upgrade to Premium ($5/mo)
+                                                </Button>
+                                            )}
+                                        </Box>
+                                    </BlockStack>
+                                </Card>
+                            </Grid.Cell>
+                        </Grid>
+                    </BlockStack>
+                )}
+
+                {/* TAB 3: APP SETTINGS */}
+                {selectedTab === 3 && (
                     <Card title="App Settings">
                         <form onSubmit={handleSaveSettings}>
                             <FormLayout>
@@ -520,11 +690,11 @@ export default function Dashboard(props) {
 
                                     <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
                                         <TextField
-                                            label="Hold Duration (Days)"
+                                            label="Reservation Hold Duration (Days)"
                                             type="number"
                                             value={String(holdDurationDays)}
                                             onChange={(val) => setHoldDurationDays(Number(val))}
-                                            helpText="Number of days remaining balance link stays valid (e.g. 14 days)."
+                                            helpText="Number of days before unpaid balance reservation expires."
                                             min={1}
                                             max={365}
                                             autoComplete="off"
@@ -532,83 +702,81 @@ export default function Dashboard(props) {
                                     </Grid.Cell>
                                 </Grid>
 
-                                <TextField
-                                    label="Buy Now Later Button Text"
-                                    value={buttonText}
-                                    onChange={(val) => setButtonText(val)}
-                                    helpText="Custom text shown on storefront widget."
-                                    autoComplete="off"
-                                />
-
-                                <TextField
-                                    label="Sender Display Name"
-                                    value={senderDisplayName}
-                                    onChange={(val) => setSenderDisplayName(val)}
-                                    helpText="Display name used in customer reminder emails."
-                                    autoComplete="off"
-                                />
-
                                 <Divider />
-                                <Text variant="headingMd" as="h3">
+
+                                <Text variant="headingMd" as="h2">
                                     Product Targeting & Visibility Rules
                                 </Text>
 
                                 <Select
-                                    label="Target Products"
+                                    label="Widget Visibility"
                                     options={[
-                                        { label: 'All Products in Store', value: 'all' },
-                                        { label: 'Specific Selected Products Only', value: 'specific' },
+                                        { label: 'Show on All Products', value: 'all' },
+                                        { label: 'Show only on Selected Products', value: 'specific' },
+                                        { label: 'Show on All Products, except selected', value: 'exclude' },
                                     ]}
                                     value={productTargetingType}
-                                    onChange={(val) => setProductTargetingType(val)}
+                                    onChange={(value) => setProductTargetingType(value)}
                                 />
 
-                                {productTargetingType === 'specific' && (
+                                {(productTargetingType === 'specific' || productTargetingType === 'exclude') && (
                                     <BlockStack gap="300">
                                         <TextField
-                                            label="Search & Select Products"
+                                            label="Search Products to Add"
                                             value={searchQuery}
-                                            onChange={(val) => setSearchQuery(val)}
-                                            placeholder="Type product title to search..."
+                                            onChange={(val) => {
+                                                setSearchQuery(val);
+                                                handleProductSearch(val);
+                                            }}
+                                            placeholder="Type product title..."
                                             prefix={<Icon source={SearchIcon} />}
                                             autoComplete="off"
                                         />
 
-                                        {isSearching && <Spinner size="small" />}
+                                        {isSearching && (
+                                            <InlineStack gap="200" align="center">
+                                                <Spinner size="small" />
+                                                <Text tone="subdued">Searching products...</Text>
+                                            </InlineStack>
+                                        )}
 
                                         {searchResults.length > 0 && (
                                             <Card padding="200">
-                                                <BlockStack gap="200">
-                                                    {searchResults.map((prod) => (
-                                                        <InlineStack key={prod.id} align="space-between" blockAlign="center">
-                                                            <InlineStack gap="200" blockAlign="center">
-                                                                {prod.image && (
-                                                                    <img
-                                                                        src={prod.image}
-                                                                        alt={prod.title}
-                                                                        style={{ width: 32, height: 32, borderRadius: 4, objectFit: 'cover' }}
-                                                                    />
-                                                                )}
-                                                                <Text variant="bodyMd">{prod.title}</Text>
+                                                <BlockStack gap="100">
+                                                    {searchResults.map((prod) => {
+                                                        const isAlreadySelected = selectedProductsList.some(
+                                                            (p) => String(p.id) === String(prod.id)
+                                                        );
+                                                        return (
+                                                            <InlineStack
+                                                                key={prod.id}
+                                                                align="space-between"
+                                                                blockAlign="center"
+                                                            >
+                                                                <Text>{prod.title}</Text>
+                                                                <Button
+                                                                    size="micro"
+                                                                    disabled={isAlreadySelected}
+                                                                    onClick={() => handleAddProduct(prod)}
+                                                                >
+                                                                    {isAlreadySelected ? 'Added' : 'Add'}
+                                                                </Button>
                                                             </InlineStack>
-                                                            <Button size="micro" onClick={() => handleSelectProduct(prod)}>
-                                                                Add
-                                                            </Button>
-                                                        </InlineStack>
-                                                    ))}
+                                                        );
+                                                    })}
                                                 </BlockStack>
                                             </Card>
                                         )}
 
-                                        {/* Selected Products List */}
                                         {selectedProductsList.length > 0 && (
                                             <BlockStack gap="200">
-                                                <Text variant="headingSm" as="h4">
-                                                    Selected Products ({selectedProductsList.length}):
-                                                </Text>
+                                                <Text fontWeight="semibold">Selected Products:</Text>
                                                 <InlineStack gap="200" wrap>
                                                     {selectedProductsList.map((prod) => (
-                                                        <Badge key={prod.id} onDismiss={() => handleRemoveProduct(prod.id)}>
+                                                        <Badge
+                                                            key={prod.id}
+                                                            onDismiss={() => handleRemoveProduct(prod.id)}
+                                                        >
                                                             {prod.title}
                                                         </Badge>
                                                     ))}
@@ -628,8 +796,8 @@ export default function Dashboard(props) {
                     </Card>
                 )}
 
-                {/* TAB 3: SUPPORT & HELP */}
-                {selectedTab === 3 && (
+                {/* TAB 4: SUPPORT & HELP */}
+                {selectedTab === 4 && (
                     <BlockStack gap="400">
                         <Card title="How It Works">
                             <BlockStack gap="300">

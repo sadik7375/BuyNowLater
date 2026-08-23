@@ -435,6 +435,8 @@ class DashboardController extends Controller
             'subTab' => $subTab,
             'downpayChartLabels' => $downpayChartLabels,
             'downpayChartData' => $downpayChartData,
+            'hasPlan' => (bool) ($shop->plan_id ?? false),
+            'shopName' => $shop->name ?? '',
         ]);
     }
 
