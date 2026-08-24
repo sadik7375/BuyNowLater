@@ -156,6 +156,22 @@ class DashboardController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // Self-heal: sync status to completed if payment_status is paid or remaining_balance is 0
+        foreach ($allBookings as $b) {
+            $pStatus = strtolower($b->payment_status ?? '');
+            if (($pStatus === 'paid' || $pStatus === 'completed' || (float)$b->remaining_balance <= 0) && $b->status === 'deposit_paid') {
+                $b->update([
+                    'status' => 'completed',
+                    'completed_at' => $b->completed_at ?? now(),
+                    'remaining_balance' => 0.0,
+                    'payment_status' => 'paid',
+                ]);
+                $b->status = 'completed';
+                $b->remaining_balance = 0.0;
+                $b->payment_status = 'paid';
+            }
+        }
+
         // Display bookings that have a valid order_id, draft_order_id, or valid deposit_paid/completed/expired status
         $bookings = $allBookings->filter(function($b) {
             return !empty($b->order_id) || !empty($b->draft_order_id) || in_array($b->status, ['deposit_paid', 'completed', 'expired']);
@@ -179,6 +195,7 @@ class DashboardController extends Controller
 
         $expiringSoonRaw = Booking::where('shop_id', $shop->id)
             ->whereNotIn('status', ['completed', 'expired'])
+            ->where('remaining_balance', '>', 0)
             ->whereNotNull('expires_at')
             ->where('expires_at', '>=', $todayStart)
             ->where('expires_at', '<=', $sevenDaysFromNow)
@@ -195,7 +212,7 @@ class DashboardController extends Controller
         // --- Status Counts (100% Dynamic from Database) ---
         $statusCounts = [
             'pending'      => $allBookings->where('status', 'pending')->count(),
-            'deposit_paid' => $allBookings->filter(fn($b) => $b->status === 'deposit_paid' && strtolower($b->payment_status) !== 'refunded')->count(),
+            'deposit_paid' => $allBookings->filter(fn($b) => $b->status === 'deposit_paid' && strtolower($b->payment_status) !== 'refunded' && (float)$b->remaining_balance > 0)->count(),
             'completed'    => $allBookings->filter(fn($b) => $b->status === 'completed' && strtolower($b->payment_status) !== 'refunded')->count(),
             'expired'      => $allBookings->filter(fn($b) => $b->status === 'expired' || strtolower($b->payment_status) === 'refunded')->count(),
         ];
@@ -217,9 +234,10 @@ class DashboardController extends Controller
 
         $activeBookings = Booking::where('shop_id', $shop->id)
             ->where('status', 'deposit_paid')
+            ->where('remaining_balance', '>', 0)
             ->where(function($q) {
                 $q->whereNull('payment_status')
-                  ->orWhereRaw('LOWER(payment_status) != ?', ['refunded']);
+                  ->orWhereNotIn(\DB::raw('LOWER(payment_status)'), ['paid', 'completed', 'refunded']);
             })
             ->count();
 
@@ -228,9 +246,10 @@ class DashboardController extends Controller
         $expiringWindow = Carbon::now()->addDays($holdDays)->endOfDay();
         $expiringSoonCount = Booking::where('shop_id', $shop->id)
             ->where('status', 'deposit_paid')
+            ->where('remaining_balance', '>', 0)
             ->where(function($q) {
                 $q->whereNull('payment_status')
-                  ->orWhereRaw('LOWER(payment_status) != ?', ['refunded']);
+                  ->orWhereNotIn(\DB::raw('LOWER(payment_status)'), ['paid', 'completed', 'refunded']);
             })
             ->whereNotNull('expires_at')
             ->where('expires_at', '>=', $now)
