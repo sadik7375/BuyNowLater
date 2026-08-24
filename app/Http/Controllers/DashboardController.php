@@ -159,7 +159,7 @@ class DashboardController extends Controller
         // Self-heal: sync status to completed if payment_status is paid or remaining_balance is 0
         foreach ($allBookings as $b) {
             $pStatus = strtolower($b->payment_status ?? '');
-            if (($pStatus === 'paid' || $pStatus === 'completed' || (float)$b->remaining_balance <= 0) && $b->status === 'deposit_paid') {
+            if (($pStatus === 'paid' || $pStatus === 'completed' || (float)$b->remaining_balance <= 0) && $b->status !== 'completed' && $b->status !== 'expired') {
                 $b->update([
                     'status' => 'completed',
                     'completed_at' => $b->completed_at ?? now(),
@@ -212,9 +212,9 @@ class DashboardController extends Controller
         // --- Status Counts (100% Dynamic from Database) ---
         $statusCounts = [
             'pending'      => $allBookings->where('status', 'pending')->count(),
-            'deposit_paid' => $allBookings->filter(fn($b) => $b->status === 'deposit_paid' && strtolower($b->payment_status) !== 'refunded' && (float)$b->remaining_balance > 0)->count(),
-            'completed'    => $allBookings->filter(fn($b) => $b->status === 'completed' && strtolower($b->payment_status) !== 'refunded')->count(),
-            'expired'      => $allBookings->filter(fn($b) => $b->status === 'expired' || strtolower($b->payment_status) === 'refunded')->count(),
+            'deposit_paid' => $allBookings->filter(fn($b) => $b->status === 'deposit_paid' && strtolower($b->payment_status ?? '') !== 'refunded' && (float)$b->remaining_balance > 0)->count(),
+            'completed'    => $allBookings->filter(fn($b) => ($b->status === 'completed' || strtolower($b->payment_status ?? '') === 'paid' || strtolower($b->payment_status ?? '') === 'completed' || (float)$b->remaining_balance <= 0) && strtolower($b->payment_status ?? '') !== 'refunded')->count(),
+            'expired'      => $allBookings->filter(fn($b) => $b->status === 'expired' || strtolower($b->payment_status ?? '') === 'refunded')->count(),
         ];
         $isMockStatus = false; // Always dynamic
 
@@ -225,7 +225,11 @@ class DashboardController extends Controller
 
         // --- Overview Stats (100% Dynamic from Database) ---
         $revenueRecovered = $allBookings
-            ->filter(fn($b) => $b->status === 'completed' && strtolower($b->payment_status ?? '') !== 'refunded')
+            ->filter(function($b) {
+                $pStatus = strtolower($b->payment_status ?? '');
+                return ($b->status === 'completed' || $pStatus === 'paid' || $pStatus === 'completed' || (float)$b->remaining_balance <= 0) 
+                    && $pStatus !== 'refunded';
+            })
             ->sum('product_price');
 
         $activeBookings = Booking::where('shop_id', $shop->id)
