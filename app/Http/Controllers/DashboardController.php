@@ -224,12 +224,8 @@ class DashboardController extends Controller
             ->count();
 
         // --- Overview Stats (100% Dynamic from Database) ---
-        $revenueRecovered = Booking::where('shop_id', $shop->id)
-            ->where('status', 'completed')
-            ->where(function($q) {
-                $q->whereNull('payment_status')
-                  ->orWhereRaw('LOWER(payment_status) != ?', ['refunded']);
-            })
+        $revenueRecovered = $allBookings
+            ->filter(fn($b) => $b->status === 'completed' && strtolower($b->payment_status ?? '') !== 'refunded')
             ->sum('product_price');
 
         $activeBookings = Booking::where('shop_id', $shop->id)
