@@ -418,7 +418,7 @@ export default function Dashboard(props) {
                                 <Card>
                                     <BlockStack gap="200">
                                         <Text variant="headingSm" as="h3" tone="subdued">
-                                            Expiring Soon (7 Days)
+                                            Expiring Soon ({holdDurationDays || settings.hold_duration_days || 7} Days)
                                         </Text>
                                         <Text variant="headingLg" as="p">
                                             {expiringSoonCount}

@@ -224,7 +224,8 @@ class DashboardController extends Controller
             ->count();
 
         $now = Carbon::now();
-        $twoDaysFromNow = Carbon::now()->addDays(2)->endOfDay();
+        $holdDays = (int) ($settings->hold_duration_days ?? 7);
+        $expiringWindow = Carbon::now()->addDays($holdDays)->endOfDay();
         $expiringSoonCount = Booking::where('shop_id', $shop->id)
             ->where('status', 'deposit_paid')
             ->where(function($q) {
@@ -233,7 +234,7 @@ class DashboardController extends Controller
             })
             ->whereNotNull('expires_at')
             ->where('expires_at', '>=', $now)
-            ->where('expires_at', '<=', $twoDaysFromNow)
+            ->where('expires_at', '<=', $expiringWindow)
             ->count();
 
         $alertSubscribersCount = Subscriber::where('shop_id', $shop->id)
